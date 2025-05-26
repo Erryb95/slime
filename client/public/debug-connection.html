@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SLIME FPS - Connection Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background: #ffe6e6; color: #cc0000; }
+        .success { background: #e6ffe6; color: #006600; }
+        .info { background: #e6f3ff; color: #0066cc; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>SLIME FPS - Connection Debug</h1>
+    <div id="status">Initializing...</div>
+    
+    <button onclick="testBasicWebSocket()">Test Basic WebSocket</button>
+    <button onclick="testColyseus()">Test Colyseus Connection</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <div id="log"></div>
+
+    <script src="https://unpkg.com/colyseus.js@^0.15.0/dist/colyseus.js"></script>
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message, type = 'info') {
+            console.log(message);
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function updateStatus(message, type = 'info') {
+            status.textContent = message;
+            status.className = type;
+        }
+        
+        function clearLog() {
+            log.innerHTML = '';
+        }
+        
+        // Test basic WebSocket connection
+        function testBasicWebSocket() {
+            addLog('Testing basic WebSocket connection to ws://localhost:2567');
+            
+            try {
+                const ws = new WebSocket('ws://localhost:2567');
+                
+                ws.onopen = (event) => {
+                    addLog('✅ WebSocket connection opened!', 'success');
+                    updateStatus('WebSocket Connected', 'success');
+                    ws.close();
+                };
+                
+                ws.onclose = (event) => {
+                    addLog(`WebSocket closed: code=${event.code}, reason=${event.reason}`, 'info');
+                };
+                
+                ws.onerror = (error) => {
+                    addLog(`❌ WebSocket error: ${error}`, 'error');
+                    updateStatus('WebSocket Failed', 'error');
+                };
+                
+                // Close after 5 seconds if still connecting
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        addLog('⏰ WebSocket connection timeout', 'error');
+                        ws.close();
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                addLog(`❌ WebSocket creation failed: ${error.message}`, 'error');
+                updateStatus('WebSocket Creation Failed', 'error');
+            }
+        }
+        
+        // Test Colyseus connection
+        async function testColyseus() {
+            addLog('Testing Colyseus connection...');
+            updateStatus('Connecting to Colyseus...', 'info');
+            
+            try {
+                addLog('Creating Colyseus client for ws://localhost:2567');
+                const client = new Colyseus.Client('ws://localhost:2567');
+                
+                addLog('Attempting to join or create room "game"...');
+                const room = await client.joinOrCreate('game', {
+                    testConnection: true,
+                    timestamp: Date.now()
+                });
+                
+                addLog(`✅ Successfully connected to room: ${room.id}`, 'success');
+                updateStatus(`Connected to room ${room.id}`, 'success');
+                
+                // Set up event handlers
+                room.onMessage('welcome', (message) => {
+                    addLog(`📩 Welcome message: ${JSON.stringify(message)}`, 'success');
+                });
+                
+                room.onMessage('testResponse', (message) => {
+                    addLog(`📩 Test response: ${JSON.stringify(message)}`, 'success');
+                });
+                
+                room.onMessage('*', (type, message) => {
+                    addLog(`📩 Message [${type}]: ${JSON.stringify(message)}`, 'info');
+                });
+                
+                room.onStateChange((state) => {
+                    addLog(`🔄 State changed: ${JSON.stringify(state)}`, 'info');
+                });
+                
+                room.onLeave(() => {
+                    addLog('❌ Left room', 'error');
+                    updateStatus('Disconnected', 'error');
+                });
+                
+                // Send test message
+                addLog('Sending test message...');
+                room.send('test', { 
+                    message: 'Hello from debug page!', 
+                    timestamp: Date.now(),
+                    userAgent: navigator.userAgent
+                });
+                
+                // Send player update test
+                setTimeout(() => {
+                    addLog('Sending player update test...');
+                    room.send('playerUpdate', {
+                        position: { x: Math.random() * 10, y: 1, z: Math.random() * 10 },
+                        rotation: { x: 0, y: Math.random() * Math.PI * 2, z: 0 },
+                        timestamp: Date.now()
+                    });
+                }, 1000);
+                
+                // Auto-disconnect after 30 seconds
+                setTimeout(() => {
+                    addLog('Auto-disconnecting after 30 seconds...');
+                    room.leave();
+                }, 30000);
+                
+            } catch (error) {
+                addLog(`❌ Colyseus connection failed: ${error.message}`, 'error');
+                updateStatus('Colyseus Connection Failed', 'error');
+                console.error('Full error:', error);
+            }
+        }
+        
+        // Auto-start basic tests
+        addLog('Debug page loaded. Ready to test connections.');
+        updateStatus('Ready for testing', 'info');
+        
+        // Test server health first
+        fetch('http://localhost:2567/health')
+            .then(response => response.json())
+            .then(data => {
+                addLog(`✅ Server health check passed: ${JSON.stringify(data)}`, 'success');
+            })
+            .catch(error => {
+                addLog(`❌ Server health check failed: ${error.message}`, 'error');
+            });
+    </script>
+</body>
+</html>

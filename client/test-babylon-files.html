@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLIME FPS - Babylon File Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.3);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00ff88;
+            text-shadow: 0 0 20px rgba(0,255,136,0.5);
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .test-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .test-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #00ff88;
+        }
+        .test-status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .test-status.pass { background: #28a745; color: white; }
+        .test-status.fail { background: #dc3545; color: white; }
+        .test-status.running { background: #ffc107; color: black; }
+        .test-status.info { background: #17a2b8; color: white; }
+        .test-log {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-info { color: #17a2b8; }
+        .log-warning { color: #ffc107; }
+        button {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            border: none;
+            padding: 12px 24px;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,255,136,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 SLIME FPS - Babylon File MIME Type Test</h1>
+        
+        <div class="test-grid">
+            <div class="test-card">
+                <div class="test-name">Player Model (.babylon)</div>
+                <div id="playerStatus" class="test-status info">Ready to Test</div>
+                <div id="playerLog" class="test-log">Ready to test player model loading...</div>
+                <button onclick="testPlayerModel()">Test Player Model</button>
+            </div>
+            
+            <div class="test-card">
+                <div class="test-name">Weapon Model (.babylon)</div>
+                <div id="weaponStatus" class="test-status info">Ready to Test</div>
+                <div id="weaponLog" class="test-log">Ready to test weapon model loading...</div>
+                <button onclick="testWeaponModel()">Test Weapon Model</button>
+            </div>
+            
+            <div class="test-card">
+                <div class="test-name">Map File (.babylon)</div>
+                <div id="mapStatus" class="test-status info">Ready to Test</div>
+                <div id="mapLog" class="test-log">Ready to test map loading...</div>
+                <button onclick="testMapFile()">Test Map File</button>
+            </div>
+        </div>
+        
+        <button onclick="testAllFiles()">🚀 Test All Babylon Files</button>
+        <button onclick="clearAllLogs()">🧹 Clear Logs</button>
+        
+        <div style="margin-top: 30px; text-align: center;">
+            <p><strong>Test Purpose:</strong> Verify that .babylon files are served with correct MIME type (application/json) and can be loaded without XML parsing errors.</p>
+        </div>
+    </div>
+
+    <script>
+        function log(testName, message, type = 'info') {
+            const logElement = document.getElementById(testName + 'Log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = `log-${type}`;
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(testName, status, type) {
+            const statusElement = document.getElementById(testName + 'Status');
+            statusElement.textContent = status;
+            statusElement.className = `test-status ${type}`;
+        }
+
+        async function testFile(url, testName, description) {
+            log(testName, `Testing ${description}...`);
+            updateStatus(testName, 'Testing...', 'running');
+            
+            try {
+                const response = await fetch(url);
+                const contentType = response.headers.get('content-type');
+                
+                log(testName, `URL: ${url}`, 'info');
+                log(testName, `Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                log(testName, `Content-Type: ${contentType}`, 'info');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Check MIME type
+                if (contentType && contentType.includes('application/json')) {
+                    log(testName, '✅ Correct MIME type (application/json)', 'success');
+                } else if (contentType && contentType.includes('text/xml')) {
+                    log(testName, '❌ Incorrect MIME type (text/xml) - This will cause XML parsing errors!', 'error');
+                } else {
+                    log(testName, `⚠️ Unexpected MIME type: ${contentType}`, 'warning');
+                }
+                
+                // Try to parse as JSON
+                const text = await response.text();
+                
+                try {
+                    const json = JSON.parse(text);
+                    log(testName, '✅ Successfully parsed as JSON', 'success');
+                    
+                    // Check if it looks like a Babylon file
+                    if (json.meshes || json.materials || json.textures) {
+                        log(testName, '✅ Valid Babylon.js format detected', 'success');
+                        log(testName, `📊 Meshes: ${json.meshes?.length || 0}, Materials: ${json.materials?.length || 0}`, 'info');
+                    } else {
+                        log(testName, '⚠️ JSON parsed but may not be a valid Babylon file', 'warning');
+                    }
+                    
+                    updateStatus(testName, '✅ Test Passed', 'pass');
+                    
+                } catch (parseError) {
+                    log(testName, `❌ JSON parsing failed: ${parseError.message}`, 'error');
+                    log(testName, `First 100 chars: ${text.substring(0, 100)}...`, 'error');
+                    updateStatus(testName, '❌ Test Failed', 'fail');
+                }
+                
+            } catch (error) {
+                log(testName, `❌ Request failed: ${error.message}`, 'error');
+                updateStatus(testName, '❌ Test Failed', 'fail');
+            }
+        }
+
+        async function testPlayerModel() {
+            await testFile('/assets/models/yBot.babylon', 'player', 'Player Model (yBot.babylon)');
+        }
+
+        async function testWeaponModel() {
+            await testFile('/assets/models/ak47.babylon', 'weapon', 'Weapon Model (ak47.babylon)');
+        }
+
+        async function testMapFile() {
+            await testFile('/assets/maps/training.babylon', 'map', 'Training Map (training.babylon)');
+        }
+
+        async function testAllFiles() {
+            log('player', '🚀 Starting comprehensive Babylon file test...', 'info');
+            log('weapon', '🚀 Starting comprehensive Babylon file test...', 'info');
+            log('map', '🚀 Starting comprehensive Babylon file test...', 'info');
+            
+            await testPlayerModel();
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay
+            await testWeaponModel();
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay
+            await testMapFile();
+            
+            log('player', '🏁 All tests completed!', 'success');
+            log('weapon', '🏁 All tests completed!', 'success');
+            log('map', '🏁 All tests completed!', 'success');
+        }
+
+        function clearAllLogs() {
+            document.getElementById('playerLog').innerHTML = 'Logs cleared...\n';
+            document.getElementById('weaponLog').innerHTML = 'Logs cleared...\n';
+            document.getElementById('mapLog').innerHTML = 'Logs cleared...\n';
+            
+            updateStatus('player', 'Ready to Test', 'info');
+            updateStatus('weapon', 'Ready to Test', 'info');
+            updateStatus('map', 'Ready to Test', 'info');
+        }
+
+        // Auto-run a quick test on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('player', 'Babylon file MIME type test page loaded', 'info');
+                log('weapon', 'Ready to test Babylon file loading', 'info');
+                log('map', 'Click buttons above to test individual files', 'info');
+            }, 100);
+        });
+    </script>
+</body>
+</html>

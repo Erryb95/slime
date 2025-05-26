@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLIME FPS - Debug Map Selection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .debug-panel {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #00ff41;
+        }
+        .test-button {
+            background: #00ff41;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .test-button:hover {
+            background: #00cc33;
+        }
+        #console-output {
+            background: #000;
+            color: #00ff41;
+            padding: 10px;
+            font-family: monospace;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>SLIME FPS - Debug Map Selection</h1>
+    
+    <div class="debug-panel">
+        <h3>Debug Controls</h3>
+        <button class="test-button" onclick="testMapSelectorExists()">Test MapSelector Exists</button>
+        <button class="test-button" onclick="testButtonClick()">Test Button Click</button>
+        <button class="test-button" onclick="clearConsole()">Clear Console</button>
+        <button class="test-button" onclick="loadLevelExplorer()">Load Level Explorer</button>
+    </div>
+    
+    <div class="debug-panel">
+        <h3>Console Output</h3>
+        <div id="console-output"></div>
+    </div>
+    
+    <!-- Level Explorer Container -->
+    <div class="debug-panel">
+        <h3>Level Explorer</h3>
+        <div id="mapSelectorContainer"></div>
+        <div id="mapPreview"></div>
+    </div>
+
+    <script>
+        // Capture console output
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToConsole(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = `[${timestamp}] ${type.toUpperCase()}: ${args.join(' ')}\n`;
+            consoleOutput.textContent += message;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            originalLog.apply(console, args);
+            addToConsole('log', ...args);
+        };
+        
+        console.error = (...args) => {
+            originalError.apply(console, args);
+            addToConsole('error', ...args);
+        };
+        
+        console.warn = (...args) => {
+            originalWarn.apply(console, args);
+            addToConsole('warn', ...args);
+        };
+        
+        function clearConsole() {
+            consoleOutput.textContent = '';
+        }
+        
+        function testMapSelectorExists() {
+            console.log('Testing if window.mapSelector exists...');
+            if (window.mapSelector) {
+                console.log('✅ window.mapSelector exists');
+                console.log('mapSelector type:', typeof window.mapSelector);
+                console.log('mapSelector methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.mapSelector)));
+            } else {
+                console.error('❌ window.mapSelector does not exist');
+                console.log('Available window properties:', Object.keys(window).filter(k => k.includes('map')));
+            }
+        }
+        
+        function testButtonClick() {
+            console.log('Testing button click...');
+            const button = document.querySelector('.load-map-btn');
+            if (button) {
+                console.log('✅ Found .load-map-btn button');
+                button.click();
+            } else {
+                console.error('❌ No .load-map-btn button found');
+                console.log('Available buttons:', document.querySelectorAll('button').length);
+            }
+        }
+        
+        async function loadLevelExplorer() {
+            console.log('Loading Level Explorer...');
+            try {
+                // Import the level explorer
+                const { default: LevelExplorer } = await import('./src/level-explorer.js');
+                console.log('✅ Level Explorer imported successfully');
+                
+                // Create instance
+                const explorer = new LevelExplorer();
+                console.log('✅ Level Explorer instance created');
+                
+                // Wait a bit for initialization
+                setTimeout(() => {
+                    testMapSelectorExists();
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Failed to load Level Explorer:', error);
+            }
+        }
+        
+        // Auto-load on page start
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Debug page loaded');
+            setTimeout(loadLevelExplorer, 1000);
+        });
+    </script>
+</body>
+</html>

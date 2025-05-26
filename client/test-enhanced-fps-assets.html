@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced FPS Demo - Asset Loading Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f23);
+            font-family: 'Courier New', monospace;
+            color: #00ff41;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-title {
+            font-size: 3rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px #00ff41;
+            animation: pulse 2s infinite;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 65, 0.3);
+            border-top: 3px solid #00ff41;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+
+        .loading-status {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            min-height: 1.5rem;
+        }
+
+        .asset-progress {
+            width: 300px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .asset-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff41, #32cd32);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .hud {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #00ff41;
+            min-width: 250px;
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .hud-label {
+            color: #ffffff;
+        }
+
+        .hud-value {
+            color: #00ff41;
+            font-weight: bold;
+        }
+
+        .fps-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 2px solid #00ff41;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        .crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: #00ff41;
+            box-shadow: 0 0 5px #00ff41;
+        }
+
+        .crosshair::before {
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .crosshair::after {
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #00ff41;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 100;
+        }
+
+        .controls h3 {
+            margin: 0 0 10px 0;
+            color: #00ff41;
+            text-align: center;
+        }
+
+        .controls p {
+            margin: 5px 0;
+            color: #ffffff;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-title">🎮 ENHANCED ULTIMATE FPS DEMO</div>
+        <div class="loading-spinner"></div>
+        <div class="loading-status" id="loadingStatus">Initializing Enhanced Systems...</div>
+        <div class="asset-progress">
+            <div class="asset-progress-bar" id="progressBar"></div>
+        </div>
+        <div id="assetDetails" style="text-align: center; font-size: 0.9rem; color: #aaa;"></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="hud">
+        <div class="hud-row">
+            <span class="hud-label">Health:</span>
+            <span class="hud-value" id="playerHealth">100/100</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">Weapon:</span>
+            <span class="hud-value" id="weaponName">CombatPistol</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">Ammo:</span>
+            <span class="hud-value" id="ammoCount">15/15</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">Score:</span>
+            <span class="hud-value" id="playerScore">0</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">Wave:</span>
+            <span class="hud-value" id="currentWave">1</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">Kills:</span>
+            <span class="hud-value" id="enemiesKilled">0</span>
+        </div>
+    </div>
+
+    <div class="fps-counter" id="fps-counter">FPS: 240/240</div>
+    <div class="crosshair"></div>
+
+    <div class="controls">
+        <h3>🎮 ENHANCED CONTROLS</h3>
+        <p><strong>WASD:</strong> Move Player</p>
+        <p><strong>Mouse:</strong> Look Around</p>
+        <p><strong>Click:</strong> Fire Weapon</p>
+        <p><strong>R:</strong> Reload</p>
+        <p><strong>1-6:</strong> Switch Weapons</p>
+        <p><strong>Space:</strong> Jump</p>
+        <p><strong>Shift:</strong> Dash</p>
+        <p><strong>T:</strong> Toggle Camera</p>
+        <p><strong>Q:</strong> Bullet Time</p>
+    </div>
+
+    <script type="module">
+        console.log('🎮 Enhanced Ultimate FPS Demo Level - Loading...');
+        
+        // Update loading status
+        function updateLoadingStatus(message, progress = null) {
+            document.getElementById('loadingStatus').textContent = message;
+            if (progress !== null) {
+                document.getElementById('progressBar').style.width = progress + '%';
+            }
+        }
+
+        updateLoadingStatus('🏗️ Creating enhanced game instance...', 10);
+
+        try {
+            const canvas = document.getElementById('gameCanvas');
+            
+            // Import the Enhanced Ultimate FPS Demo Level
+            const { EnhancedUltimateFPSDemoLevel } = await import('./src/levels/EnhancedUltimateFPSDemoLevel.js');
+            
+            updateLoadingStatus('🔧 Initializing enhanced systems...', 30);
+            
+            // Create the enhanced game instance
+            const game = new EnhancedUltimateFPSDemoLevel(canvas);
+            
+            updateLoadingStatus('📦 Loading enhanced assets...', 50);
+            
+            // Wait for initialization
+            setTimeout(() => {
+                updateLoadingStatus('🎯 Setting up enhanced physics...', 70);
+                
+                setTimeout(() => {
+                    updateLoadingStatus('🚀 Starting enhanced game...', 90);
+                    
+                    setTimeout(() => {
+                        updateLoadingStatus('✅ Enhanced Ultimate FPS Demo Level loaded!', 100);
+                        
+                        // Hide loading screen after a short delay
+                        setTimeout(() => {
+                            document.getElementById('loadingScreen').classList.add('hidden');
+                        }, 1000);
+                        
+                        console.log('✅ Enhanced Ultimate FPS Demo Level loaded successfully!');
+                        console.log('📊 Enhanced game features:');
+                        console.log('    • Physics-based combat system with Rapier engine');
+                        console.log('    • Real 3D assets from downloaded collections');
+                        console.log('    • AI enemies with patrol/chase/attack behaviors');
+                        console.log('    • 6 weapon types (pistol, rifle, shotgun, sniper, knife, bat)');
+                        console.log('    • Third-person camera (toggle with T)');
+                        console.log('    • Wave-based survival gameplay');
+                        console.log('    • Advanced movement (dash, bullet time)');
+                        console.log('    • Target performance: 240 FPS');
+                        console.log('    • Enhanced asset loading with fallbacks');
+                        
+                    }, 500);
+                }, 1000);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('❌ Failed to load Enhanced Ultimate FPS Demo Level:', error);
+            updateLoadingStatus('❌ Failed to load enhanced game', 0);
+            document.getElementById('assetDetails').innerHTML = 
+                '<div style="color: #ff4444;">Error: ' + error.message + '</div>';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "slime",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "server:start": "node scripts/server-manager.js start",
+    "server:stop": "node scripts/server-manager.js stop",
+    "server:restart": "node scripts/server-manager.js restart",
+    "server:status": "node scripts/server-manager.js status",
+    "server:clean": "node scripts/server-manager.js clean",
+    "dev:full": "concurrently \"npm run server:start\" \"npm run client:dev\"",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "server:dev": "cd server && npm run dev",
+    "clean:all": "npm run server:clean && rm -f server/.server.pid"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.1.1"
+  }
+}
