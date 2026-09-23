@@ -1,259 +1,199 @@
-# SLIME FPS 🎮
+# sparrow 🪶 
+[![DOI](https://zenodo.org/badge/DOI/10.48550/arXiv.2509.13329.svg)](https://doi.org/10.48550/arXiv.2509.13329)
+[![CI](https://github.com/JeroenGar/sparrow/actions/workflows/rust_ci.yml/badge.svg?branch=main)](https://github.com/JeroenGar/sparrow/actions/workflows/rust_ci.yml) 
 
-A high-performance browser-based competitive FPS game built with modern web technologies, targeting native-class frame rates (240 Hz) and professional-grade server tick rates (128 Hz).
+<p>
+    <img src="data/sparrow.jpeg" align="right" alt="logo" height=80>
 
-## 🚀 Features
+> Sparrows are master weavers, crafting nests with intricate patterns. They utilize geometry and symmetry to ensure structural integrity and stability. By incorporating precise angles,  lengths, and weaving patterns, these birds achieve a balance between strength and efficiency.
+[(read more)](https://www.mathnasium.com/math-centers/happyvalley/news/mathematical-marvels-bird-nest-construction-hv#)
 
-### Client Performance
+</p>
 
-- **240 Hz Rendering**: WebGPU-powered graphics with Babylon.js
-- **Sub-millisecond Input**: Native pointer lock and high-frequency input polling
-- **Physics Simulation**: Rapier (Rust → WASM) with SIMD and multi-threading
-- **OffscreenCanvas**: Worker-based rendering for consistent performance
+### The state-of-the-art nesting heuristic for 2D irregular strip packing
+`sparrow` can be used to solve 2D irregular strip packing problems, also commonly referred to as nesting problems.
+This optimization algorithm builds on [`jagua-rs`](https://github.com/JeroenGar/jagua-rs): _a collision detection engine for 2D irregular cutting & packing problems_.
 
-### Server Architecture
+This repository accompanies the paper: ["_An open-source heuristic to reboot 2D nesting research_"](https://doi.org/10.48550/arXiv.2509.13329).
 
-- **128 Hz Tick Rate**: Authoritative server simulation matching Valorant/CS2
-- **WebTransport**: QUIC-based low-latency networking
-- **Binary Messaging**: FlatBuffers for efficient serialization
-- **Scalable Multiplayer**: Colyseus framework with room-based matchmaking
+> [!TIP]
+> **[Try 2D nesting with sparrow in your browser](https://sparrowstudio.app/)**
+>
+> Import SVG, DXF or instance JSON, configure the nesting job, watch the search live and download the result. It runs locally on your device, with no installation.
+>
+> [<img width="500" alt="image" src="https://github.com/user-attachments/assets/4d84bb67-ff98-4310-82de-5350baa02427" />](https://sparrowstudio.app/)
 
-### Development Experience
+## `sparrow` in action
 
-- **Hot Reload**: Lightning-fast Vite builds with instant updates
-- **Full Stack Debugging**: VS Code launch configs for client and server
-- **Asset Pipeline**: Automated pulling from open-source repositories
-- **Performance Monitoring**: Real-time FPS, tick rate, and latency metrics
+![The `sparrow` TUI dashboard running alongside the live solution viewer](data/demo.gif)
 
-## 🏗️ Architecture
+## Nested by `sparrow`
+<p align="center">
+    <img src="data/records/final_best_trousers.svg" height=200/>
+    <img src="data/records/final_best_mao.svg" height=200/>
+</p>
+<p align="center">
+    <img src="data/records/final_best_swim.svg" height=270/>
+    <img src="data/records/final_best_marques.svg" height=270/>
+    <img src="data/records/final_best_dagli.svg" height=270/>
+</p>
+<p align="center">
+    <img src="data/records/final_best_albano.svg" height=200/>
+    <img src="data/records/final_best_shirts.svg" height=200/>
+</p>
+<p align="center">
+    <img src="data/records/final_best_gardeyn1.svg" height=220/>
+    <img src="data/records/final_best_gardeyn8.svg" height=220/>
+</p>
 
+## Requirements
+- [Rust](https://www.rust-lang.org/tools/install) ≥ 1.90
+
+## Usage
+
+**General usage:**
+```bash
+cargo run --release  -- \
+    -i [path to input JSON, or a solution JSON] \
+    -t [timelimit in seconds (default is 600s)]
 ```
-┌─────────────────┐    WebTransport     ┌─────────────────┐
-│   Client        │    (QUIC/UDP)       │   Server        │
-│                 │◄─────────────────────┤                 │
-│ WebGPU Babylon  │    Binary Messages   │ Colyseus 128Hz  │
-│ Rapier Physics  │    @ 32-240Hz        │ Auth Simulation │
-│ 240Hz Rendering │                      │ State Sync      │
-└─────────────────┘                      └─────────────────┘
+The optimization process contains two distinct phases: exploration & compression.
+By default 80% of the timelimit is spent exploring and 20% is spent compressing.
+Pressing 'Ctrl + C' immediately moves the algorithm to the next phase, or terminates it.
+
+**All CLI options:**
+```bash
+-i, --input <INPUT>              Path to the input JSON file, or a solution JSON file for warm starting
+-t, --global-time <GLOBAL_TIME>  Set a global time limit (in seconds)
+-e, --exploration <EXPLORATION>  Set the exploration phase time limit (in seconds)
+-c, --compression <COMPRESSION>  Set the compression phase time limit (in seconds)
+-x, --early-termination          Enable early termination of the optimization process
+-s, --rng-seed <RNG_SEED>        Fixed seed for the random number generator
+--min-item-separation <MIN_ITEM_SEPARATION> Minimum distance between items and other hazards
+--workers <WORKERS>           Number of worker threads used by the separator
+-h, --help                       Print help
 ```
 
-## 📁 Project Structure
-
-```
-SLIME/
-├── client/                 # TypeScript WebGPU client
-│   ├── src/
-│   │   ├── client/         # Game client & networking
-│   │   ├── input/          # Input handling
-│   │   ├── physics/        # Rapier integration
-│   │   ├── rendering/      # Babylon.js systems
-│   │   └── ui/             # User interface
-│   ├── index.html
-│   ├── vite.config.ts      # WebGPU + WASM config
-│   └── package.json
-├── server/                 # Node.js Colyseus server
-│   ├── src/
-│   │   ├── rooms/          # Game room logic
-│   │   ├── schemas/        # State schemas
-│   │   └── systems/        # Game systems
-│   ├── server.ts
-│   └── package.json
-├── tools/
-│   └── pullAssets.js       # Asset automation
-├── .vscode/
-│   ├── tasks.json          # Build & run tasks
-│   ├── launch.json         # Debug configs
-│   └── settings.json       # Workspace settings
-└── README.md
+**Concrete example**:
+```bash
+cargo run --release -- \
+    -i data/input/swim.json
 ```
 
-## 🚀 Quick Start
+## Live visualization
 
-### Prerequisites
-
-- **Node.js** 18+ (for ES modules and top-level await)
-- **Modern Browser** with WebGPU support (Chrome 113+, Edge 113+)
-- **VS Code** (recommended for optimal development experience)
-
-### 1. Install Dependencies
+`sparrow` can show the search in a terminal dashboard alongside a live browser view of the current solution.
+The dashboard reports the current phase, progress, throughput, and logs. It continuously updates the SVG used by
+[live_viewer.html](data/live/live_viewer.html):
 
 ```bash
-# Install all dependencies (client + server)
-npm run install:all
-
-# Or individually:
-cd client && npm install
-cd ../server && npm install
+cargo run --release --features=tui -- \
+    -i data/input/swim.json
 ```
 
-### 2. Start Development Servers
+For the browser viewer without the dashboard, open
+[live_viewer.html](data/live/live_viewer.html) and enable the `live_svg` feature:
 
 ```bash
-# Option A: Use VS Code Task (Recommended)
-Ctrl+Shift+P → "Tasks: Run Task" → "Start Full Stack"
-
-# Option B: Manual startup
-# Terminal 1 - Server (128Hz)
-cd server && npm run dev
-
-# Terminal 2 - Client (Vite HMR)
-cd client && npm run dev
+cargo run --release --features=live_svg -- \
+    -i data/input/swim.json
 ```
 
-### 3. Open Game
+## Input
 
-- **Client**: http://localhost:3000
-- **Server Monitor**: http://localhost:2567/colyseus
-- **Playground**: http://localhost:2567/playground
+This repository uses the same JSON format as [`jagua-rs`](https://github.com/JeroenGar/jagua-rs) to represent instances.
+These are also available in Oscar Oliveira's [OR-Datasets repository](https://github.com/Oscar-Oliveira/OR-Datasets/tree/master/Cutting-and-Packing/2D-Irregular).
 
-## 🎮 Controls
+See [`jagua-rs` README](https://github.com/JeroenGar/jagua-rs?tab=readme-ov-file#input) for details on the input format.
 
-| Key           | Action               |
-| ------------- | -------------------- |
-| `W A S D`     | Movement             |
-| `Mouse`       | Look around          |
-| `Left Click`  | Fire weapon          |
-| `Right Click` | Aim/Secondary        |
-| `Space`       | Jump                 |
-| `Shift`       | Crouch/Walk          |
-| `R`           | Reload               |
-| `F`           | Toggle fullscreen    |
-| `Esc`         | Release pointer lock |
+## Output
 
-## 🔧 Development
+Solutions are exported as SVG files in the `output` folder. 
+The final SVG solution is saved as `output/final_{name}.svg`.
 
-### VS Code Tasks
+The SVG files serve both as a visual and exact representation of the solution.
+All original shapes and their exact transformations applied to them are defined within the SVG:
+```html
+    ...
+    <g id="items">
+        <defs>
+            <g id="item_0">...</g>
+        </defs>
+        <use transform="translate(1289.9116 1828.7717), rotate(-90)" xlink:href="#item_0">...</use>
+    </g>
+    ...
+```
+The [SVG spec](https://stackoverflow.com/questions/18582935/the-applying-order-of-svg-transforms) defines that the transformations are applied from right to left.
+So here the item is always first rotated and then translated.
 
-- **Install All Dependencies**: Install client + server npm packages
-- **Start Full Stack**: Launch both client and server in parallel
-- **Client: Dev Server**: Start Vite dev server with hot reload
-- **Server: Dev Server**: Start Colyseus server with auto-restart
-- **Assets: Pull**: Download open-source game assets
+By default, a range of intermediate (and infeasible) solutions will be exported in `output/sols_{name}`.
+To disable this and export only a single final solution, compile with the `only_final_svg` feature:
+```bash
+cargo run --release --features=only_final_svg -- \
+    -i data/input/swim.json
+```
+The final solution is saved both in SVG and JSON format in `output/final_{name}.svg` and `output/final_{name}.json`, respectively.
 
-### Debugging
+## Targeting maximum performance
 
-- **Launch Full Stack**: Debug both client (Chrome) and server (Node.js)
-- **Launch Client**: Attach debugger to Chrome with WebGPU enabled
-- **Launch Server**: Debug Node.js with TypeScript source maps
-
-### Asset Pipeline
+This crate is highly optimized and is floating-point heavy.
+To enable the maximum performance, make sure `target-cpu=native` compiler flag is set, 
+switch to the nightly toolchain (required for [SIMD](https://doc.rust-lang.org/std/simd/index.html) support) 
+and enable the `simd` feature:
 
 ```bash
-# Pull assets from open repositories
-npm run assets:pull
-
-# Assets saved to:
-# client/public/assets/kenney/        # Kenney.nl assets
-# client/public/assets/opengameart/   # OpenGameArt.org assets
-# client/public/assets/manifest.json  # Asset index
+  export RUSTFLAGS='-C target-cpu=native'
+  export RUSTUP_TOOLCHAIN=nightly
+  cargo run --release --features=simd,only_final_svg -- \
+      -i data/input/swim.json
 ```
 
-## ⚡ Performance Targets
+## Testing
+A suite of `debug_assert!()` checks are included throughout the codebase to verify the correctness of the heuristic.
+These assertions are omitted in release builds to maximize performance, but are active in test builds.
+Some basic integration tests are included that run the heuristic on a few example instances while all assertions are active:
+```bash
+  cargo test
+```
 
-### Client Rendering
+Alternatively you can enable all `debug_assert!()` checks in release builds by running the tests with the `debug-release` profile:
+```bash
+cargo run --profile debug-release -- \
+    -i data/input/swim.json
+```
 
-- **Target FPS**: 240 Hz (4.16ms frame budget)
-- **Input Latency**: <1ms pointer lock to render
-- **Physics Rate**: 128 Hz simulation step
-- **Memory**: <200MB heap usage
+## Experiments
+All solutions from the comparative experiments in the paper can be found at
+[data/experiments](data/experiments).
+The accompanying [README](data/experiments/README.md) details how to perform an exact reproduction of any benchmark run.
 
-### Server Simulation
+## Related Projects
 
-- **Tick Rate**: 128 Hz (7.8ms per tick)
-- **State Sync**: 32-64 Hz to clients
-- **Input Processing**: 240 Hz from clients
-- **Latency**: <50ms regional, <150ms global
+- [`sparrow/studio`](https://github.com/JeroenGar/sparrow-studio): an interactive browser interface for `sparrow`
+- [`spyrrow`](https://github.com/PaulDL-RS/spyrrow): a Python wrapper of `sparrow`
+- [`sparrow-3d`](https://github.com/JonasTollenaere/sparrow-3d): a 3D adaptation of `sparrow`
 
-### Network Protocol
+## Development
 
-- **Input Messages**: 240 Hz unreliable UDP
-- **State Updates**: 32 Hz reliable delivery
-- **Event Messages**: Reliable ordered delivery
-- **Bandwidth**: <100 KB/s per player
+This repo is meant to remain a faithful representation of the algorithm described in the paper.
+However, I am open to pull requests containing bug fixes and speed/performance improvements as long as they do not alter the algorithm too significantly.
 
-## 🛠️ Technology Stack
+Feel free to fork the repository if you want to experiment with different heuristics or want to expand the functionality.
 
-### Client Stack
-
-| Component      | Technology     | Purpose                 |
-| -------------- | -------------- | ----------------------- |
-| **Engine**     | Babylon.js 7.x | WebGPU rendering        |
-| **Physics**    | Rapier 0.14    | WASM physics simulation |
-| **Language**   | TypeScript 5.x | Type-safe development   |
-| **Bundler**    | Vite 6.x       | Fast build & HMR        |
-| **Networking** | Colyseus.js    | Client multiplayer SDK  |
-
-### Server Stack
-
-| Component         | Technology     | Purpose                   |
-| ----------------- | -------------- | ------------------------- |
-| **Framework**     | Colyseus 0.15  | Authoritative multiplayer |
-| **Runtime**       | Node.js 18+    | ES modules & performance  |
-| **Language**      | TypeScript 5.x | Shared types with client  |
-| **Transport**     | WebTransport   | QUIC low-latency protocol |
-| **Serialization** | FlatBuffers    | Binary message format     |
-
-## 🎯 Roadmap
-
-### Phase 1: Core FPS (Current)
-
-- [x] WebGPU rendering setup
-- [x] High-frequency input handling
-- [x] Rapier physics integration
-- [x] Colyseus multiplayer foundation
-- [x] 128Hz server tick rate
-- [ ] Weapon systems & ballistics
-- [ ] Player health & damage
-- [ ] Respawn mechanics
-
-### Phase 2: Competitive Features
-
-- [ ] Anti-cheat foundation
-- [ ] Spectator mode
-- [ ] Match replay system
-- [ ] Performance profiling tools
-- [ ] Regional server deployment
-- [ ] Ranked matchmaking
-
-### Phase 3: Polish & Optimization
-
-- [ ] Advanced graphics options
-- [ ] Audio system integration
-- [ ] Map editor tools
-- [ ] Tournament mode
-- [ ] Streaming integration
-- [ ] Mobile companion app
-
-## 🤝 Contributing
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Guidelines
-
-- Maintain 240 FPS client performance
-- Keep server tick rate at 128 Hz
-- Write tests for game logic
-- Use TypeScript strict mode
-- Follow established architecture patterns
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgements
 
-- **Babylon.js Team** - Outstanding WebGPU support
-- **Dimforge** - Rapier physics engine
-- **Colyseus** - Multiplayer framework
-- **Kenney** - Open game assets
-- **OpenGameArt** - Community assets
+<p>
+<img src="https://upload.wikimedia.org/wikipedia/commons/4/49/KU_Leuven_logo.svg" height="30px" alt="KU Leuven logo">
+&nbsp;
+<img src="https://upload.wikimedia.org/wikipedia/commons/9/97/Fonds_Wetenschappelijk_Onderzoek_logo_2024.svg" height="30px" alt="FWO logo">
+</p>
 
----
 
-**Built with ❤️ for competitive FPS gaming**
+This project began development at the CODeS research group of [NUMA - KU Leuven](https://numa.cs.kuleuven.be/) and was funded by [Research Foundation - Flanders (FWO)](https://www.fwo.be/en/) (grant number: 1S71222N) until October 2025.
 
-_Targeting the performance standards of modern esports titles in a web browser._
+Since then, I have continued the development and maintenance of the project independently.
+If you find `sparrow` useful and would like to support its continued development and maintenance, you can do so through [GitHub Sponsors](https://github.com/sponsors/JeroenGar) or [Buy Me a Coffee](https://buymeacoffee.com/jeroengards).
