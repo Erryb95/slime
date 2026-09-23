@@ -1,0 +1,653 @@
+<title>Corvo Nesting</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f3f4f6;
+    --paper: #ffffff;
+    --ink: #15181d;
+    --ink-2: #4b5260;
+    --ink-3: #8a91a0;
+    --line: #d9dce3;
+    --accent: #f2b418;
+    --accent-ink: #1a1400;
+    --accent-soft: #fff3cc;
+    --good: #1f8a4c;
+    --panel: #24272d;
+    --panel-2: #2e3138;
+    --panel-line: #3b3f48;
+    --panel-ink: #e8eaee;
+    --panel-ink-2: #a7adb9;
+    --roll: #ffffff;
+    --roll-grid: #e6e8ee;
+    --waste: #f7e9c4;
+    --piece: #2b2f36;
+    --piece-line: #f2b418;
+    --shadow: 0 1px 2px rgba(20,24,32,.06), 0 8px 24px rgba(20,24,32,.08);
+    --radius: 10px;
+    --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121417; --paper: #1a1d22; --ink: #eceef2; --ink-2: #b4bac6; --ink-3: #7c8390;
+      --line: #2c3039; --accent: #f2b418; --accent-ink: #1a1400; --accent-soft: #3a3010;
+      --good: #4cc07a; --panel: #202329; --panel-2: #292d34; --panel-line: #383d47;
+      --roll: #23262c; --roll-grid: #2f333b; --waste: #3a3010; --piece: #dfe3ea; --piece-line: #f2b418;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121417; --paper: #1a1d22; --ink: #eceef2; --ink-2: #b4bac6; --ink-3: #7c8390;
+    --line: #2c3039; --accent: #f2b418; --accent-ink: #1a1400; --accent-soft: #3a3010;
+    --good: #4cc07a; --panel: #202329; --panel-2: #292d34; --panel-line: #383d47;
+    --roll: #23262c; --roll-grid: #2f333b; --waste: #3a3010; --piece: #dfe3ea; --piece-line: #f2b418;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 0 64px; }
+  a { color: inherit; }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .mark { width: 38px; height: 38px; background: var(--ink); color: var(--accent); border-radius: 8px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 900; font-size: 26px; line-height: 1; }
+  .brand .name { font-family: var(--font-display); font-weight: 900; font-size: 30px; letter-spacing: .01em; line-height: 1; }
+  .brand .sub { font-size: 12px; color: var(--ink-3); }
+  .badge { font-family: var(--font-mono); font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); }
+
+  .hero { padding-block: 36px 18px; display: grid; gap: 8px; }
+  .hero h1 { font-family: var(--font-display); font-weight: 900; font-size: clamp(40px, 7vw, 76px); line-height: .95; letter-spacing: .005em; max-width: 14ch; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { max-width: 62ch; color: var(--ink-2); margin: 6px 0 0; font-size: 17px; }
+
+  .demo { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; margin-top: 18px; }
+  @media (max-width: 860px) { .demo { grid-template-columns: 1fr; } }
+
+  /* Illustrator-style panel */
+  .panel { background: var(--panel); color: var(--panel-ink); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; font-size: 13px; }
+  .panel .tab { background: var(--panel-2); border-bottom: 1px solid var(--panel-line); padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+  .panel .tab .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .panel .tab b { font-weight: 600; }
+  .panel .tab span { color: var(--panel-ink-2); margin-left: auto; font-family: var(--font-mono); font-size: 11px; }
+  .panel section { padding: 12px; border-bottom: 1px solid var(--panel-line); display: grid; gap: 8px; }
+  .panel section:last-child { border-bottom: 0; }
+  .panel label { display: grid; gap: 4px; color: var(--panel-ink-2); font-size: 12px; }
+  .panel .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .panel select, .panel input[type=number] { width: 100%; background: #16181d; color: var(--panel-ink); border: 1px solid var(--panel-line); border-radius: 6px; padding: 6px 8px; font: inherit; font-family: var(--font-mono); font-size: 13px; }
+  .panel input[type=range] { width: 100%; accent-color: var(--accent); }
+  .panel .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--panel-line); border-radius: 6px; overflow: hidden; }
+  .panel .seg button { background: #16181d; color: var(--panel-ink-2); border: 0; padding: 6px 4px; font: inherit; font-size: 12px; cursor: pointer; }
+  .panel .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .panel .seg button:focus-visible, .btn:focus-visible, .panel select:focus-visible, .panel input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .btn { border: 0; border-radius: 8px; padding: 10px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); width: 100%; font-size: 15px; }
+  .btn.primary[disabled] { opacity: .5; cursor: default; }
+  .btn.ghost { background: transparent; color: var(--panel-ink); border: 1px solid var(--panel-line); }
+  .panel .actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .panel .upload { border: 1px dashed var(--panel-line); border-radius: 6px; padding: 8px; text-align: center; color: var(--panel-ink-2); cursor: pointer; }
+  .panel .upload input { display: none; }
+  .panel .status { font-family: var(--font-mono); font-size: 11px; color: var(--panel-ink-2); min-height: 16px; }
+  .progress { height: 6px; background: #16181d; border-radius: 3px; overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s linear; }
+
+  /* Canvas */
+  .stage { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; display: grid; gap: 12px; }
+  .stage .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .stage .head .t { font-weight: 600; }
+  .stage .head .m { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); }
+  .roll { width: 100%; aspect-ratio: 16 / 6.5; max-width: 100%; background: var(--roll); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .roll svg { width: 100%; height: 100%; display: block; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; }
+  .stat .k { font-size: 12px; color: var(--ink-3); }
+  .stat .v { font-family: var(--font-mono); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat .v small { font-size: 12px; color: var(--ink-3); margin-left: 3px; }
+  .stat.good .v { color: var(--good); }
+  .compare-bars { display: grid; gap: 6px; font-size: 12px; }
+  .bar { display: grid; grid-template-columns: 150px 1fr 70px; align-items: center; gap: 10px; }
+  .bar .track { height: 12px; background: var(--roll-grid); border-radius: 3px; overflow: hidden; }
+  .bar .track i { display: block; height: 100%; background: var(--ink-3); }
+  .bar.corvo .track i { background: var(--accent); }
+  .bar .n { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+  .note { font-size: 12px; color: var(--ink-3); }
+
+  /* Sections */
+  section.block { padding-block: 44px 0; }
+  section.block h2 { font-family: var(--font-display); font-weight: 900; font-size: clamp(30px, 4.5vw, 44px); line-height: 1; margin-bottom: 8px; }
+  section.block > p { max-width: 64ch; color: var(--ink-2); margin: 0 0 18px; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 860px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+  .step { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 6px; }
+  .step .n { font-family: var(--font-display); font-weight: 900; font-size: 34px; color: var(--accent); line-height: 1; }
+  .step b { font-weight: 600; }
+  .step p { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--ink-3); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+  tr:last-child td { border-bottom: 0; }
+  td.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.hl td { background: var(--accent-soft); }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); }
+  .pill.yes { border-color: var(--good); color: var(--good); }
+
+  .pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .pricing { grid-template-columns: 1fr; } }
+  .price { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: grid; gap: 10px; }
+  .price.main { border-color: var(--accent); }
+  .price .amt { font-family: var(--font-display); font-weight: 900; font-size: 54px; line-height: 1; }
+  .price .amt small { font-family: var(--font-body); font-size: 14px; font-weight: 400; color: var(--ink-3); }
+  .price ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14px; display: grid; gap: 4px; }
+  footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; }
+  @media (prefers-reduced-motion: reduce) { .progress i { transition: none; } }
+  .offscreen { position: absolute; left: -99999px; top: 0; width: 10px; height: 10px; overflow: hidden; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">C</div>
+      <div>
+        <div class="name">CORVO</div>
+        <div class="sub">Nesting true-shape per Adobe Illustrator</div>
+      </div>
+    </div>
+    <div class="badge">Prototipo · motore Sparrow compilato in WebAssembly</div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Demo nel browser · nessuna installazione</div>
+    <h1>Meno vinile <em>sprecato</em>, senza spostare i pezzi a mano.</h1>
+    <p>Corvo dispone lettere, loghi e sagome sul rotolo con il motore di nesting più efficiente pubblicato in letteratura. Qui sotto gira l'algoritmo vero, nel tuo browser: scegli un lavoro, premi <b>Nest</b> e guarda il rotolo accorciarsi.</p>
+  </section>
+
+  <div class="demo">
+    <aside class="panel" aria-label="Pannello Corvo">
+      <div class="tab"><span class="dot"></span><b>Corvo</b><span>Finestra › Estensioni</span></div>
+
+      <section>
+        <label for="job">Lavoro
+          <select id="job">
+            <option value="sign">Insegna: lettere e frecce (44 pezzi)</option>
+            <option value="stickers">Adesivi: stelle, tag, anelli (60 pezzi)</option>
+            <option value="swim">Benchmark tessile "swim" (48 pezzi)</option>
+            <option value="shirts">Benchmark tessile "shirts" (99 pezzi)</option>
+            <option value="trousers">Benchmark tessile "trousers" (64 pezzi)</option>
+            <option value="custom">Il tuo SVG…</option>
+          </select>
+        </label>
+        <label class="upload" for="svgfile"><span id="uploadText">Carica un SVG (path, gruppi, compound path)</span>
+          <input type="file" id="svgfile" accept=".svg,image/svg+xml">
+        </label>
+      </section>
+
+      <section>
+        <div class="row">
+          <label for="rollWidth">Larghezza rotolo (mm)
+            <input type="number" id="rollWidth" value="610" min="50" step="10">
+          </label>
+          <label for="gap">Distanza minima (mm)
+            <input type="number" id="gap" value="3" min="0" step="0.5">
+          </label>
+        </div>
+        <label>Rotazioni
+          <div class="seg" id="rot" role="group" aria-label="Rotazioni">
+            <button type="button" data-v="free" aria-pressed="true">Libere</button>
+            <button type="button" data-v="4" aria-pressed="false">0/90/180/270</button>
+            <button type="button" data-v="2" aria-pressed="false">0/180</button>
+            <button type="button" data-v="0" aria-pressed="false">Nessuna</button>
+          </div>
+        </label>
+        <label for="budget">Tempo di ricerca: <span id="budgetLabel">10 s</span>
+          <input type="range" id="budget" min="4" max="60" step="1" value="10">
+        </label>
+      </section>
+
+      <section>
+        <div class="actions">
+          <button class="btn primary" id="run" type="button">Nest</button>
+          <button class="btn ghost" id="stop" type="button" disabled>Stop</button>
+        </div>
+        <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+        <div class="status" id="status">Pronto.</div>
+      </section>
+    </aside>
+
+    <div class="stage">
+      <div class="head">
+        <div class="t" id="stageTitle">Rotolo 610 mm</div>
+        <div class="m" id="stageMeta">In attesa</div>
+      </div>
+      <div class="roll"><svg id="canvas" viewBox="0 0 1600 650" preserveAspectRatio="xMinYMin meet" aria-label="Layout sul rotolo"></svg></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Rotolo usato</div><div class="v" id="sLen">–<small>mm</small></div></div>
+        <div class="stat"><div class="k">Riempimento</div><div class="v" id="sDens">–<small>%</small></div></div>
+        <div class="stat"><div class="k">A bounding box</div><div class="v" id="sBox">–<small>mm</small></div></div>
+        <div class="stat good"><div class="k">Materiale risparmiato</div><div class="v" id="sSave">–<small>%</small></div></div>
+      </div>
+      <div class="compare-bars">
+        <div class="bar"><span>Bounding box (a mano / eCut)</span><div class="track"><i id="bBox" style="width:0%"></i></div><span class="n" id="nBox">–</span></div>
+        <div class="bar corvo"><span>Corvo · true-shape</span><div class="track"><i id="bCorvo" style="width:0%"></i></div><span class="n" id="nCorvo">–</span></div>
+      </div>
+      <div class="note">Il confronto "bounding box" è un impacchettamento a colonne dei rettangoli di ingombro con le stesse rotazioni: è quello che fa un operatore attento o un plugin senza true-shape. Nel browser il motore gira su un solo thread; nel plugin usa tutti i core del Mac o del PC.</div>
+    </div>
+  </div>
+
+  <section class="block">
+    <h2>Come funziona nel plugin</h2>
+    <p>Corvo è un pannello di Illustrator. Non esporta nulla, non apre altri programmi: lavora sui tuoi oggetti e li riposiziona nella tavola da disegno.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><b>Seleziona</b><p>Lettere, loghi, sagome, gruppi e compound path. I gruppi restano interi: gli accenti non si staccano dalle lettere.</p></div>
+      <div class="step"><div class="n">2</div><b>Imposta il materiale</b><p>Larghezza del rotolo o del foglio, distanza minima per la lama, rotazioni ammesse, quantità per pezzo.</p></div>
+      <div class="step"><div class="n">3</div><b>Nest</b><p>Il motore cerca la disposizione più corta. Vedi il rotolo accorciarsi in tempo reale e puoi fermarti quando ti basta.</p></div>
+      <div class="step"><div class="n">4</div><b>Torna al lavoro</b><p>Gli oggetti originali vengono spostati e ruotati, con bezier intatte. Poi mandi al plotter come sempre.</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Contro gli altri</h2>
+    <p>Prezzi e limiti presi dai siti dei produttori e dai thread di Signs101 a settembre 2026.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Prodotto</th><th>Prezzo</th><th>True-shape</th><th>Mac</th><th>Gruppi interi</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td><b>Corvo</b></td><td class="mono">79 $ una tantum</td><td><span class="pill yes">sì</span></td><td><span class="pill yes">sì</span></td><td><span class="pill yes">sì</span></td><td>Motore Sparrow (KU Leuven, 2025), stato dell'arte nei benchmark accademici. Prototipo.</td></tr>
+          <tr><td>eCut</td><td class="mono">~60 $ una tantum</td><td><span class="pill">parziale</span></td><td><span class="pill">no</span></td><td><span class="pill">no</span></td><td>Il più consigliato su Windows. Con gruppi e livelli torna a bounding box; la versione Mac non è più mantenuta.</td></tr>
+          <tr><td>Arrange Master</td><td class="mono">39–159 $ una tantum</td><td><span class="pill yes">sì</span></td><td><span class="pill yes">sì</span></td><td><span class="pill">?</span></td><td>Uscito a ottobre 2025, motore JavaScript in un processo Chromium. Nessuna recensione pubblica ancora.</td></tr>
+          <tr><td>AI Nest-Pro</td><td class="mono">998 $ / anno</td><td><span class="pill yes">sì</span></td><td><span class="pill yes">sì</span></td><td><span class="pill yes">sì</span></td><td>Consiglia 8 core e 32 GB di RAM. Su Signs101: "prezzo assurdo".</td></tr>
+          <tr><td>Onyx TruFit</td><td class="mono">1.995 $</td><td><span class="pill yes">sì</span></td><td><span class="pill yes">sì</span></td><td><span class="pill">–</span></td><td>Programma esterno, non un plugin. "Ci vorrebbero decenni per rientrare."</td></tr>
+          <tr><td>Deepnest / SVGnest</td><td class="mono">gratis</td><td><span class="pill yes">sì</span></td><td><span class="pill yes">sì</span></td><td><span class="pill">no</span></td><td>Esterni, lenti, non mantenuti. Bisogna esportare e reimportare.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Prezzo</h2>
+    <p>Licenza perpetua, come si usa in questo mestiere. Niente abbonamento.</p>
+    <div class="pricing">
+      <div class="price">
+        <div class="eyebrow">Demo</div>
+        <div class="amt">0 $</div>
+        <ul>
+          <li>Fino a 20 pezzi per nesting</li>
+          <li>Tempo di ricerca limitato a 15 secondi</li>
+          <li>Filigrana "Corvo demo" sul layout</li>
+          <li>Nessuna scadenza</li>
+        </ul>
+      </div>
+      <div class="price main">
+        <div class="eyebrow">Corvo</div>
+        <div class="amt">79 $ <small>una tantum · 2 computer</small></div>
+        <ul>
+          <li>Pezzi illimitati, tempo di ricerca libero</li>
+          <li>Rotolo o foglio fisso, più fogli</li>
+          <li>Gruppi e compound path preservati</li>
+          <li>Mac e Windows, Illustrator CC 2018 → 2026</li>
+          <li>Aggiornamenti della versione 1 inclusi</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Corvo è un prototipo. Il pannello qui sopra è una simulazione dell'interfaccia; il motore di nesting è quello reale, compilato da <a href="https://github.com/JeroenGar/sparrow">sparrow</a> (MIT) a WebAssembly.</div>
+    <div>I benchmark tessili "swim", "shirts" e "trousers" sono istanze standard della letteratura; le unità sono quelle originali.</div>
+  </footer>
+</div>
+
+<div class="offscreen" id="svgSandbox" aria-hidden="true"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- Sample jobs (mm, y-down like Illustrator) ---------- */
+  const H = 200, S = 40; // letter height and stroke
+  const flip = (pts) => pts.map(([x, y]) => [x, -y]);
+  const letters = {
+    L: [[0,0],[120,0],[120,S],[S,S],[S,H],[0,H]],
+    T: [[S,0],[80,0],[80,160],[120,160],[120,H],[0,H],[0,160],[S,160]],
+    E: [[0,0],[120,0],[120,S],[S,S],[S,80],[100,80],[100,120],[S,120],[S,160],[120,160],[120,H],[0,H]],
+    H: [[0,0],[S,0],[S,80],[80,80],[80,0],[120,0],[120,H],[80,H],[80,120],[S,120],[S,H],[0,H]],
+    F: [[0,0],[S,0],[S,80],[100,80],[100,120],[S,120],[S,160],[120,160],[120,H],[0,H]],
+    C: [[0,0],[120,0],[120,S],[S,S],[S,160],[120,160],[120,H],[0,H]],
+    V: [[0,H],[45,H],[70,60],[95,H],[140,H],[90,0],[50,0]],
+    A: [[0,0],[45,0],[52,45],[88,45],[95,0],[140,0],[95,H],[45,H]],
+  };
+  const ngon = (r, n, rot = 0) => Array.from({ length: n }, (_, i) => {
+    const a = rot + i * 2 * Math.PI / n; return [Math.round(r * Math.cos(a) * 100) / 100, Math.round(r * Math.sin(a) * 100) / 100];
+  });
+  const star = (ro, ri, n) => Array.from({ length: 2 * n }, (_, i) => {
+    const r = i % 2 ? ri : ro, a = -Math.PI / 2 + i * Math.PI / n; return [Math.round(r * Math.cos(a) * 100) / 100, Math.round(r * Math.sin(a) * 100) / 100];
+  });
+  const arrow = [[0,60],[120,60],[120,20],[200,100],[120,180],[120,140],[0,140]];
+  const chevron = [[0,0],[70,0],[130,80],[70,160],[0,160],[60,80]];
+  const tag = { outer: [[0,0],[160,0],[200,40],[160,80],[0,80]], inner: [ngon(9, 16).map(([x, y]) => [x + 170, y + 40])] };
+  const ring = { outer: ngon(60, 32), inner: [ngon(36, 24)] };
+  const roundRect = (w, h, r) => [[r,0],[w-r,0],[w,r],[w,h-r],[w-r,h],[r,h],[0,h-r],[0,r]];
+
+  const item = (id, shape, demand, name) => ({ id, demand, name, shape });
+  const simple = (pts) => ({ type: 'simple_polygon', data: pts });
+  const withHoles = (o) => ({ type: 'polygon', data: { outer: o.outer, inner: o.inner } });
+
+  const JOBS = {
+    sign: {
+      title: 'Insegna "CAFFÈ LEVANTE" + frecce direzionali', rollWidth: 610, unit: 'mm',
+      items: [
+        item(0, simple(flip(letters.C)), 2, 'C'), item(1, simple(flip(letters.A)), 3, 'A'), item(2, simple(flip(letters.F)), 2, 'F'),
+        item(3, simple(flip(letters.E)), 4, 'E'), item(4, simple(flip(letters.L)), 2, 'L'), item(5, simple(flip(letters.V)), 2, 'V'),
+        item(6, simple(flip(letters.T)), 2, 'T'), item(7, simple(flip(letters.H)), 1, 'H'),
+        item(8, simple(arrow), 6, 'freccia'), item(9, simple(chevron), 8, 'chevron'),
+        item(10, simple(roundRect(420, 140, 30)), 2, 'pannello'), item(11, simple(ngon(90, 28)), 4, 'tondo'),
+        item(12, simple(star(70, 30, 5)), 6, 'stella'),
+      ],
+    },
+    stickers: {
+      title: 'Adesivi die-cut: stelle, tag, anelli, esagoni', rollWidth: 300, unit: 'mm',
+      items: [
+        item(0, simple(star(45, 20, 5)), 12, 'stella'), item(1, withHoles(tag), 8, 'tag'), item(2, withHoles(ring), 8, 'anello'),
+        item(3, simple(ngon(50, 6, Math.PI / 6)), 10, 'esagono'), item(4, simple(ngon(35, 24)), 12, 'tondo'),
+        item(5, simple(roundRect(120, 60, 15)), 6, 'etichetta'), item(6, simple(chevron.map(([x, y]) => [x * .6, y * .6])), 4, 'chevron'),
+      ],
+    },
+  };
+  const BENCH = { swim: 'swim.json', shirts: 'shirts.json', trousers: 'trousers.json' };
+
+  /* ---------- Geometry helpers ---------- */
+  const rings = (shape) => shape.type === 'simple_polygon' ? [shape.data] : [shape.data.outer, ...shape.data.inner];
+  const area = (pts) => { let a = 0; for (let i = 0, n = pts.length; i < n; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % n]; a += x1 * y2 - x2 * y1; } return a / 2; };
+  const shapeArea = (shape) => shape.type === 'simple_polygon' ? Math.abs(area(shape.data)) : Math.abs(area(shape.data.outer)) - shape.data.inner.reduce((s, r) => s + Math.abs(area(r)), 0);
+  const bbox = (pts) => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 }; };
+  const rotPts = (pts, deg) => { const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return pts.map(([x, y]) => [x * c - y * s, x * s + y * c]); };
+  const pathD = (shape) => rings(shape).map((r) => 'M' + r.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join('L') + 'Z').join('');
+
+  /* Bounding-box baseline: columns across the strip, sorted by width. */
+  function bboxBaseline(items, stripH, gap, orientations) {
+    const pieces = [];
+    for (const it of items) {
+      const cand = (orientations || [0, 90]).map((deg) => bbox(rotPts(rings(it.shape)[0], deg)));
+      cand.sort((a, b) => a.h - b.h);
+      const fit = cand.find((b) => b.h + gap <= stripH) || cand[0];
+      for (let k = 0; k < it.demand; k++) pieces.push({ w: fit.w + gap, h: fit.h + gap });
+    }
+    pieces.sort((a, b) => b.w - a.w);
+    let x = 0, colW = 0, y = 0;
+    for (const p of pieces) {
+      if (y + p.h > stripH + 1e-6) { x += colW; colW = 0; y = 0; }
+      colW = Math.max(colW, p.w); y += p.h;
+    }
+    return x + colW;
+  }
+
+  /* ---------- SVG import (uses the browser to flatten beziers) ---------- */
+  function splitSubpaths(d) {
+    const chunks = d.replace(/\s+/g, ' ').trim().split(/(?=[Mm])/).filter((c) => c.trim());
+    return chunks;
+  }
+  function importSvg(text) {
+    const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    const src = doc.documentElement;
+    if (src.nodeName !== 'svg') throw new Error('Il file non è un SVG.');
+    const sandbox = $('svgSandbox'); sandbox.innerHTML = '';
+    const svg = document.importNode(src, true); sandbox.appendChild(svg);
+    const vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+    const wAttr = svg.getAttribute('width') || '';
+    let scale = 1; // user units -> mm
+    const m = wAttr.match(/^([\d.]+)\s*(mm|cm|in|pt|px)?$/);
+    if (m) {
+      const val = parseFloat(m[1]); const unit = m[2] || 'px';
+      const mmPer = { mm: 1, cm: 10, in: 25.4, pt: 25.4 / 72, px: 25.4 / 96 }[unit];
+      const vbW = vb.length === 4 ? vb[2] : val;
+      scale = (val * mmPer) / vbW;
+    } else { scale = 25.4 / 96; }
+
+    const shapeTags = new Set(['path', 'polygon', 'polyline', 'rect', 'circle', 'ellipse']);
+    const ringsOf = (el) => {
+      const out = [];
+      const sampleEl = (g) => {
+        const len = g.getTotalLength(); if (!len) return;
+        const n = Math.max(12, Math.min(160, Math.round(len * scale / 1.5)));
+        const ctm = g.getCTM(), root = svg.getCTM();
+        const pts = [];
+        for (let i = 0; i < n; i++) {
+          const p = g.getPointAtLength(len * i / n);
+          let pt = new DOMPoint(p.x, p.y);
+          if (ctm && root) pt = pt.matrixTransform(root.inverse().multiply(ctm));
+          pts.push([pt.x * scale, pt.y * scale]);
+        }
+        if (Math.abs(area(pts)) > 0.5) out.push(pts);
+      };
+      const walk = (node) => {
+        if (node.nodeName === 'path') {
+          const chunks = splitSubpaths(node.getAttribute('d') || '');
+          if (chunks.length <= 1) { sampleEl(node); return; }
+          let cur = [0, 0];
+          for (const chunk0 of chunks) {
+            let chunk = chunk0;
+            if (/^m/.test(chunk)) { const mm = chunk.match(/^m\s*([-\d.eE]+)[\s,]+([-\d.eE]+)/); if (mm) { const sx = cur[0] + parseFloat(mm[1]), sy = cur[1] + parseFloat(mm[2]); chunk = 'M' + sx + ' ' + sy + chunk.slice(mm[0].length); } }
+            const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            tmp.setAttribute('d', chunk); tmp.setAttribute('transform', node.getAttribute('transform') || '');
+            node.parentNode.appendChild(tmp);
+            const L = tmp.getTotalLength();
+            const start = tmp.getPointAtLength(0), end = tmp.getPointAtLength(L);
+            cur = /[zZ]\s*$/.test(chunk) ? [start.x, start.y] : [end.x, end.y];
+            sampleEl(tmp); tmp.remove();
+          }
+        } else if (shapeTags.has(node.nodeName)) sampleEl(node);
+        else if (node.nodeName === 'g' || node.nodeName === 'svg') for (const c of node.children) walk(c);
+      };
+      walk(el); return out;
+    };
+    const top = [...svg.children].filter((c) => c.nodeName === 'g' || shapeTags.has(c.nodeName));
+    const items = []; let id = 0;
+    for (const el of top) {
+      const rs = ringsOf(el); if (!rs.length) continue;
+      rs.sort((a, b) => Math.abs(area(b)) - Math.abs(area(a)));
+      const outer = rs[0]; const ob = bbox(outer);
+      const inner = [], stray = [];
+      for (const r of rs.slice(1)) { const b = bbox(r); (b.x0 >= ob.x0 && b.y0 >= ob.y0 && b.x1 <= ob.x1 && b.y1 <= ob.y1 ? inner : stray).push(r); }
+      let shape;
+      if (stray.length) { shape = simple(convexHull([outer, ...inner, ...stray].flat())); }
+      else shape = inner.length ? withHoles({ outer, inner }) : simple(outer);
+      items.push(item(id++, shape, 1, el.id || el.nodeName));
+    }
+    sandbox.innerHTML = '';
+    if (!items.length) throw new Error('Nessuna forma chiusa trovata nell\'SVG.');
+    return { title: 'Il tuo SVG (' + items.length + ' oggetti)', unit: 'mm', items, rollWidth: null };
+  }
+  function convexHull(pts) {
+    const p = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lower = []; for (const q of p) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop(); lower.push(q); }
+    const upper = []; for (const q of p.slice().reverse()) { while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push(q); }
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+  }
+
+  /* ---------- Rendering ---------- */
+  const canvas = $('canvas');
+  const NS = 'http://www.w3.org/2000/svg';
+  function render(job, stripH, placements, stripLen) {
+    const L = stripLen || stripH * 2.5;
+    const pad = stripH * 0.04;
+    canvas.setAttribute('viewBox', `${-pad} ${-pad} ${L + 2 * pad} ${stripH + 2 * pad}`);
+    canvas.innerHTML = '';
+    const defs = document.createElementNS(NS, 'defs');
+    for (const it of job.items) {
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('id', 'it-' + it.id); p.setAttribute('d', pathD(it.shape)); p.setAttribute('fill-rule', 'evenodd');
+      defs.appendChild(p);
+    }
+    canvas.appendChild(defs);
+    const roll = document.createElementNS(NS, 'rect');
+    roll.setAttribute('x', 0); roll.setAttribute('y', 0); roll.setAttribute('width', L); roll.setAttribute('height', stripH);
+    roll.setAttribute('fill', 'var(--roll)'); roll.setAttribute('stroke', 'var(--line)'); roll.setAttribute('stroke-width', stripH * 0.004);
+    canvas.appendChild(roll);
+    const grid = document.createElementNS(NS, 'path');
+    const step = niceStep(stripH); let d = '';
+    for (let x = step; x < L; x += step) d += `M${x} 0V${stripH}`;
+    for (let y = step; y < stripH; y += step) d += `M0 ${y}H${L}`;
+    grid.setAttribute('d', d); grid.setAttribute('stroke', 'var(--roll-grid)'); grid.setAttribute('stroke-width', stripH * 0.002); grid.setAttribute('fill', 'none');
+    canvas.appendChild(grid);
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('fill', 'var(--piece)'); g.setAttribute('stroke', 'var(--piece-line)'); g.setAttribute('stroke-width', stripH * 0.004); g.setAttribute('stroke-linejoin', 'round');
+    for (const pl of placements || []) {
+      const u = document.createElementNS(NS, 'use');
+      u.setAttribute('href', '#it-' + pl.item_id);
+      u.setAttribute('transform', `translate(${pl.translation[0]} ${pl.translation[1]}) rotate(${pl.rotation})`);
+      g.appendChild(u);
+    }
+    canvas.appendChild(g);
+    if (stripLen) {
+      const cut = document.createElementNS(NS, 'line');
+      cut.setAttribute('x1', stripLen); cut.setAttribute('x2', stripLen); cut.setAttribute('y1', -pad * .6); cut.setAttribute('y2', stripH + pad * .6);
+      cut.setAttribute('stroke', 'var(--accent)'); cut.setAttribute('stroke-width', stripH * 0.006); cut.setAttribute('stroke-dasharray', `${stripH * .02} ${stripH * .012}`);
+      canvas.appendChild(cut);
+    }
+  }
+  function niceStep(h) { const raw = h / 6; const p = Math.pow(10, Math.floor(Math.log10(raw))); const m = raw / p; return (m < 2 ? 1 : m < 5 ? 2 : 5) * p; }
+  const fmt = (v, digits = 0) => Number(v).toLocaleString('it-IT', { maximumFractionDigits: digits });
+
+  /* ---------- State & worker ---------- */
+  let job = null, worker = null, timer = null, baseline = 0, best = null, running = false;
+  let rotMode = 'free';
+  const rotList = () => rotMode === 'free' ? null : rotMode === '4' ? [0, 90, 180, 270] : rotMode === '2' ? [0, 180] : [0];
+
+  function currentStripH() {
+    const v = parseFloat($('rollWidth').value);
+    return v > 0 ? v : (job && job.rollWidth) || 610;
+  }
+  function setStats(len, dens) {
+    const H0 = currentStripH();
+    $('sLen').innerHTML = (len ? fmt(len) : '–') + `<small>${job ? job.unit : 'mm'}</small>`;
+    $('sDens').innerHTML = (dens ? fmt(dens * 100, 1) : '–') + '<small>%</small>';
+    $('sBox').innerHTML = (baseline ? fmt(baseline) : '–') + `<small>${job ? job.unit : 'mm'}</small>`;
+    const save = len && baseline ? (1 - len / baseline) * 100 : null;
+    $('sSave').innerHTML = (save !== null ? fmt(Math.max(0, save), 1) : '–') + '<small>%</small>';
+    const maxL = Math.max(baseline || 0, len || 0) || 1;
+    $('bBox').style.width = (baseline / maxL * 100) + '%'; $('nBox').textContent = baseline ? fmt(baseline) : '–';
+    $('bCorvo').style.width = (len ? len / maxL * 100 : 0) + '%'; $('nCorvo').textContent = len ? fmt(len) : '–';
+    $('stageTitle').textContent = `Rotolo ${fmt(H0)} ${job ? job.unit : 'mm'} · ${job ? job.title : ''}`;
+  }
+  function prepareInstance() {
+    const H0 = currentStripH();
+    const gap = Math.max(0, parseFloat($('gap').value) || 0);
+    const rots = rotList();
+    const items = job.items.map((it) => ({ id: it.id, demand: it.demand, shape: it.shape, ...(rots ? { allowed_orientations: rots } : {}) }));
+    return { instance: { name: 'corvo', strip_height: H0, items }, gap, rots };
+  }
+  function loadJob(j) {
+    job = j; best = null;
+    if (j.rollWidth) $('rollWidth').value = j.rollWidth;
+    const H0 = currentStripH();
+    const { gap, rots } = prepareInstance();
+    baseline = bboxBaseline(j.items, H0, gap, rots || [0, 45, 90, 135]);
+    const n = j.items.reduce((s, it) => s + it.demand, 0);
+    // Initial view: pieces laid out by the bounding-box baseline so the page is never empty.
+    render(j, H0, previewPlacements(j, H0, gap, rots), baseline);
+    setStats(null, null);
+    $('stageMeta').textContent = `${n} pezzi · disposizione a bounding box`;
+    $('status').textContent = 'Pronto. Premi Nest.';
+    $('prog').style.width = '0%';
+  }
+  function previewPlacements(j, stripH, gap, rots) {
+    const out = []; const pieces = [];
+    for (const it of j.items) {
+      const cand = (rots || [0, 90]).map((deg) => ({ deg, b: bbox(rotPts(rings(it.shape)[0], deg)) }));
+      cand.sort((a, b) => a.b.h - b.b.h);
+      const fit = cand.find((c) => c.b.h + gap <= stripH) || cand[0];
+      for (let k = 0; k < it.demand; k++) pieces.push({ id: it.id, ...fit });
+    }
+    pieces.sort((a, b) => b.b.w - a.b.w);
+    let x = 0, colW = 0, y = 0;
+    for (const p of pieces) {
+      if (y + p.b.h + gap > stripH + 1e-6) { x += colW; colW = 0; y = 0; }
+      out.push({ item_id: p.id, rotation: p.deg, translation: [x + gap / 2 - p.b.x0, y + gap / 2 - p.b.y0] });
+      colW = Math.max(colW, p.b.w + gap); y += p.b.h + gap;
+    }
+    return out;
+  }
+
+  async function loadBench(key) {
+    $('status').textContent = 'Carico il benchmark…';
+    const r = await fetch(BENCH[key]); const d = await r.json();
+    const items = d.items.map((it, i) => item(it.id ?? i, it.shape, it.demand, 'item ' + (it.id ?? i)));
+    return { title: `Benchmark "${d.name}"`, unit: 'u', items, rollWidth: d.strip_height };
+  }
+
+  function start() {
+    if (!job || running) return;
+    const { instance, gap } = prepareInstance();
+    const budget = parseInt($('budget').value, 10);
+    const explore = budget * 0.8, compress = budget * 0.2;
+    running = true; best = null;
+    $('run').disabled = true; $('stop').disabled = false;
+    $('status').textContent = 'Costruisco la disposizione iniziale…';
+    const t0 = performance.now();
+    worker = new Worker('worker.js');
+    worker.onmessage = (e) => {
+      const m = e.data;
+      if (m.type === 'report') {
+        const r = m.report; best = r;
+        render(job, instance.strip_height, r.placements, r.strip_width);
+        setStats(r.strip_width, r.density);
+        $('stageMeta').textContent = `${r.placements.length} pezzi · ${r.phase === 'compression' ? 'compressione' : r.phase === 'done' ? 'finito' : 'esplorazione'}`;
+        $('status').textContent = `${r.phase === 'compression' ? 'Comprimo' : 'Esploro'} · rotolo ${fmt(r.strip_width)} ${job.unit} · ${fmt(r.density * 100, 1)}%`;
+      } else if (m.type === 'done') {
+        finish(`Fatto in ${fmt((performance.now() - t0) / 1000, 1)} s. Rotolo ${fmt(m.solution.strip_width)} ${job.unit}, riempimento ${fmt(m.solution.density * 100, 1)}%.`);
+      } else if (m.type === 'error') {
+        finish('Errore: ' + m.message);
+      }
+    };
+    worker.onerror = (err) => finish('Errore nel motore: ' + (err.message || err));
+    worker.postMessage({ instance, exploreSecs: explore, compressSecs: compress, seed: Math.floor(Math.random() * 1e9), minSeparation: gap });
+    timer = setInterval(() => {
+      const p = Math.min(100, (performance.now() - t0) / (budget * 1000) * 100);
+      $('prog').style.width = p + '%';
+    }, 200);
+  }
+  function finish(msg) {
+    running = false; clearInterval(timer); timer = null;
+    if (worker) { worker.terminate(); worker = null; }
+    $('run').disabled = false; $('stop').disabled = true; $('prog').style.width = '100%';
+    $('status').textContent = msg;
+    if (best) $('stageMeta').textContent = `${best.placements.length} pezzi · finito`;
+  }
+  $('run').addEventListener('click', start);
+  $('stop').addEventListener('click', () => finish(best ? `Fermato. Rotolo ${fmt(best.strip_width)} ${job.unit}, riempimento ${fmt(best.density * 100, 1)}%.` : 'Fermato.'));
+
+  $('rot').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    for (const x of $('rot').querySelectorAll('button')) x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+    rotMode = b.dataset.v; if (job && !running) loadJob(job);
+  });
+  $('budget').addEventListener('input', () => { $('budgetLabel').textContent = $('budget').value + ' s'; });
+  for (const id of ['rollWidth', 'gap']) $(id).addEventListener('change', () => { if (job && !running) { job.rollWidth = null; loadJob(job); } });
+  $('job').addEventListener('change', async () => {
+    if (running) finish('Fermato: lavoro cambiato.');
+    const v = $('job').value;
+    if (v === 'custom') { $('svgfile').click(); return; }
+    try { loadJob(JOBS[v] ? structuredClone(JOBS[v]) : await loadBench(v)); }
+    catch (err) { $('status').textContent = 'Non riesco a caricare il lavoro: ' + err.message; }
+  });
+  $('svgfile').addEventListener('change', async () => {
+    const f = $('svgfile').files[0]; if (!f) return;
+    try {
+      const j = importSvg(await f.text());
+      $('uploadText').textContent = f.name + ' · ' + j.items.length + ' oggetti';
+      $('job').value = 'custom'; loadJob(j);
+    } catch (err) { $('status').textContent = 'SVG non valido: ' + err.message; }
+  });
+
+  loadJob(structuredClone(JOBS.sign));
+})();
+</script>
