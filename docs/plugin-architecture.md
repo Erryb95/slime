@@ -133,3 +133,64 @@ Correzioni emerse:
   protetto quando non c'e' nessun documento.
 - Pannello: un errore dell'host durante la ricerca ferma la sessione (`failSession`) invece di ripetere l'errore ogni
   250 ms; un `corvoApply` parziale (`ok:false` + `errors`, es. pezzo bloccato) ora viene mostrato come avviso.
+
+## Modulo 8 — DTF gang sheet: raster con contorno (2026-09-24)
+
+Obiettivo: immagini trasparenti (PNG per DTF) nestate per la loro **silhouette reale** invece che per il rettangolo,
+con l'immagine che si muove col suo contorno. Tutte le aggiunte sono marcate `MODULO 8`.
+
+**Host (`host/corvo.jsx`, blocco `corvo_m8_*`).** `corvoExport({flatness, raster:true})`: un `PlacedItem` o `RasterItem`
+di primo livello diventa un pezzo con `rings: []` e
+`raster: {path, temp, kind:'linked'|'render', corners:{tl,tr,bl}}`, dove `corners` sono le coordinate documento dei
+vertici pixel (0,0), (W,0), (0,H) (y pixel in basso). Senza `raster:true` il vecchio errore resta (messaggio aggiornato).
+- `linked`: PNG collegato, esistente, matrice senza rotazione/inclinazione, `mValueA > 0` e
+  `mValueD·CORVO_M8_PLACED_DSIGN > 0` → file originale a piena risoluzione, corners dai `geometricBounds`.
+- `render`: tutto il resto (incorporato, TIF/PSD/JPG, ruotato, specchiato, `rasterRender:true`) → documento RGB temporaneo,
+  `duplicate`, tavola = `visibleBounds`, `exportFile(PNG24, transparency, artBoardClipping)` in `Folder.temp`
+  a `rasterPpi` (default 150) con lato massimo `rasterMaxPx` (default 4000 px, scala PNG24 1..776 %), chiusura senza salvare,
+  `doc.activate()`. Corners = `visibleBounds` dell'originale (pixel allineati agli assi). Il pannello cancella il PNG temporaneo.
+
+**Pannello (`client/js/raster.js`, `window.CorvoRaster` / `module.exports`).** `prepareItems(items, opts)` legge il file
+(fs), `decodePNG` (decoder scritto da noi: zlib di Node, filtri 0-4, Adam7, profondità 1-16, tipi 0/2/3/4/6 + tRNS; solo
+l'alfa), `trace(img, corners, opts)` e sostituisce `rings` con contorni esterni (CCW) + fori (CW) in coordinate documento,
+lo stesso formato di `corvoExport`: `geometry.buildPiece` non cambia.
+1. soglia alfa `alphaThreshold` 10 %; immagini > `maxPixels` (4 Mpx) ridotte con media a blocchi;
+2. pulizia = apertura morfologica per ricostruzione: una componente (8-conn) resta intera se sopravvive a un'apertura di
+   raggio `openPx` (1) e ha ≥ max(9, 1e-5·W·H) px (via i puntini, le linee sottili vere restano); fori < stessa soglia riempiti;
+3. marching squares sul campo alfa vincolato alla maschera pulita (bordo sub-pixel sull'anti-aliasing), selle = primo piano
+   8-connesso; esterni/fori per parità di contenimento;
+4. smoothing laplaciano leggero (2 passate 1/4-1/2-1/4) + Douglas-Peucker 0.5 px: niente gradini sui bordi netti;
+5. mappa pixel → documento con i 3 corners (qualsiasi affine: scala, rotazione, specchio);
+6. offset esterno Clipper (`offset`, pt). Il pannello usa `SAFETY_MM = 0.2 mm`: la separazione di Sparrow misurata sui
+   contorni veri può restare ~0.2 mm sotto la distanza impostata; con l'offset la distanza misurata è ≥ distanza.
+   La spaziatura vera e propria resta il `gap` di Sparrow (uguale per pezzi vettoriali e raster nello stesso nest).
+Modi (`Immagini` nel pannello): `contour` (default, "Trim transparency": il margine trasparente non conta) o `bbox`
+(rettangolo rifilato); `canvas` (rettangolo intero) solo per confronto. Immagine senza canale alfa / tRNS (`noAlpha`) o con
+< 0.1 % di pixel trasparenti (`noTransparency`) → rettangolo intero + avviso nella riga di stato; tutta trasparente →
+errore `empty`; file non PNG → errore `notPng`.
+**Preset** (`R.PRESETS`): DTF 22" = 558.8 mm e DTF 58 cm = 580 mm, distanza 6 mm; cambiare larghezza/distanza a mano torna
+a "Personalizzato".
+
+**Test** `node plugin/tools/test_raster.js [secondi=20]` (Node, niente Illustrator): decoder (RGBA 8/16, Adam7, grigio+alfa,
+RGB, chiave tRNS, palette), pulizia (puntini, foro piccolo riempito, foro vero tenuto, diagonale senza gradini), 5 PNG reali di
+`bench/real/dtf`, mappatura ruotata+specchiata, offset, `prepareItems` (PNG temporaneo cancellato), poi nest wasm di 5 design × 6
+copie su 22", distanza 6 mm, rotazioni 90°:
+
+| PNG | px | contorni | fori | silhouette/bbox | scarto max px (maschera→contorno / ritorno) |
+|---|---|---|---|---|---|
+| donut | 618² | 1 | **1** | 71.6 % | 1.01 / 0.59 |
+| gatto | 618² | 1 | 0 | 49.3 % | 1.06 / 0.59 |
+| stella | 618² | 1 | 0 | 46.4 % | 1.03 / 0.59 |
+| farfalla | 618² | 1 | 0 | 60.5 % | 0.94 / 0.58 |
+| testo corsivo | 1899×446 | 13 | 5 | 16.6 % | 1.03 / 0.60 |
+
+Nest 30 copie, 20 s: silhouette **358 mm** (riempimento 42.9 %, distanza minima misurata sui contorni 6.15 mm), rettangolo
+rifilato 460 mm (33.5 %), rettangolo intero 657 mm (23.4 %) → **−22 % di rotolo** rispetto al bbox rifilato, −45 % rispetto
+all'immagine intera (a 5 s: −25 % / −47 %).
+
+**Limiti / da verificare in Illustrator.** Segno di `mValueD` per un PNG collegato dritto (`CORVO_M8_PLACED_DSIGN`, se
+sbagliato i PNG collegati passano comunque dal render, tranne quelli specchiati in verticale → contorno capovolto); render
+= documento temporaneo che compare un istante; solo immagini di primo livello (dentro un gruppo → errore, dentro una maschera
+conta il tracciato di maschera); l'opacità dell'oggetto riduce l'alfa (sotto il 10 % sparisce); i fori sono esportati ma
+`geometry.js` v0.1 li ignora (pezzi nei fori = modulo 2); il testo in più parti passa per la chiusura morfologica di geometry.
+PNG temporanei rimasti in `%TEMP%\corvo_m8_*.png` se l'export fallisce a metà.

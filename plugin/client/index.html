@@ -25,6 +25,20 @@
     <label class="field"><span data-i18n="time">Time</span>
       <span class="unit"><input type="number" id="time" value="30" min="2" max="3600" step="5"><i>s</i></span>
     </label>
+    <!-- MODULO 8: preset rotolo DTF + immagini raster (contorno dalla trasparenza) -->
+    <label class="field"><span data-i18n="preset">Preset</span>
+      <select id="preset">
+        <option value="" data-i18n="presetCustom">Custom</option>
+        <option value="dtf22">DTF 22" · 558.8 mm</option>
+        <option value="dtf58">DTF 58 cm · 580 mm</option>
+      </select>
+    </label>
+    <label class="field"><span data-i18n="images">Images</span>
+      <select id="rasterMode">
+        <option value="contour" data-i18n="imgContour" selected>Contour</option>
+        <option value="bbox" data-i18n="imgBbox">Bounding box</option>
+      </select>
+    </label>
   </section>
 
   <section class="actions">
@@ -60,6 +74,7 @@
   }
 </script>
 <script src="js/geometry.js"></script>
+<script src="js/raster.js"></script><!-- MODULO 8 -->
 <script src="js/main.js"></script>
 </body>
 </html>

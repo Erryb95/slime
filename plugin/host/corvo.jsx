@@ -136,8 +136,9 @@ function corvo_unsupported(it) {
     switch (it.typename) {
         case 'TextFrame': return 'Converti il testo in tracciati (Maiusc+Ctrl+O)';
         case 'LegacyTextItem': return 'Converti il testo in tracciati (Maiusc+Ctrl+O)';
-        case 'PlacedItem': return 'Le immagini collegate non sono supportate: vettorializzale o rimuovile';
-        case 'RasterItem': return 'Le immagini raster non sono supportate: vettorializzale o rimuovile';
+        // MODULO 8: con "Immagini: contorno" attivo nel pannello le immagini diventano pezzi (vedi corvo_m8_*)
+        case 'PlacedItem': return 'Immagine collegata: attiva "Immagini" nel pannello (contorno dalla trasparenza) o vettorializzala';
+        case 'RasterItem': return 'Immagine raster: attiva "Immagini" nel pannello (contorno dalla trasparenza) o vettorializzala';
         case 'SymbolItem': return 'Scollega il simbolo (Oggetto > Espandi) prima del nesting';
         case 'MeshItem': return 'Le trame (mesh) non sono supportate: espandi l\'oggetto';
         case 'GraphItem': return 'I grafici non sono supportati: espandi l\'oggetto';
@@ -238,6 +239,71 @@ function corvo_probe(doc) {
     return res;
 }
 
+/* ------------------------------------------------------------------ MODULO 8: immagini raster (DTF) */
+
+// MODULO 8 — PlacedItem (collegato) e RasterItem (incorporato) diventano pezzi il cui contorno viene dalla
+// trasparenza. Il contorno lo calcola il pannello (client/js/raster.js); l'host esporta solo DOVE sono i pixel:
+//   raster: { path, temp, kind: 'linked'|'render', corners: { tl:[x,y], tr:[x,y], bl:[x,y] } }
+// corners = coordinate documento (pt, y in alto) dei vertici (0,0), (W,0), (0,H) dell'immagine (y pixel in basso).
+// Percorso veloce: PlacedItem collegato a un .png, senza rotazione/inclinazione/specchiatura -> file originale,
+// corners dai geometricBounds. In tutti gli altri casi (incorporato, TIF/PSD/JPG, ruotato, specchiato, link
+// mancante) render PNG24 trasparente in un documento temporaneo: i pixel sono allineati agli assi e coprono
+// esattamente i visibleBounds dell'oggetto. Limiti: vedi docs/plugin-architecture.md, "Modulo 8".
+var CORVO_M8_PLACED_DSIGN = 1;   // segno di matrix.mValueD per un PNG collegato dritto: DA VERIFICARE in Illustrator
+
+function corvo_m8_isRaster(it) { return it.typename === 'PlacedItem' || it.typename === 'RasterItem'; }
+
+function corvo_m8_linked(it) {
+    if (it.typename !== 'PlacedItem') return null;
+    var f = null, m = null;
+    try { f = it.file; m = it.matrix; } catch (e) { return null; }
+    if (!f || !f.exists || !/\.png$/i.test(f.name) || !m) return null;
+    if (Math.abs(m.mValueB) > 1e-6 || Math.abs(m.mValueC) > 1e-6) return null;
+    if (!(m.mValueA > 0) || !(m.mValueD * CORVO_M8_PLACED_DSIGN > 0)) return null;
+    var gb = it.geometricBounds;
+    return { path: f.fsName, temp: false, kind: 'linked',
+             corners: { tl: [gb[0], gb[1]], tr: [gb[2], gb[1]], bl: [gb[0], gb[3]] } };
+}
+
+function corvo_m8_render(it, doc, idx, opts) {
+    var vb = it.visibleBounds, w = vb[2] - vb[0], h = vb[1] - vb[3];
+    if (!(w > 0.01 && h > 0.01)) throw new Error('immagine vuota');
+    var ppi = opts.rasterPpi > 0 ? Number(opts.rasterPpi) : 150;
+    var maxPx = opts.rasterMaxPx > 0 ? Number(opts.rasterMaxPx) : 4000;
+    var scale = ppi / 72 * 100, lim = maxPx / Math.max(w, h) * 100;
+    if (scale > lim) scale = lim;
+    if (scale > 776) scale = 776;                  // limiti di ExportOptionsPNG24
+    if (scale < 1) scale = 1;
+    var base = 'corvo_m8_' + (new Date()).getTime() + '_' + idx;
+    var file = new File(Folder.temp.fsName + '/' + base + '.png');
+    var tmp = app.documents.add(DocumentColorSpace.RGB, Math.max(w, 1), Math.max(h, 1));
+    try {
+        var dup = it.duplicate(tmp.layers[0], ElementPlacement.PLACEATEND);
+        var dvb = dup.visibleBounds;
+        dup.translate(-dvb[0], -dvb[3]);           // in basso a sinistra sull'origine, dentro la tela
+        tmp.artboards[0].artboardRect = dup.visibleBounds;
+        var o = new ExportOptionsPNG24();
+        o.transparency = true; o.antiAliasing = true; o.artBoardClipping = true; o.saveAsHTML = false;
+        o.horizontalScale = scale; o.verticalScale = scale;
+        tmp.exportFile(file, ExportType.PNG24, o);
+    } finally {
+        try { tmp.close(SaveOptions.DONOTSAVECHANGES); } catch (e1) {}
+        try { doc.activate(); } catch (e2) {}
+    }
+    if (!file.exists) {                            // alcune versioni aggiungono un suffisso al nome
+        var alt = Folder.temp.getFiles(base + '*.png');
+        if (alt && alt.length) file = alt[0];
+        else throw new Error('export del PNG temporaneo non riuscito');
+    }
+    return { path: file.fsName, temp: true, kind: 'render', ppi: scale * 72 / 100,
+             corners: { tl: [vb[0], vb[1]], tr: [vb[2], vb[1]], bl: [vb[0], vb[3]] } };
+}
+
+function corvo_m8_info(it, doc, idx, opts) {
+    var r = opts.rasterRender ? null : corvo_m8_linked(it);
+    return r || corvo_m8_render(it, doc, idx, opts);
+}
+
 /* ------------------------------------------------------------------ export */
 
 function corvoExport(optsJson) {
@@ -253,6 +319,18 @@ function corvoExport(optsJson) {
         var items = [], applied = [], out = [], i;
         for (i = 0; i < sel.length; i++) {
             var it = sel[i];
+            // MODULO 8: immagini raster come pezzi (il contorno dalla trasparenza lo calcola il pannello)
+            if (opts && opts.raster && corvo_m8_isRaster(it)) {
+                var ri;
+                try { ri = corvo_m8_info(it, doc, i, opts); }
+                catch (e8) { return corvo_err('Oggetto ' + (i + 1) + ' (' + (it.name || it.typename) + '): ' + e8.message); }
+                var vb8 = it.visibleBounds;
+                items.push(it);
+                applied.push({ a: 0, tx: 0, ty: 0 });
+                out.push({ i: items.length - 1, name: it.name || '', type: it.typename, rings: [], raster: ri,
+                           bounds: [vb8[0], vb8[1], vb8[2], vb8[3]] });
+                continue;
+            }
             var rings = [];
             try { corvo_collect(it, tol, rings); }
             catch (e) { return corvo_err('Oggetto ' + (i + 1) + ' (' + (it.name || it.typename) + '): ' + e.message); }

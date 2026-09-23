@@ -8,6 +8,7 @@
   'use strict';
 
   var G = window.CorvoGeometry;
+  var R = window.CorvoRaster;          // MODULO 8 (DTF: immagini -> contorno)
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -39,7 +40,11 @@
       noLayout: 'Stopped before a first layout was found.',
       workerFallback: 'Web Worker unavailable: running in the panel thread, the panel will freeze until the end.',
       engineError: 'Nesting engine error: {msg}',
-      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}'
+      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}',
+      // MODULO 8
+      preset: 'Preset', presetCustom: 'Custom', images: 'Images', imgContour: 'Contour', imgBbox: 'Bounding box',
+      rasterNoAlpha: 'No real transparency, nested as a rectangle: {names}.',
+      rasterNoEngine: 'Images selected but raster.js is not loaded.'
     },
     it: {
       rollWidth: 'Larghezza rotolo', gap: 'Distanza', rotations: 'Rotazioni', rotNone: 'Nessuna', rotFree: 'Libera', time: 'Tempo',
@@ -65,7 +70,11 @@
       noLayout: 'Fermato prima di trovare una prima disposizione.',
       workerFallback: 'Web Worker non disponibile: il calcolo gira nel pannello, che resterà bloccato fino alla fine.',
       engineError: 'Errore del motore di nesting: {msg}',
-      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}'
+      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}',
+      // MODULO 8
+      preset: 'Preset', presetCustom: 'Personalizzato', images: 'Immagini', imgContour: 'Contorno', imgBbox: 'Rettangolo',
+      rasterNoAlpha: 'Nessuna trasparenza reale, disposte come rettangolo: {names}.',
+      rasterNoEngine: 'Immagini selezionate ma raster.js non è caricato.'
     }
   };
   var lang = 'en';
@@ -229,7 +238,8 @@
     $('btnStop').disabled = !running;
     $('btnApply').disabled = !(running || review);
     $('btnCancel').disabled = !(running || review || st === 'preparing');
-    ['rollWidth', 'gap', 'rotations', 'time'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
+    // MODULO 8: + preset, rasterMode
+    ['rollWidth', 'gap', 'rotations', 'time', 'preset', 'rasterMode'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
   }
 
   function readParams() {
@@ -237,7 +247,8 @@
       rollMm: parseFloat($('rollWidth').value),
       gapMm: parseFloat($('gap').value),
       rot: $('rotations').value,
-      time: parseFloat($('time').value)
+      time: parseFloat($('time').value),
+      rasterMode: $('rasterMode').value           // MODULO 8
     };
     if (!(p.rollMm > 0) || !(p.gapMm >= 0) || !(p.time >= 2)) throw new Error(t('badInput'));
     return p;
@@ -371,12 +382,21 @@
     setStatus('exporting');
 
     var H = p.rollMm * MM, gapPt = p.gapMm * MM, orient = G.rotationsFor(p.rot);
-    hostCall('corvoExport', { flatness: FLATNESS }).then(function (exp) {
+    hostCall('corvoExport', { flatness: FLATNESS, raster: true }).then(function (exp) {   // MODULO 8: raster
       if (S !== me || S.state !== 'preparing') return;
       S.session = true;
       var items = (exp && exp.items) || [];
       if (!items.length) throw new Error(t('noSelection'));
       setStatus('preparing', { n: items.length });
+
+      // MODULO 8: immagini (PlacedItem/RasterItem) -> contorno dalla trasparenza (client/js/raster.js)
+      var rasterNote = '';
+      if (items.some(function (x) { return x.raster; })) {
+        if (!R) throw new Error(t('rasterNoEngine'));
+        var rr = R.prepareItems(items, { mode: p.rasterMode, offset: R.SAFETY_MM * MM });
+        items = rr.items;
+        if (rr.warnings.length) rasterNote = t('rasterNoAlpha', { names: rr.warnings.map(function (w) { return w.name || '?'; }).join(', ') });
+      }
 
       var pieces = G.buildPieces(items, { gap: gapPt, flatness: FLATNESS });
       var bad = pieces.filter(function (x) { return x.error; });
@@ -393,7 +413,7 @@
       pieces.forEach(function (x) { S.pieceById[x.id] = x; });
       S.areaSum = pieces.reduce(function (s, x) { return s + x.area; }, 0);
       S.budget = p.time;
-      S.note = hulls ? t('hullNote', { n: hulls }) : '';
+      S.note = (hulls ? t('hullNote', { n: hulls }) : '') + (rasterNote ? ' ' + rasterNote : '');   // MODULO 8: rasterNote
 
       var msg = {
         type: 'nest',
@@ -485,6 +505,14 @@
     lang = lang === 'en' ? 'it' : 'en';
     try { localStorage.setItem('corvo.lang', lang); } catch (e) { /* storage blocked */ }
     applyLang();
+  });
+  // MODULO 8: preset rotolo DTF -> larghezza e distanza; modificarle a mano torna a "Personalizzato"
+  $('preset').addEventListener('change', function () {
+    var pr = R && R.PRESETS[$('preset').value];
+    if (pr) { $('rollWidth').value = pr.rollMm; $('gap').value = pr.gapMm; }
+  });
+  ['rollWidth', 'gap'].forEach(function (id) {
+    $(id).addEventListener('input', function () { $('preset').value = ''; });
   });
   window.addEventListener('beforeunload', onUnload);
   window.addEventListener('unload', onUnload);
