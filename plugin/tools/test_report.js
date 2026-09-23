@@ -47,6 +47,16 @@ const near = (a, b, tol) => Math.abs(a - b) <= (tol || 1e-9) * Math.max(1, Math.
     check(lr.rows[0].layer === 'Print + CUT' && lr.rows[1].layer === 'Solo', 'layer column from clustered pieces (hostI, layers[]): ' + lr.rows.map((r) => r.layer));
     check(lr.initial && near(lr.initial.lengthMm, 100 / MM, 1e-9), "original length from piece box (300x100 pt turned)");
   }
+  // MODULO 6: registration marks -> material = whole roll x (nest + margins); savings compare like with like
+  {
+    const sqp = [[0, 0], [100, 0], [100, 100], [0, 100]];
+    const base = { pieces: [{ id: 0, name: 'A', polygon: sqp, area: 10000 }], placements: [{ item_id: 0, rotation: 0, translation: [0, 0] }],
+      stripLengthPt: 1000 * MM, rollWidthPt: 560 * MM, gapPt: 0, material: { price: 10 }, baseline: { lengthPt: 1200 * MM, shelves: 1, policy: 'x' } };
+    const r0 = R.computeReport(base);
+    const r1 = R.computeReport(Object.assign({}, base, { materialWidthPt: 600 * MM, materialLengthPt: 1100 * MM }));
+    check(near(r1.lengthMm, 1100, 1e-9) && near(r1.rollWidthMm, 600, 1e-9) && near(r1.materialCost, 11, 1e-9), 'marks: cost on roll length incl. margins');
+    check(near(r1.baseline.savedM, r0.baseline.savedM, 1e-9), 'marks: saving vs rectangles unchanged by the constant margins');
+  }
   const empty = R.computeReport({ pieces: [], placements: [], stripLengthPt: 0, rollWidthPt: 600 * MM, gapPt: 0, material: { price: 5 } });
   check(empty.fillPct === 0 && empty.costPerPiece === 0 && isFinite(empty.totalCost), 'empty report finite');
   // CSV quoting / injection

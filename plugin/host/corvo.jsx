@@ -811,7 +811,9 @@ function corvo_singleUndo(st, keepRoll) {
         var ly = null;
         try { ly = doc.layers.getByName('Corvo'); } catch (e2) { ly = null; }
         var rollGone = !ly || !corvo_findIn(ly, 'pathItems', 'Corvo_Roll');
-        if (rollGone && corvo_atOrigin(st, 8) && corvo_atOrigin(st, 0)) { ok = true; break; }
+        // MODULO 6: anche i crocini di anteprima devono essere spariti (i loro passi sono contati in st.steps)
+        var rmGone = !(typeof corvo_rmPresent === 'function' && corvo_rmPresent(doc));
+        if (rollGone && rmGone && corvo_atOrigin(st, 8) && corvo_atOrigin(st, 0)) { ok = true; break; }
     }
     if (!ok) {
         for (k = 0; k < undone; k++) { try { app.redo(); } catch (e3) { break; } }
@@ -828,6 +830,8 @@ function corvo_singleUndo(st, keepRoll) {
         r.setEntirePath([[rollB[0], rollB[3]], [rollB[2], rollB[3]], [rollB[2], rollB[1]], [rollB[0], rollB[1]]]);
         r.closed = true;
     }
+    // MODULO 6: crocini confermati ridisegnati nello stesso script (gia' "_rif")
+    if (st.rmPayload && typeof corvo_rmDraw === 'function') { try { corvo_rmDraw(doc, st.rmPayload, '_rif'); } catch (eRm) {} }
     return 'single';
 }
 
@@ -844,8 +848,14 @@ function corvoFinish(optsJson) {
         }
         corvo_removeRollAndLabel(st, !keepRoll);
         if (keepRoll && corvo_alive(st.roll)) { try { st.roll.name = 'Corvo_Roll_rif'; } catch (e) {} }
+        if (typeof corvo_rmFinishAll === 'function') { try { corvo_rmFinishAll(st.doc); } catch (eRm) {} }   // MODULO 6
         corvo_resetState();
         corvo_redraw();
         return corvo_json({ ok: true, undo: undo });
     });
 }
+
+/* ------------------------------------------------------------------ MODULO 6 */
+// Crocini di registro (host/regmarks.jsx), caricati accanto a questo file. Se $.fileName non e' disponibile
+// il pannello carica regmarks.jsx da se' (main.js, rmEnsureHost).
+try { $.evalFile(new File(new File($.fileName).parent.fsName + '/regmarks.jsx')); } catch (eRM) { /* vedi pannello */ }

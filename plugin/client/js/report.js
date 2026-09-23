@@ -171,7 +171,8 @@
 
   /* opts: { pieces (geometry.buildPieces), placements (Sparrow report), stripLengthPt, rollWidthPt,
    *         gapPt, orientations, material, items (corvoExport items: name/layer/bounds), job, date,
-   *         baseline (optional, precomputed shelfBaseline) } */
+   *         baseline (optional, precomputed shelfBaseline),
+ *         materialWidthPt / materialLengthPt (optional: whole roll incl. registration-mark margins) } */
   function computeReport(opts) {
     var mat = normalizeMaterial(opts.material);
     var H = opts.rollWidthPt, L = opts.stripLengthPt;
@@ -197,7 +198,10 @@
     });
     rows.sort(function (a, b) { return a.xMm - b.xMm || a.yMm - b.yMm; });
 
-    var Wmm = H / MM, Lmm = L / MM;
+    // MODULO 6: with registration marks the material used is the whole roll (nest strip + side bands) over the
+    // nest length + lead/trail margins: materialWidthPt / materialLengthPt override the strip for cost and usage
+    var ML = opts.materialLengthPt > 0 ? opts.materialLengthPt : L, extra = ML - L;
+    var Wmm = (opts.materialWidthPt > 0 ? opts.materialWidthPt : H) / MM, Lmm = ML / MM;
     var usedM2 = Lmm * Wmm / 1e6, piecesM2 = areaPt2 * PT2_TO_MM2 / 1e6;
     var fill = usedM2 > 0 ? piecesM2 / usedM2 : 0;
     var mc = materialCost(Lmm, Wmm, mat);
@@ -217,8 +221,8 @@
       pieces: n, costPerPiece: n ? total / n : 0,
       cutLengthM: cutPt / MM / 1000,
       baseline: baseline ? Object.assign({ shelves: baseline.shelves, policy: baseline.policy },
-        savingsVs(baseline.lengthPt, L, Wmm, mat, mc.cost)) : null,
-      initial: savingsVs(init, L, Wmm, mat, mc.cost),
+        savingsVs(baseline.lengthPt + extra, ML, Wmm, mat, mc.cost)) : null,
+      initial: savingsVs(init === null || init === undefined ? init : init + extra, ML, Wmm, mat, mc.cost),
       rows: rows
     };
   }

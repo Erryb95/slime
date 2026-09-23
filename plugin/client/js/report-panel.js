@@ -1,7 +1,8 @@
 /* Corvo panel, modulo 5: "Material & cost" section (DOM only; the numbers come from js/report.js).
  *
  * main.js calls (marked "// MODULO 5"):
- *   CorvoReportPanel.begin(ctx)   new session: ctx = {pieces, items, H, gapPt, orient, docName}
+ *   CorvoReportPanel.begin(ctx)   new session: ctx = {pieces, items, H, gapPt, orient, docName,
+ *                                 materialWidthPt?, materialLength?(stripPt) -> pt (registration-mark margins)}
  *                                 -> computes the rectangle baseline and the original length once
  *   CorvoReportPanel.update(best) every live tick / at the end: best = Sparrow report (cheap, recomputed
  *                                 only when the layout or the material changes)
@@ -87,7 +88,9 @@
   function compute() {
     if (!C || !best) { rep = null; return; }
     rep = R.computeReport({ pieces: C.pieces, placements: best.placements, stripLengthPt: best.strip_width,
-      rollWidthPt: C.H, gapPt: C.gapPt, orientations: C.orient, material: readMaterial(), items: C.items,
+      rollWidthPt: C.H, gapPt: C.gapPt,
+      materialWidthPt: C.materialWidthPt, materialLengthPt: C.materialLength ? C.materialLength(best.strip_width) : undefined,   // MODULO 6
+      orientations: C.orient, material: readMaterial(), items: C.items,
       baseline: C.baseline, initialLengthPt: C.initial, job: $('m5Job').value.trim() || String(C.docName || '').replace(/\.[^.]+$/, '') });
     dirty = false;
   }
