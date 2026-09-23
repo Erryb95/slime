@@ -8,6 +8,7 @@
   'use strict';
 
   var G = window.CorvoGeometry;
+  var HO = window.CorvoHoles;          // MODULO 2 (pieces inside holes), optional
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -39,7 +40,8 @@
       noLayout: 'Stopped before a first layout was found.',
       workerFallback: 'Web Worker unavailable: running in the panel thread, the panel will freeze until the end.',
       engineError: 'Nesting engine error: {msg}',
-      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}'
+      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}',
+      useHoles: 'Use holes', holesNote: '{n} piece(s) placed inside holes.'   // MODULO 2
     },
     it: {
       rollWidth: 'Larghezza rotolo', gap: 'Distanza', rotations: 'Rotazioni', rotNone: 'Nessuna', rotFree: 'Libera', time: 'Tempo',
@@ -65,7 +67,8 @@
       noLayout: 'Fermato prima di trovare una prima disposizione.',
       workerFallback: 'Web Worker non disponibile: il calcolo gira nel pannello, che resterà bloccato fino alla fine.',
       engineError: 'Errore del motore di nesting: {msg}',
-      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}'
+      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}',
+      useHoles: 'Usa i fori', holesNote: '{n} pezzi nei fori.'   // MODULO 2
     }
   };
   var lang = 'en';
@@ -230,6 +233,7 @@
     $('btnApply').disabled = !(running || review);
     $('btnCancel').disabled = !(running || review || st === 'preparing');
     ['rollWidth', 'gap', 'rotations', 'time'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
+    if ($('useHoles')) $('useHoles').disabled = st !== 'idle';   // MODULO 2
   }
 
   function readParams() {
@@ -237,8 +241,10 @@
       rollMm: parseFloat($('rollWidth').value),
       gapMm: parseFloat($('gap').value),
       rot: $('rotations').value,
-      time: parseFloat($('time').value)
+      time: parseFloat($('time').value),
+      holes: !!($('useHoles') && $('useHoles').checked)   // MODULO 2
     };
+    try { localStorage.setItem('corvo.holes', p.holes ? '1' : '0'); } catch (e) { /* storage blocked */ }   // MODULO 2
     if (!(p.rollMm > 0) || !(p.gapMm >= 0) || !(p.time >= 2)) throw new Error(t('badInput'));
     return p;
   }
@@ -269,6 +275,7 @@
   }
 
   function movesFor(rep) {
+    if (HO) return HO.movesFor(rep.placements, S.nestPieces, S.origin, S.holes);   // MODULO 2: + children in holes
     var out = [];
     for (var k = 0; k < rep.placements.length; k++) {
       var pl = rep.placements[k], piece = S.pieceById[pl.item_id];
@@ -344,7 +351,7 @@
     }
     setState('review');
     hostIdle().then(pushBest).then(function () {
-      setStatus(msgKey, { len: fmt(S.best.strip_width / MM, 0), fill: fmt(density(S.best) * 100, 1) }, 'ok');
+      setStatus(msgKey, { len: fmt(S.best.strip_width / MM, 0), fill: fmt(density(S.best) * 100, 1) }, 'ok', S.note);
     }, function () { /* error already shown */ });
   }
 
@@ -395,9 +402,16 @@
       S.budget = p.time;
       S.note = hulls ? t('hullNote', { n: hulls }) : '';
 
+      // MODULO 2: small pieces inside the holes of big ones; children travel with their parent (one Sparrow item)
+      S.holes = (HO && p.holes) ? HO.planHoles(items, pieces, { gap: gapPt, orientations: orient }) : null;
+      S.nestPieces = HO ? HO.nestPieces(pieces, S.holes) : pieces;
+      S.pieceById = {};
+      S.nestPieces.forEach(function (x) { S.pieceById[x.id] = x; });
+      if (S.holes && S.holes.children.length) S.note = (S.note ? S.note + ' ' : '') + t('holesNote', { n: S.holes.children.length });
+
       var msg = {
         type: 'nest',
-        instance: G.buildInstance(pieces, H, orient),
+        instance: G.buildInstance(S.nestPieces, H, orient),   // MODULO 2: children excluded
         exploreSecs: p.time * 0.8,
         compressSecs: p.time * 0.2,
         seed: 1 + Math.floor(Math.random() * 1e9),
@@ -489,6 +503,7 @@
   window.addEventListener('beforeunload', onUnload);
   window.addEventListener('unload', onUnload);
 
+  try { if ($('useHoles')) $('useHoles').checked = localStorage.getItem('corvo.holes') !== '0'; } catch (e) { /* storage blocked */ }   // MODULO 2
   setState('idle');
   applyLang();
   if (!cs) setStatus('notCep', null, 'warn');

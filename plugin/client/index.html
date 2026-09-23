@@ -25,6 +25,8 @@
     <label class="field"><span data-i18n="time">Time</span>
       <span class="unit"><input type="number" id="time" value="30" min="2" max="3600" step="5"><i>s</i></span>
     </label>
+    <!-- MODULO 2: pieces inside holes -->
+    <label class="check wide" id="holesOpt"><input type="checkbox" id="useHoles" checked><span data-i18n="useHoles">Use holes</span></label>
   </section>
 
   <section class="actions">
@@ -60,6 +62,7 @@
   }
 </script>
 <script src="js/geometry.js"></script>
+<script src="js/holes.js"></script><!-- MODULO 2 -->
 <script src="js/main.js"></script>
 </body>
 </html>

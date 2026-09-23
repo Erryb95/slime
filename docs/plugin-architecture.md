@@ -133,3 +133,44 @@ Correzioni emerse:
   protetto quando non c'e' nessun documento.
 - Pannello: un errore dell'host durante la ricerca ferma la sessione (`failSession`) invece di ripetere l'errore ogni
   250 ms; un `corvoApply` parziale (`ok:false` + `errors`, es. pezzo bloccato) ora viene mostrato come avviso.
+
+## Modulo 2 — Pezzi dentro i fori (`client/js/holes.js`, branch `modulo2-fori`)
+
+jagua-rs/Sparrow non accetta item con fori (jagua-rs PR #96): i fori si riempiono PRIMA del nest, fuori dal motore,
+con un pre-pass deterministico in JS (nessuna modifica al wasm). File nuovo, puro, usabile in Node e nel pannello
+(`window.CorvoHoles`, richiede `CorvoGeometry` + `ClipperLib`). Aggancio in `main.js`/`index.html` marcato `// MODULO 2`.
+
+1. **Regioni libere** di ogni pezzo P = poligono Sparrow di P (contorno esterno, chiusura o inviluppo) MENO il disegno
+   di P (riempimento even-odd) cresciuto di `gap + 0.05 pt`. Sono i controfori di O A R B D P Q 0 6 8 9, cornici,
+   anelli, guarnizioni, e anche le concavita' coperte da una chiusura/inviluppo. Regioni < 50 pt² ignorate. Le isole
+   dentro un foro (es. il disco centrale di un logo ad anello) restano ostacoli.
+2. **Riempimento greedy**: regioni per area decrescente; per ciascuna si provano i pezzi rimasti dal piu' grande, in
+   tutte le rotazioni ammesse dall'UI (Libera → 0/90/180/270). Le posizioni ammissibili sono ESATTE via somme di
+   Minkowski (inner-fit della regione meno i no-fit dei figli gia' messi, cresciuti di `gap`), usando l'inviluppo
+   convesso del figlio come pattern (conservativo). Si prende il vertice in basso a sinistra e si ricontrolla con
+   clipper (figlio dentro la regione, fuori dagli altri figli). Forme conservative: figlio = poligono Sparrow
+   semplificato GONFIANDO (≤ 40 vertici), regione = sgonfiata poi semplificata → distanza sempre ≥ `gap`.
+   Budget 2 s (`maxMs`); misurato 0.1–0.5 s su 26–46 pezzi.
+3. **Un livello**: un pezzo che riceve figli non diventa figlio, un figlio non riceve figli. Genitore + figli = UN
+   item Sparrow (il poligono del genitore: i figli sono dentro).
+4. **Contratto**: `planHoles(items, pieces, {gap, orientations})` →
+   `{children:[{id, parent, a, tx, ty}], parents, regions, usedRegions, emptyRegions, ms, timedOut}` dove
+   `(a, tx, ty)` porta il figlio dalla sua posizione ORIGINALE dentro il foro del genitore nella posizione ORIGINALE
+   del genitore. `nestPieces(pieces, plan)` toglie i figli e rinumera gli id 0..n-1 (Sparrow vuole id consecutivi;
+   `srcId` = indice host). `movesFor(placements, nestPieces, origin, plan)` = mosse `corvoApply` di TUTTI i pezzi:
+   figlio `a = a_P + a_c`, `t = R(a_P)·t_c + t_P` (stesso contratto assoluto per indice `i`, quindi `corvoRevert`
+   riporta anche i figli, e il colore spot dei figli resta intatto: solo trasformazioni).
+5. **UI**: casella "Usa i fori" / "Use holes" (default ON, ricordata in `localStorage corvo.holes`); nota di stato
+   "N pezzi nei fori". La densita' mostrata conta l'area di tutti i pezzi, figli compresi.
+
+Test: `node plugin/tools/test_holes.js [secondi]` (Node + wasm, niente Illustrator; contiene un piccolo parser SVG
+con archi/Bézier/trasformazioni). Set: Bebas Neue O A R B D 8 a 300 pt + 20 pezzi; le 9 lettere reali
+`BebasNeue_channel_letters_OARBDQ890.svg`; anello/guarnizione/cornice MDI + roundel Wikimedia (+ 26 o 40 pezzi); caso
+negativo senza pezzi che entrano. Verifica: tutti i pezzi piazzati e nel rotolo, nessuna sovrapposizione fra i disegni
+(even-odd), ogni figlio dentro il genitore con distanza ≥ gap dal genitore e dagli altri figli, composizione delle
+trasformazioni, lunghezza fori ON vs OFF (stesso seed) e tempo del pre-pass.
+
+Limiti noti: un solo livello di annidamento; il figlio e' trattato come convesso nel calcolo delle posizioni
+(niente incastri a L dentro un foro); il greedy non garantisce "mai peggio": quando il rotolo ha comunque spazio
+libero per i pezzi piccoli il guadagno e' ~0 e il rumore stocastico di Sparrow (±2%) domina; non ancora verificato
+in Illustrator (`test_e2e.js`).
