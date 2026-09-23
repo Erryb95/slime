@@ -35,6 +35,11 @@ input[type=number]::-webkit-inner-spin-button { opacity: .6; }
 input:focus, select:focus, .btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 0; }
 input:disabled, select:disabled { opacity: .5; }
 
+.field.wide, .check.wide { grid-column: 1 / -1; }
+.check { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 11px; cursor: pointer; }
+.check input { margin: 0; accent-color: var(--accent); }
+.check input:disabled + span { opacity: .5; }
+
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .btn {
   height: 26px; border-radius: 3px; border: 1px solid var(--line); background: var(--bg-2);

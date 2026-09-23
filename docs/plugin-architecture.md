@@ -133,3 +133,106 @@ Correzioni emerse:
   protetto quando non c'e' nessun documento.
 - Pannello: un errore dell'host durante la ricerca ferma la sessione (`failSession`) invece di ripetere l'errore ogni
   250 ms; un `corvoApply` parziale (`ok:false` + `errors`, es. pezzo bloccato) ora viene mostrato come avviso.
+
+## Modulo 1 — Fedeltà al file (print&cut, kit veicoli) — 2026-09-23
+
+Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, il pannello decide i pezzi con
+`client/js/cluster.js` (puro, testato in Node) e li comunica all'host con `corvoGroup`.
+
+### Contratto host (aggiornato)
+
+1. `corvoExport({flatness})` — un elemento per ogni oggetto di primo livello della selezione, anche senza anelli chiusi:
+   `{"i","name","type","layer","rings":[...],"bounds":[l,t,r,b],"box":[l,t,r,b],"cut":[indici in rings]?,
+     "cutSpots":["CutContour"]?,"other":[rettangoli]?,"text":n?,"nonVector":n?,"nonVectorTypes":[..]?}`
+   - `rings`: tracciati VISIBILI (riempimento o traccia; i tracciati senza né l'uno né l'altra sono ignorati), guide escluse,
+     figli nascosti esclusi; gruppo con maschera → solo il tracciato di maschera (il contenuto mascherato viene visitato
+     solo per trovare linee di taglio).
+   - `cut`: indici dei tracciati con traccia o riempimento in tinta piatta di taglio (`corvo_isCutName`: senza maiuscole,
+     spazi, trattini, punti, underscore; prefissi `cutcontour|contourcut|thrucut|throughcut|kisscut|diecut|cutline|cutpath|perfcut`
+     oppure esatti `cut|cuts|cutter|contour|taglio` + numero facoltativo → "CutContour", "Thru-cut", "Kiss Cut",
+     "Through Cut Rectangle", "CONTOUR", "Cut 2"; NON "Cutting Mat", "Uncut", "Shortcut").
+   - `other`: rettangolo d'ingombro di raster, immagini collegate, simboli, mesh, grafici, plugin (si muovono col pezzo).
+   - `text`: numero di cornici di testo vivo (NON più errore dell'host: decide il pannello).
+   - `box`: ingombro di tutto (anche linee aperte e testo); `bounds` = ingombro dei soli anelli (compatibile v0.1).
+   - Esclusi e riportati in `"excluded":[{name,layer,reason:"hidden"|"locked"}]`: oggetti nascosti o bloccati (anche via
+     livello/gruppo antenato). Oggetti sul livello `Corvo` ignorati in silenzio. Tutti esclusi → `{"error","code":"allExcluded","n"}`.
+   - `doc.artboards`: tutti i rettangoli delle tavole (per i crocini).
+   - `rg` (verifica 24/09): per ogni anello l'id del tracciato / tracciato composto di provenienza. L'area riempita del pezzo
+     (statistica "Riempimento") è pari-dispari DENTRO un tracciato composto e unione non-zero TRA tracciati: prima era
+     pari-dispari su tutto e la stampa fatta di forme sovrapposte (o il kiss cut dentro il suo through cut) si annullava
+     (die-cut Sticker Mule: 12 % mostrato contro 48 % reale).
+   - `lockedCuts` (verifica 24/09): `[{name, spot, layer, reason:"locked"|"hidden", box}]` — tracciati con tinta di taglio
+     BLOCCATI o NASCOSTI (anche via livello/gruppo) che non stanno dentro la selezione. Cercati solo se il documento ha
+     almeno una tinta con nome di taglio. Corvo non sblocca mai nulla: decide il pannello (sotto).
+   - `processCuts` (verifica 24/09): nomi dei campioni con nome di taglio che NON sono tinta piatta (quadricromia globale
+     o semplice) → avviso `noteProcessCut` in testa alla riga di stato (checklist A5, problema utenti n. 1). Solo avviso.
+2. `corvoGroup([[0,3],[1],...])` — NUOVO: indici degli elementi esportati che formano ciascun pezzo; il pezzo k è l'indice
+   di `corvoApply`. Va chiamato prima del primo `corvoApply`. Elementi non elencati (crocini) non vengono mai toccati.
+   Senza `corvoGroup` ogni elemento è un pezzo (compatibile v0.1).
+3. `corvoApply`/`corvoRevert`: la stessa `transform()` viene applicata a ogni membro del pezzo, attorno all'origine del
+   documento → i membri restano rigidamente solidali e ciascuno resta sul SUO livello (nessuno spostamento tra livelli).
+   `$.global.corvo.items[i]` è ora un ARRAY di membri.
+
+### Pannello (`cluster.js` → `planPieces(items, {merge, shape, artboards})`)
+
+- Opzioni UI: **Forma di ingombro** (`shapeSrc`: "Tutto il disegno" | "Solo linea di taglio (CutContour…)") e
+  **Unisci oggetti sovrapposti** (`merge`, default ON). Ricordate in localStorage (`corvo.opts`).
+- **Crocini di registro** esclusi automaticamente (nota nella riga di stato): livello il cui nome contiene
+  Reg / Reg Marks / Registration / Registro / Marks / Crop marks / Crocini / OPOS / ARMS; oppure oggetto ≤ 12 mm,
+  quasi quadrato (rapporto ≤ 1.4), con il centro entro 30 mm da un angolo di una tavola e che non tocca nessun altro oggetto.
+- **Unione** (shape "all"): union-find sui `box`; due oggetti si uniscono se i box si sovrappongono di più di 0.5 pt su
+  entrambi gli assi E (uno contiene l'altro OPPURE le sagome reali, ingrandite di 0.125 pt, si intersecano — clipper).
+  Così lettere crenate con box sovrapposti restano separate, stampa+taglio o decal fatte di forme sovrapposte restano unite.
+- **Unione** (shape "cut", `clusterCutAnchored`): gli oggetti con linea di taglio sono ancore; due ancore si uniscono solo
+  se le LINEE DI TAGLIO si sovrappongono/contengono; ogni altro oggetto va all'ancora il cui box di taglio sovrappone di più.
+  Serve per fogli già disposti con distanza < abbondanza: le abbondanze che invadono il vicino non incollano due adesivi.
+  Oggetti che non toccano nessuna linea di taglio → regola normale → pezzi "fallback".
+- **Forma**: "all" = tutti gli anelli + rettangoli `other`; "cut" = solo gli anelli di taglio del pezzo (l'abbondanza
+  fuori dal taglio è ignorata: comportamento corretto print&cut); pezzo senza taglio → "all" + avviso `noteFallback`.
+- **Cornici del foglio** (verifica 24/09, `findFrames`): un oggetto di primo livello che è solo linea di taglio (es.
+  "Through Cut Rectangle" del foglio Sticker Mule 11x8.5) oppure un'unica forma grande come una tavola (lo sfondo di
+  Wikipedia20) e che contiene almeno due oggetti separati → escluso (`reason:"sheetFrame"`), resta al suo posto, nota
+  `noteSheetFrame` ("per spostare un foglio intero raggruppalo, Ctrl+G"). Senza questa regola la cornice incollava
+  tutti gli adesivi in UN pezzo. Un through cut attorno a UN solo adesivo (template kiss-cut) resta parte del pezzo.
+- **Linee di taglio bloccate** (`lockedCuts`): se toccano un pezzo o ne contengono uno solo → errore `errLockedCut`
+  (nomina tinta e livello: "sblocca e mostra il livello, seleziona anche le linee di taglio"); se contengono due o più
+  pezzi (cornice del foglio sul livello bloccato) → solo nota `noteLockedFrame`; lontane → ignorate.
+- **Pezzi degeneri**: pezzi i cui anelli sono tutti sotto `minRingArea` (puntini, tracciati chiusi ad area nulla) restano al
+  loro posto con la nota `noteNoContour`, invece di bloccare tutto il nesting (errore visto su Wikimania2021).
+- **Errori**: testo vivo che definisce la forma (shape "all" o fallback) → `errText` con il numero di cornici e
+  "Testo > Crea contorni"; in shape "cut" il testo dentro un adesivo con linea di taglio è solo un passeggero.
+  Pezzo fatto solo di immagini/oggetti non vettoriali → `errRasterOnly`. Pezzo con sole linee aperte → saltato (`noteNoContour`).
+- Avvisi nella riga di stato: oggetti uniti, crocini esclusi, nascosti/bloccati ignorati, fallback, senza contorno, inviluppi.
+
+### Annullo unico (E2, verifica 24/09)
+- Ogni `corvoApply` che sposta qualcosa e ogni `corvoRoll` contano un passo (`st.steps`); `corvoExport` salva l'ingombro
+  originale di ogni elemento (`st.orig`). `corvoFinish` (Applica) chiama `app.undo()` finché tutto è di nuovo
+  all'ingombro originale e il rotolo non esiste (al massimo `st.steps` volte), poi rifà la disposizione finale e il
+  rettangolo `Corvo_Roll_rif` nello STESSO script → un solo Ctrl+Z riporta il foglio all'originale, Ctrl+Maiusc+Z lo rifà.
+  Se il riavvolgimento non torna esattamente all'origine (l'utente ha toccato il documento durante la ricerca) si
+  rifanno i passi (`app.redo`) e resta la cronologia a passi. `corvoFinish({singleUndo:false})` lo disattiva.
+  Risultato in `{"undo":"single"|"restored"|"skip"|"off"}`.
+- ExtendScript: `final` è parola riservata (ES3) — un `var final` rompe il caricamento dell'intero corvo.jsx.
+
+### Limiti v1 (noti)
+- La traccia (strokeWidth) non allarga la sagoma: un tracciato stampato con traccia spessa sporge di metà traccia (la
+  distanza la assorbe se ≥ traccia/2).
+- Raster/immagini in "Tutto il disegno" = rettangolo d'ingombro (conservativo, niente trasparenza → contorno: modulo 8).
+- Un oggetto di stampa che copre due linee di taglio (sfondo unico per due adesivi) va a una sola ancora.
+- Lettura della geometria lenta sui file densi: ogni lettura DOM di un punto costa ~1-4 ms con Illustrator in
+  background (misurato 24/09: 27 000 punti di Wikipedia20 = ~270 s di esportazione). Da valutare: esportazione in blocco
+  (SVG/PDF temporaneo) letta dal pannello.
+- Applica lascia la disposizione sul rotolo SOTTO la tavola: un PDF salvato contiene solo le tavole, quindi serve una
+  tavola sul rotolo (per ora a mano; candidata per il modulo 5/6).
+- Il riconoscimento dei crocini ARMS/OPOS con forme a L o gruppi di linee dipende dal nome del livello o dall'ingombro quadrato.
+
+### Test
+- `node plugin/tools/test_cluster.js` — 74 controlli (dal 24/09 anche cornici del foglio, linee di taglio bloccate, area per tracciato), senza Illustrator (nomi tinte di taglio via vm su corvo.jsx,
+  union-find, foglio print&cut, foglio già disposto, fallback, testo, raster, lettere crenate, crocini).
+- `node plugin/tools/test_modulo1.js [s]` — pannello reale: foglio A3 CMYK sintetico, 12 adesivi (vettoriali, 3 raster,
+  1 gruppo con maschera; abbondanza 3 mm asimmetrica) + CutContour su livello CUT + 4 crocini su "Reg". 32 controlli (dal 24/09 anche un solo Ctrl+Z dopo Applica, campione di taglio in quadricromia → avviso, cornice
+  "Through Cut Rectangle" lasciata al suo posto, livello CUT bloccato → errore e livello ancora bloccato).
+- `SEED=n node plugin/tools/test_e2e.js insegna48 30` — seme del motore fisso (`window.CorvoSeed`, solo test) per
+  confronti di regressione meno rumorosi; 0/assente = casuale come in produzione.
+- Aperture di file nei test: `app.userInteractionLevel = DONTDISPLAYALERTS` (un avviso sui profili colore CMYK bloccava
+  ExtendScript con una finestra modale).

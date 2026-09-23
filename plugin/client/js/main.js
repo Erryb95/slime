@@ -8,6 +8,7 @@
   'use strict';
 
   var G = window.CorvoGeometry;
+  var CL = window.CorvoCluster;
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -39,7 +40,23 @@
       noLayout: 'Stopped before a first layout was found.',
       workerFallback: 'Web Worker unavailable: running in the panel thread, the panel will freeze until the end.',
       engineError: 'Nesting engine error: {msg}',
-      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}'
+      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}',
+      shapeSrc: 'Shape used for nesting', shapeAll: 'All artwork', shapeCut: 'Cut line only (CutContour…)',
+      merge: 'Merge overlapping objects',
+      noteMerged: '{objects} overlapping objects joined into {pieces} piece(s).',
+      noteRegMarks: '{n} registration mark(s) left in place.',
+      noteSkipped: '{n} hidden or locked object(s) skipped.',
+      noteFallback: '{n} piece(s) without a cut line: whole artwork used.',
+      noteNoContour: '{n} object(s) without a closed contour left in place.',
+      errText: '{n} live text frame(s) define the shape of {names}: convert them with Type > Create Outlines (Shift+Ctrl+O), or choose "Cut line only".',
+      errTextCut: '{n} live text frame(s) in {names}, which has no cut line (no CutContour/Thru-cut spot color), so the artwork defines the shape: convert the text with Type > Create Outlines (Shift+Ctrl+O) or add a cut path.',
+      errRasterOnly: '{n} image(s) without a vector contour ({names}): place a cut path or a vector shape over them, or select them together with it.',
+      errAllExcluded: 'All {n} selected object(s) are hidden or locked.',
+      errNothing: 'Nothing to nest: the selection only contains registration marks or open lines.',
+      noteProcessCut: 'Warning: the swatch "{names}" is a process colour, not a spot colour: the cutter/RIP will PRINT it instead of cutting. Set Color Type to Spot Color in Swatch Options.',
+      noteSheetFrame: '{n} sheet frame(s) or background(s) around several pieces ({names}) left in place. To move a whole sheet, group it first (Ctrl+G).',
+      noteLockedFrame: 'The {names} cut frame on the locked layer "{layers}" stays in place (Corvo never unlocks layers).',
+      errLockedCut: '{n} cut line(s) ({names}) on the locked or hidden layer "{layers}" belong to the selected pieces: they would stay behind while the artwork moves. Unlock and show the layer "{layers}" (Corvo never does it for you), select the cut lines too and press Nest again.'
     },
     it: {
       rollWidth: 'Larghezza rotolo', gap: 'Distanza', rotations: 'Rotazioni', rotNone: 'Nessuna', rotFree: 'Libera', time: 'Tempo',
@@ -65,7 +82,23 @@
       noLayout: 'Fermato prima di trovare una prima disposizione.',
       workerFallback: 'Web Worker non disponibile: il calcolo gira nel pannello, che resterà bloccato fino alla fine.',
       engineError: 'Errore del motore di nesting: {msg}',
-      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}'
+      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}',
+      shapeSrc: 'Forma di ingombro', shapeAll: 'Tutto il disegno', shapeCut: 'Solo linea di taglio (CutContour…)',
+      merge: 'Unisci oggetti sovrapposti',
+      noteMerged: '{objects} oggetti sovrapposti uniti in {pieces} pezzi.',
+      noteRegMarks: '{n} crocini di registro lasciati al loro posto.',
+      noteSkipped: '{n} oggetti nascosti o bloccati ignorati.',
+      noteFallback: '{n} pezzi senza linea di taglio: uso tutto il disegno.',
+      noteNoContour: '{n} oggetti senza contorno chiuso lasciati al loro posto.',
+      errText: '{n} cornici di testo vivo definiscono la forma di {names}: convertile con Testo > Crea contorni (Maiusc+Ctrl+O) oppure scegli "Solo linea di taglio".',
+      errTextCut: '{n} cornici di testo vivo in {names}, che non ha una linea di taglio (nessuna tinta CutContour/Thru-cut), quindi la forma è il disegno: converti il testo con Testo > Crea contorni (Maiusc+Ctrl+O) o aggiungi un tracciato di taglio.',
+      errRasterOnly: '{n} immagini senza contorno vettoriale ({names}): mettici sopra un tracciato di taglio o una forma vettoriale, o selezionale insieme.',
+      errAllExcluded: 'Tutti i {n} oggetti selezionati sono nascosti o bloccati.',
+      errNothing: 'Niente da disporre: la selezione contiene solo crocini di registro o linee aperte.',
+      noteProcessCut: 'Attenzione: il campione «{names}» è in quadricromia, non in tinta piatta: il plotter/RIP lo STAMPERÀ invece di tagliarlo. In Opzioni campione imposta Tipo di colore = Tinta piatta.',
+      noteSheetFrame: '{n} cornici o sfondi del foglio attorno a più pezzi ({names}) lasciati al loro posto. Per spostare un foglio intero raggruppalo prima (Ctrl+G).',
+      noteLockedFrame: 'La cornice di taglio {names} sul livello bloccato «{layers}» resta al suo posto (Corvo non sblocca mai i livelli).',
+      errLockedCut: '{n} linee di taglio ({names}) sul livello bloccato o nascosto «{layers}» appartengono ai pezzi selezionati: resterebbero ferme mentre la stampa si sposta. Sblocca e mostra il livello «{layers}» (Corvo non lo fa da solo), seleziona anche le linee di taglio e ripremi Nest.'
     }
   };
   var lang = 'en';
@@ -123,7 +156,10 @@
     if (res === undefined || res === null || res === '' || res === 'EvalScript error.') throw new Error(t('hostScriptError'));
     var obj;
     try { obj = JSON.parse(res); } catch (e) { throw new Error(t('hostScriptError') + ' ' + String(res).slice(0, 200)); }
-    if (obj && obj.error) throw new Error(String(obj.error));
+    if (obj && obj.error) {
+      var key = obj.code ? 'err' + obj.code.charAt(0).toUpperCase() + obj.code.slice(1) : null;
+      throw new Error(key && STR.en[key] ? t(key, obj) : String(obj.error));
+    }
     return obj;
   }
   // fn(arg) with arg passed as a JSON string literal; calls never overlap
@@ -229,7 +265,7 @@
     $('btnStop').disabled = !running;
     $('btnApply').disabled = !(running || review);
     $('btnCancel').disabled = !(running || review || st === 'preparing');
-    ['rollWidth', 'gap', 'rotations', 'time'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
+    ['rollWidth', 'gap', 'rotations', 'time', 'shapeSrc', 'merge'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
   }
 
   function readParams() {
@@ -237,8 +273,11 @@
       rollMm: parseFloat($('rollWidth').value),
       gapMm: parseFloat($('gap').value),
       rot: $('rotations').value,
-      time: parseFloat($('time').value)
+      time: parseFloat($('time').value),
+      shape: $('shapeSrc').value === 'cut' ? 'cut' : 'all',
+      merge: !!$('merge').checked
     };
+    try { localStorage.setItem('corvo.opts', JSON.stringify({ shape: p.shape, merge: p.merge })); } catch (e) { /* storage blocked */ }
     if (!(p.rollMm > 0) || !(p.gapMm >= 0) || !(p.time >= 2)) throw new Error(t('badInput'));
     return p;
   }
@@ -344,7 +383,7 @@
     }
     setState('review');
     hostIdle().then(pushBest).then(function () {
-      setStatus(msgKey, { len: fmt(S.best.strip_width / MM, 0), fill: fmt(density(S.best) * 100, 1) }, 'ok');
+      setStatus(msgKey, { len: fmt(S.best.strip_width / MM, 0), fill: fmt(density(S.best) * 100, 1) }, 'ok', S.note);
     }, function () { /* error already shown */ });
   }
 
@@ -376,16 +415,47 @@
       S.session = true;
       var items = (exp && exp.items) || [];
       if (!items.length) throw new Error(t('noSelection'));
-      setStatus('preparing', { n: items.length });
+      var doc = exp.doc || {};
 
+      // module 1: registration marks, overlapping objects -> one piece, shape from the cut line
+      var plan = CL.planPieces(items, { merge: p.merge, shape: p.shape, artboards: doc.artboards || [], lockedCuts: exp.lockedCuts || [] });
+      if (plan.error) {
+        var en = plan.error.names || [];
+        throw new Error(t({ text: p.shape === 'cut' ? 'errTextCut' : 'errText', lockedCut: 'errLockedCut' }[plan.error.code] || 'errRasterOnly',
+          { n: plan.error.n, names: en.slice(0, 3).join(', ') + (en.length > 3 ? '…' : ''), layers: (plan.error.layers || []).join(', ') }));
+      }
+      if (!plan.pieces.length) throw new Error(t('errNothing'));
+      var notes = [], w = plan.warnings, skipped = (exp.excluded || []).length;
+      if (w.merged.pieces) notes.push(t('noteMerged', w.merged));
+      if (exp.processCuts && exp.processCuts.length) notes.unshift(t('noteProcessCut', { names: exp.processCuts.join(', ') }));
+      if (w.regMarks) notes.push(t('noteRegMarks', { n: w.regMarks }));
+      if (w.sheetFrames) notes.push(t('noteSheetFrame', { n: w.sheetFrames, names: w.sheetFrameNames.slice(0, 2).join(', ') }));
+      if (w.lockedFrames) notes.push(t('noteLockedFrame', { names: w.lockedFrames.spots.join(', '), layers: w.lockedFrames.layers.join(', ') }));
+      if (skipped) notes.push(t('noteSkipped', { n: skipped }));
+      if (w.cutFallback) notes.push(t('noteFallback', { n: w.cutFallback }));
+      if (w.noContour) notes.push(t('noteNoContour', { n: w.noContour }));
+      S.plan = plan;
+      setStatus('preparing', { n: plan.pieces.length });
+      return hostCall('corvoGroup', plan.pieces.map(function (x) { return x.members; })).then(function () {
+        return { items: plan.pieces, notes: notes, doc: doc };
+      });
+    }).then(function (pl) {
+      if (!pl || S !== me || S.state !== 'preparing') return;
+      var items = pl.items, doc = pl.doc;
       var pieces = G.buildPieces(items, { gap: gapPt, flatness: FLATNESS });
+      // pieces whose rings are all degenerate (below minRingArea: specks, zero-area closed paths) stay in place
       var bad = pieces.filter(function (x) { return x.error; });
-      if (bad.length) throw new Error(t('badPieces', { names: bad.map(function (x) { return x.name; }).join(', ') }));
+      if (bad.length === pieces.length) throw new Error(t('badPieces', { names: bad.map(function (x) { return x.name; }).slice(0, 5).join(', ') }));
+      if (bad.length) {
+        // the engine wants consecutive ids 0..n-1: renumber, keep the host piece index for corvoApply
+        pieces = pieces.filter(function (x) { return !x.error; });
+        pieces.forEach(function (x, k) { x.hostI = x.id; x.id = k; });
+        pl.notes.push(t('noteNoContour', { n: bad.length }));
+      }
       var big = pieces.filter(function (x) { return G.minExtent(x.polygon, orient) > H - 1e-6; });
       if (big.length) throw new Error(t('tooBig', { w: fmt(p.rollMm), names: big.map(function (x) { return x.name; }).join(', ') }));
       var hulls = pieces.filter(function (x) { return /hull/.test(x.method) && x.parts > 1; }).length;
 
-      var doc = exp.doc || {};
       S.H = H;
       S.origin = [+doc.abLeft || 0, (+doc.abBottom || 0) - ROLL_MARGIN_MM * MM - H];
       S.pieces = pieces;
@@ -393,14 +463,15 @@
       pieces.forEach(function (x) { S.pieceById[x.id] = x; });
       S.areaSum = pieces.reduce(function (s, x) { return s + x.area; }, 0);
       S.budget = p.time;
-      S.note = hulls ? t('hullNote', { n: hulls }) : '';
+      if (hulls) pl.notes.push(t('hullNote', { n: hulls }));
+      S.note = pl.notes.join(' ');
 
       var msg = {
         type: 'nest',
         instance: G.buildInstance(pieces, H, orient),
         exploreSecs: p.time * 0.8,
         compressSecs: p.time * 0.2,
-        seed: 1 + Math.floor(Math.random() * 1e9),
+        seed: window.CorvoSeed > 0 ? Math.floor(window.CorvoSeed) : 1 + Math.floor(Math.random() * 1e9),   // fixed seed = tests only
         gap: gapPt
       };
       setStatus('loading');
@@ -489,6 +560,10 @@
   window.addEventListener('beforeunload', onUnload);
   window.addEventListener('unload', onUnload);
 
+  try {
+    var saved = JSON.parse(localStorage.getItem('corvo.opts') || 'null');
+    if (saved) { $('shapeSrc').value = saved.shape === 'cut' ? 'cut' : 'all'; $('merge').checked = saved.merge !== false; }
+  } catch (e) { /* storage blocked or corrupt */ }
   setState('idle');
   applyLang();
   if (!cs) setStatus('notCep', null, 'warn');

@@ -206,11 +206,31 @@
     return best;
   }
 
-  // Filled area of the piece as drawn (even-odd: counters of letters are holes)
-  function filledArea(rings) {
+  // Filled area of the piece as drawn. groups (optional, parallel to rings) = source path of each ring:
+  // even-odd INSIDE a path / compound path (counters of letters are holes), non-zero union ACROSS paths (print art
+  // drawn as overlapping shapes, or a kiss cut inside its through cut, must not cancel out).
+  // Without groups: even-odd over everything (v0.1 behaviour).
+  function filledArea(rings, groups) {
     if (!rings.length) return 0;
-    var C = lib(), res = union(rings.map(toPath), C.PolyFillType.pftEvenOdd), a = 0;
-    for (var i = 0; i < res.length; i++) a += C.Clipper.Area(res[i]);
+    var C = lib(), res, a = 0, i;
+    if (groups && groups.length === rings.length) {
+      var by = {}, keys = [];
+      for (i = 0; i < rings.length; i++) {
+        var k = String(groups[i]);
+        if (!by[k]) { by[k] = []; keys.push(k); }
+        by[k].push(toPath(rings[i]));
+      }
+      var parts = [];
+      for (i = 0; i < keys.length; i++) {
+        var eo = union(by[keys[i]], C.PolyFillType.pftEvenOdd);
+        // union() output: outers and holes with opposite orientation -> the non-zero union below keeps the holes
+        for (var q = 0; q < eo.length; q++) parts.push(eo[q]);
+      }
+      res = keys.length === 1 ? parts : union(parts, C.PolyFillType.pftNonZero);
+    } else {
+      res = union(rings.map(toPath), C.PolyFillType.pftEvenOdd);
+    }
+    for (i = 0; i < res.length; i++) a += C.Clipper.Area(res[i]);
     return Math.abs(a) / (SCALE * SCALE);
   }
 
@@ -252,12 +272,16 @@
   function buildPiece(item, opts) {
     opts = Object.assign({}, DEFAULTS, opts || {});
     var id = item.i, name = item.name || ('#' + item.i);
-    var rings = (item.rings || []).map(function (r) { return cleanRing(r); })
-      .filter(function (r) { return r.length >= 3 && area(r) >= opts.minRingArea; });
+    var src = item.rings || [], rgIn = item.rg && item.rg.length === src.length ? item.rg : null;
+    var rings = [], rg = [];
+    for (var q = 0; q < src.length; q++) {
+      var cr = cleanRing(src[q]);
+      if (cr.length >= 3 && area(cr) >= opts.minRingArea) { rings.push(cr); if (rgIn) rg.push(rgIn[q]); }
+    }
     if (!rings.length) return { id: id, name: name, error: 'no closed contour' };
 
     var all = [].concat.apply([], rings);
-    var pieceArea = filledArea(rings);
+    var pieceArea = filledArea(rings, rgIn ? rg : null);
     var parts = silhouette(rings), method = 'single', outer = null;
     if (parts.length === 1) {
       outer = fromPath(parts[0]);
@@ -330,7 +354,7 @@
   function placementToMove(pl, piece, origin) {
     var a = pl.rotation * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     var rx = c * piece.ref[0] - s * piece.ref[1], ry = s * piece.ref[0] + c * piece.ref[1];
-    return { i: piece.id, a: pl.rotation,
+    return { i: piece.hostI !== undefined ? piece.hostI : piece.id, a: pl.rotation,   // hostI: renumbered pieces
              tx: pl.translation[0] - rx + origin[0], ty: pl.translation[1] - ry + origin[1] };
   }
 
@@ -352,6 +376,6 @@
     buildPiece: buildPiece, buildPieces: buildPieces, buildInstance: buildInstance,
     minExtent: minExtent, placementToMove: placementToMove, applyMove: applyMove,
     _internals: { silhouette: silhouette, closing: closing, simplify: simplify, union: union,
-                  offset: offset, outers: outers, toPath: toPath, fromPath: fromPath, SCALE: SCALE }
+                  offset: offset, outers: outers, toPath: toPath, fromPath: fromPath, SCALE: SCALE, lib: lib }
   };
 });

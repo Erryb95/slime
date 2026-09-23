@@ -5,11 +5,12 @@ Obiettivo: portare il plugin Corvo (plugin/) alla beta, modulo per modulo, usand
 
 ## Come si lavora a ogni giro
 1. Leggi `docs/loop-log.md` (stato, modulo corrente) e questo brief. Prendi il primo modulo non chiuso del backlog.
-2. RICERCA (1 agente Opus, web): 3-6 file/casi reali per quel segmento (SVG/AI/DXF/PDF gratuiti o dimostrativi:
+2. RICERCA (agenti Sonnet o Haiku, web, IN PARALLELO; anticipare i moduli successivi quando possibile): 3-6 file/casi reali per quel segmento (SVG/AI/DXF/PDF gratuiti o dimostrativi:
    template kit veicoli, fogli di adesivi, insegne, progetti laser, gang sheet DTF) + i problemi che gli utenti
    segnalano su quel modulo (Signs101, Reddit, forum Adobe/LightBurn, recensioni eCut/Arrange Master/AINest).
    I file scaricati vanno in `bench/real/<segmento>/` (gitignored: NON committare file di terzi), con `SOURCES.md`
-   (URL + licenza).
+   (URL + licenza). Gli agenti NON possono scrivere file FINDINGS/report: restituiscono il testo e il
+   coordinatore lo salva in `bench/real/FINDINGS-moduloN.md`. SOURCES.md solo in append.
 3. IMPLEMENTA (1-2 agenti Opus in parallelo su file disgiunti, contratto in `docs/plugin-architecture.md`,
    aggiornarlo se cambia). Test unitari in Node dove possibile.
 4. VERIFICA (1 agente Opus): in Illustrator tramite il pannello Corvo (CEP debug porta 8093, `plugin/tools/test_e2e.js`)
@@ -22,12 +23,14 @@ Obiettivo: portare il plugin Corvo (plugin/) alla beta, modulo per modulo, usand
 - Illustrator: gira da G:\afree\illustrator\Adobe Illustrator 2026. MAI SetForegroundWindow, MAI tasti o click
   sul desktop: Enrico usa il PC (gioca). Screenshot solo con PrintWindow. Chiudere i documenti di test senza salvare.
   Se Illustrator crasha: riavvialo e riapri il pannello con requestOpenExtension dal pannello Arrange Master (8092).
-- Budget: max 4 agenti per giro, modello opus; DeepSeek (`tools/deepseek.py`, credito ~1 $) solo per testi brevi.
+- Modelli: ricerca web e raccolta file = sonnet (haiku per compiti meccanici: download, conteggi); codice e verifica = opus. Parallelizzare sempre: ricerca dei moduli futuri mentre si implementa quello corrente. Budget indicativo: max 6 agenti attivi insieme; DeepSeek (`tools/deepseek.py`, credito ~1 $) solo per testi brevi.
 - Non copiare codice da MXNestSpirit (GPL) o NestorCut (PolyForm). Sparrow/jagua-rs MIT ok.
 - Nessuna chiave o segreto nel repo.
+- Mai inviare dati personali di Enrico (email, nome, account) a servizi esterni, nemmeno negli header User-Agent dei
+  download: usare un User-Agent generico tipo "CorvoResearchBot/0.1".
 
 ## Backlog (in ordine)
-1. [ ] Fedelta' al file — kit veicoli + print&cut: livelli preservati, spot color CutContour/Thru-cut intatti,
+1. [~] Fedelta' al file (24/09: checklist A1-E3 ok sui file reali; E4 ±0,5% non confermato, export lento sui file densi — vedi loop-log) — kit veicoli + print&cut: livelli preservati, spot color CutContour/Thru-cut intatti,
        gruppi con maschera, bleed/offset, testo non convertito con errore chiaro. File reali: template kit moto/auto,
        fogli adesivi con CutContour.
 2. [ ] Pezzi dentro i fori (lettere O/A/R, cornici, loghi ad anello) — insegne + kit.

@@ -40,7 +40,7 @@ function check(cond, msg) { console.log((cond ? '  OK   ' : '  FAIL ') + msg); i
 // bounds [l,t,r,b] in coordinate documento dei pezzi in $.global.corvo.items
 async function readBounds() {
   const s = await host(`(function(){ var prev=app.coordinateSystem; app.coordinateSystem=CoordinateSystem.DOCUMENTCOORDINATESYSTEM;
-    var st=$.global.corvo, out=[]; for (var i=0;i<st.items.length;i++){ var b=st.items[i].geometricBounds; out.push('['+b[0]+','+b[1]+','+b[2]+','+b[3]+']'); }
+    var st=$.global.corvo, out=[]; for (var i=0;i<st.items.length;i++){ var it0=st.items[i]; if (it0 instanceof Array) it0=it0[0]; var b=it0.geometricBounds; out.push('['+b[0]+','+b[1]+','+b[2]+','+b[3]+']'); }
     app.coordinateSystem=prev; return '['+out.join(',')+']'; })()`);
   return JSON.parse(s);
 }
@@ -167,7 +167,9 @@ async function testFile(key) {
     check(fin.ok, 'corvoFinish');
     // ---- errore per il testo vivo
     const te = await host(load + `(function(){ var d=app.activeDocument; var t=d.layers[0].textFrames.add(); t.contents='ABC'; d.selection=null; t.selected=true; var r=corvoExport('{"flatness":0.5}'); t.remove(); return r; })()`);
-    check(/tracciati/.test(te), `testo vivo -> errore chiaro: ${te}`);
+    // modulo 1: l'host conta il testo vivo (items[].text), l'errore lo da' il pannello (cluster.js, codice 'text')
+    let teo = null; try { teo = JSON.parse(te); } catch (e) { teo = null; }
+    check(teo && teo.items && teo.items.length === 1 && teo.items[0].text === 1, `testo vivo -> contato per il pannello: ${te.slice(0, 160)}`);
   } finally {
     console.log('  chiusura documento:', await closeDoc());
   }

@@ -25,6 +25,13 @@
     <label class="field"><span data-i18n="time">Time</span>
       <span class="unit"><input type="number" id="time" value="30" min="2" max="3600" step="5"><i>s</i></span>
     </label>
+    <label class="field wide"><span data-i18n="shapeSrc">Shape used for nesting</span>
+      <select id="shapeSrc">
+        <option value="all" data-i18n="shapeAll" selected>All artwork</option>
+        <option value="cut" data-i18n="shapeCut">Cut line only (CutContour…)</option>
+      </select>
+    </label>
+    <label class="check wide"><input type="checkbox" id="merge" checked><span data-i18n="merge">Merge overlapping objects</span></label>
   </section>
 
   <section class="actions">
@@ -60,6 +67,7 @@
   }
 </script>
 <script src="js/geometry.js"></script>
+<script src="js/cluster.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

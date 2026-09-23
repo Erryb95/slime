@@ -3,6 +3,7 @@
  * Contratto: docs/plugin-architecture.md
  *
  *   corvoExport(optsJson)  -> geometria della selezione (anelli discretizzati, coordinate documento, pt, y in alto)
+ *   corvoGroup(groupsJson) -> quali elementi esportati formano ciascun pezzo (oggetti sovrapposti, stampa+taglio)
  *   corvoApply(movesJson)  -> trasformazioni ASSOLUTE per pezzo, applicate come delta con una sola transform()
  *   corvoRoll(rollJson)    -> rettangolo del rotolo + etichetta sul livello "Corvo"
  *   corvoRevert()          -> riporta i pezzi alla posizione originale, rimuove rotolo ed etichetta
@@ -64,7 +65,7 @@ function corvo_err(msg) { return corvo_json({ error: String(msg) }); }
 
 /* ------------------------------------------------------------------ stato */
 
-if (!$.global.corvo) $.global.corvo = { items: [], applied: [], doc: null, probe: null, roll: null, label: null };
+if (!$.global.corvo) $.global.corvo = { items: [], raw: [], applied: [], doc: null, probe: null, roll: null, label: null };
 
 function corvo_state() { return $.global.corvo; }
 
@@ -238,8 +239,249 @@ function corvo_probe(doc) {
     return res;
 }
 
+/* ------------------------------------------------------------------ fedelta' al file (modulo 1) */
+
+/* Nome di tinta piatta che indica una linea di taglio (CutContour, Thru-cut, Kiss-cut, Cut, ...).
+   Confronto senza maiuscole, spazi, trattini, punti e underscore. Prefissi specifici (CutContour..., Through Cut Rectangle)
+   oppure nomi brevi esatti con numero finale facoltativo (Cut, Cut2, Contour). */
+function corvo_isCutName(name) {
+    if (name === undefined || name === null) return false;
+    var n = String(name).toLowerCase().replace(/[\s\-_.]+/g, '');
+    if (/^(cutcontour|contourcut|thrucut|throughcut|kisscut|diecut|cutline|cutpath|perfcut|lineaditaglio|mezzotaglio)/.test(n)) return true;  // anche "Through Cut Rectangle"
+    return /^(cut|cuts|cutter|contour|contourline|taglio)\d*$/.test(n);
+}
+
+/* nome della tinta piatta di un colore (SpotColor), altrimenti null */
+function corvo_spotName(col) {
+    var name = null;
+    try { if (col && col.typename === 'SpotColor') { var sp = col.spot; name = String(sp.name); } } catch (e) { name = null; }
+    return name;
+}
+
+/* {cut: nome tinta di taglio o null, visible: ha riempimento o traccia} per un PathItem */
+function corvo_pathPaint(p) {
+    var res = { cut: null, visible: false }, f = false, s = false, n;
+    try { f = !!p.filled; } catch (e) { f = false; }
+    try { s = !!p.stroked; } catch (e2) { s = false; }
+    res.visible = f || s;
+    if (s) { n = null; try { n = corvo_spotName(p.strokeColor); } catch (e3) {} if (corvo_isCutName(n)) res.cut = n; }
+    if (!res.cut && f) { n = null; try { n = corvo_spotName(p.fillColor); } catch (e4) {} if (corvo_isCutName(n)) res.cut = n; }
+    return res;
+}
+
+function corvo_rectRing(b) { return [[b[0], b[3]], [b[2], b[3]], [b[2], b[1]], [b[0], b[1]]]; }
+
+function corvo_boxAdd(acc, x, y) {
+    var b = acc.box;
+    if (x < b[0]) b[0] = x;
+    if (x > b[2]) b[2] = x;
+    if (y > b[1]) b[1] = y;
+    if (y < b[3]) b[3] = y;
+}
+function corvo_boxAddRing(acc, r) { for (var k = 0; k < r.length; k++) corvo_boxAdd(acc, r[k][0], r[k][1]); }
+function corvo_boxAddPath(acc, p) {
+    // geometricBounds = 1 lettura DOM (le letture dei singoli punti costano ms ciascuna con Illustrator in background)
+    try {
+        var gb = p.geometricBounds;
+        if (gb && gb[2] >= gb[0] && gb[1] >= gb[3]) { corvo_boxAdd(acc, gb[0], gb[1]); corvo_boxAdd(acc, gb[2], gb[3]); }
+    } catch (e) { /* tracciato vuoto */ }
+}
+
+function corvo_addRing(acc, ring, cutName) {
+    acc.rings.push(ring);
+    if (acc.rg) acc.rg.push(acc.g || 0);                         // tracciato/tracciato composto di provenienza
+    corvo_boxAddRing(acc, ring);
+    if (cutName) { acc.cut.push(acc.rings.length - 1); acc.cutSpots[cutName] = true; }
+}
+
+/*
+ * Visita un oggetto e accumula in acc:
+ *   rings  : anelli chiusi dei tracciati visibili (gruppi con maschera: solo il tracciato di maschera)
+ *   cut    : indici in rings dei tracciati con tinta piatta di taglio
+ *   other  : rettangoli d'ingombro di oggetti non vettoriali (raster, collegati, simboli, mesh, ...)
+ *   text   : numero di cornici di testo vivo
+ *   box    : ingombro [l,t,r,b] di tutto (anche linee aperte e testo)
+ * cutOnly: il contenuto mascherato di un gruppo con maschera serve solo a trovare linee di taglio.
+ */
+function corvo_scan(it, tol, acc, cutOnly) {
+    var t = it.typename, i, k, r, pp;
+    if (t === 'PathItem') {
+        if (it.guides) return;
+        pp = corvo_pathPaint(it);
+        if (cutOnly && !pp.cut) return;
+        if (!cutOnly) corvo_boxAddPath(acc, it);
+        if (!pp.visible && !it.clipping && !pp.cut) return;      // tracciato invisibile: non e' disegno
+        acc.g = (acc.g || 0) + 1;
+        r = corvo_pathRing(it, tol);
+        if (r) corvo_addRing(acc, r, pp.cut);
+        return;
+    }
+    if (t === 'CompoundPathItem') {
+        if (it.pathItems.length === 0) return;
+        pp = corvo_pathPaint(it.pathItems[0]);                   // l'aspetto sta sul primo sottotracciato
+        if (cutOnly && !pp.cut) return;
+        var clip = false;
+        try { clip = !!it.pathItems[0].clipping; } catch (e0) { clip = false; }
+        acc.g = (acc.g || 0) + 1;                                // i sottotracciati formano UNA forma (fori pari-dispari)
+        if (!cutOnly) corvo_boxAddPath(acc, it);
+        if (!pp.visible && !clip && !pp.cut) return;
+        var sub = it.pathItems, ns = sub.length;                 // collezione letta una volta (ogni accesso DOM costa)
+        for (i = 0; i < ns; i++) {
+            r = corvo_pathRing(sub[i], tol);
+            if (r) corvo_addRing(acc, r, pp.cut);
+        }
+        return;
+    }
+    if (t === 'GroupItem') {
+        if (it.clipped && !cutOnly) {
+            var cps = corvo_clipPaths(it);
+            if (cps.length > 0) {
+                for (i = 0; i < cps.length; i++) {
+                    var cp = cps[i], subs = cp.typename === 'PathItem' ? [cp] : cp.pathItems;
+                    acc.g = (acc.g || 0) + 1;
+                    for (k = 0; k < subs.length; k++) {
+                        corvo_boxAddPath(acc, subs[k]);
+                        r = corvo_pathRing(subs[k], tol);
+                        if (r) corvo_addRing(acc, r, corvo_pathPaint(subs[k]).cut);
+                    }
+                }
+                for (i = 0; i < it.pageItems.length; i++) {
+                    var c0 = it.pageItems[i], isClip = false;
+                    if (c0.hidden) continue;
+                    for (k = 0; k < cps.length; k++) if (cps[k] === c0) isClip = true;
+                    if (!isClip) corvo_scan(c0, tol, acc, true);
+                }
+                return;
+            }
+        }
+        var kids = it.pageItems, nk = kids.length;
+        for (i = 0; i < nk; i++) {
+            var ch = kids[i];
+            if (ch.hidden) continue;
+            corvo_scan(ch, tol, acc, cutOnly);
+        }
+        return;
+    }
+    if (cutOnly) return;
+    var gb = null;
+    try { gb = it.geometricBounds; } catch (e1) { gb = null; }
+    if (t === 'TextFrame' || t === 'LegacyTextItem') {
+        acc.text++;
+        if (gb) { corvo_boxAdd(acc, gb[0], gb[1]); corvo_boxAdd(acc, gb[2], gb[3]); }
+        return;
+    }
+    // raster, collegati, simboli, mesh, grafici, plugin: si muovono col pezzo, ingombro = rettangolo
+    acc.nonVector++;
+    acc.nonVectorTypes[t] = true;
+    if (gb && gb[2] > gb[0] && gb[1] > gb[3]) {
+        var rr = corvo_rectRing(gb);
+        acc.other.push(rr);
+        corvo_boxAddRing(acc, rr);
+    }
+}
+
+/* nascosto o bloccato, direttamente o tramite un livello/gruppo antenato */
+function corvo_itemState(it) {
+    var res = { hidden: false, locked: false }, o = it, guard = 0, tn;
+    while (o && guard++ < 64) {
+        tn = '';
+        try { tn = o.typename; } catch (e) { break; }
+        if (tn === 'Document') break;
+        try {
+            if (tn === 'Layer') { if (!o.visible) res.hidden = true; if (o.locked) res.locked = true; }
+            else { if (o.hidden) res.hidden = true; if (o.locked) res.locked = true; }
+        } catch (e2) { /* proprieta' non disponibile */ }
+        try { o = o.parent; } catch (e3) { break; }
+    }
+    return res;
+}
+
+function corvo_layerName(it) {
+    var n = '';
+    try { n = String(it.layer.name); } catch (e) { n = ''; }
+    return n;
+}
+
+/* Campioni con nome di taglio che NON sono tinte piatte (quadricromia globale o semplice): il RIP/plotter non li
+   riconosce come linea di taglio e li stampa (problema n. 1 degli utenti). Solo avviso: Corvo non cambia i campioni. */
+function corvo_processCutSwatches(doc) {
+    var out = [], seen = {}, i, n;
+    try {
+        for (i = 0; i < doc.spots.length; i++) {
+            var sp = doc.spots[i];
+            n = String(sp.name);
+            if (corvo_isCutName(n) && sp.colorType !== ColorModel.SPOT && !seen[n]) { seen[n] = true; out.push(n); }
+        }
+    } catch (e) { /* nessuna tinta */ }
+    try {
+        for (i = 0; i < doc.swatches.length; i++) {
+            var sw = doc.swatches[i];
+            n = String(sw.name);
+            if (seen[n] || !corvo_isCutName(n)) continue;
+            var ct = '';
+            try { ct = sw.color.typename; } catch (e2) { ct = ''; }
+            if (ct !== 'SpotColor') { seen[n] = true; out.push(n); }
+        }
+    } catch (e3) { /* nessun campione */ }
+    return out;
+}
+
+/* true se il documento ha almeno una tinta piatta con nome di taglio (altrimenti niente da cercare) */
+function corvo_hasCutSpot(doc) {
+    try { for (var i = 0; i < doc.spots.length; i++) if (corvo_isCutName(doc.spots[i].name)) return true; } catch (e) { /* nessuna tinta */ }
+    return false;
+}
+
+/* true se it o un suo antenato e' in list (confronto per identita') */
+function corvo_underAny(it, list) {
+    var o = it, guard = 0, tn;
+    while (o && guard++ < 64) {
+        for (var k = 0; k < list.length; k++) if (list[k] === o) return true;
+        tn = '';
+        try { tn = o.typename; } catch (e) { return false; }
+        if (tn === 'Layer' || tn === 'Document') return false;
+        try { o = o.parent; } catch (e2) { return false; }
+    }
+    return false;
+}
+
+/*
+ * Linee di taglio (tinta piatta di taglio) BLOCCATE o NASCOSTE (direttamente o via livello/gruppo) che non fanno parte
+ * della selezione: Corvo non le sposta e non sblocca nulla. Il pannello decide: se toccano un pezzo -> errore chiaro
+ * (la stampa si sposterebbe senza il suo taglio); se contengono piu' pezzi (rettangolo del foglio) -> solo avviso.
+ */
+function corvo_lockedCuts(doc, raw) {
+    var out = [];
+    if (!corvo_hasCutSpot(doc)) return out;
+    var ps = doc.pathItems, n = 0;
+    try { n = ps.length; } catch (e) { n = 0; }
+    for (var i = 0; i < n && out.length < 500; i++) {
+        var p = ps[i], pp = null;
+        try { pp = corvo_pathPaint(p); } catch (e1) { pp = null; }
+        if (!pp || !pp.cut) continue;
+        var ist = corvo_itemState(p);
+        if (!ist.locked && !ist.hidden) continue;
+        var ln = corvo_layerName(p);
+        if (ln === 'Corvo') continue;
+        if (corvo_underAny(p, raw)) continue;                 // dentro un oggetto selezionato: si muove con lui
+        var gb = null;
+        try { gb = p.geometricBounds; } catch (e2) { gb = null; }
+        if (!gb) continue;
+        var nm = '';
+        try { nm = p.name || ''; } catch (e3) { nm = ''; }
+        out.push({ name: nm, spot: pp.cut, layer: ln, reason: ist.hidden ? 'hidden' : 'locked', box: [gb[0], gb[1], gb[2], gb[3]] });
+    }
+    return out;
+}
+
 /* ------------------------------------------------------------------ export */
 
+/*
+ * corvoExport({flatness}) -> un elemento per ogni oggetto di primo livello della selezione (esclusi: livello Corvo,
+ * nascosti, bloccati -> "excluded"). Il raggruppamento in pezzi (oggetti sovrapposti, forma di taglio, crocini)
+ * lo decide il pannello (client/js/cluster.js) e lo comunica con corvoGroup(); senza corvoGroup ogni elemento
+ * e' un pezzo (compatibile v0.1).
+ */
 function corvoExport(optsJson) {
     return corvo_withDocCoords(function () {
         if (app.documents.length === 0) return corvo_err('Nessun documento aperto');
@@ -250,36 +492,111 @@ function corvoExport(optsJson) {
         if (!sel || sel.length === undefined || sel.length === 0) return corvo_err('Seleziona gli oggetti da disporre');
 
         var st = corvo_state();
-        var items = [], applied = [], out = [], i;
+        var raw = [], out = [], excluded = [], i, k;
         for (i = 0; i < sel.length; i++) {
             var it = sel[i];
-            var rings = [];
-            try { corvo_collect(it, tol, rings); }
-            catch (e) { return corvo_err('Oggetto ' + (i + 1) + ' (' + (it.name || it.typename) + '): ' + e.message); }
-            if (rings.length === 0) continue;               // niente di chiuso da disporre (linee, punti)
-            var l = 1e30, t = -1e30, r = -1e30, b = 1e30;
-            for (var k = 0; k < rings.length; k++) {
-                var rg = rings[k];
-                for (var j = 0; j < rg.length; j++) {
-                    var x = rg[j][0], y = rg[j][1];
-                    if (x < l) l = x; if (x > r) r = x; if (y > t) t = y; if (y < b) b = y;
-                }
+            var lname = corvo_layerName(it);
+            if (lname === 'Corvo') continue;                     // rotolo di una sessione precedente
+            var nm = '';
+            try { nm = it.name || ''; } catch (e0) { nm = ''; }
+            var ist = corvo_itemState(it);
+            if (ist.hidden || ist.locked) {
+                excluded.push({ name: nm || it.typename, layer: lname, reason: ist.hidden ? 'hidden' : 'locked' });
+                continue;
             }
-            var idx = items.length;
-            items.push(it);
-            applied.push({ a: 0, tx: 0, ty: 0 });
-            out.push({ i: idx, name: it.name || '', type: it.typename, rings: rings, bounds: [l, t, r, b] });
+            var acc = { rings: [], rg: [], g: 0, cut: [], cutSpots: {}, other: [], text: 0, nonVector: 0, nonVectorTypes: {},
+                        box: [1e30, -1e30, -1e30, 1e30] };
+            try { corvo_scan(it, tol, acc, false); }
+            catch (e) { return corvo_err('Oggetto ' + (i + 1) + ' (' + (nm || it.typename) + '): ' + e.message); }
+            if (!(acc.box[2] >= acc.box[0]) || !(acc.box[1] >= acc.box[3])) continue;   // niente di geometrico
+            var spots = [], nv = [];
+            for (k in acc.cutSpots) if (acc.cutSpots.hasOwnProperty(k)) spots.push(k);
+            for (k in acc.nonVectorTypes) if (acc.nonVectorTypes.hasOwnProperty(k)) nv.push(k);
+            var rb = null;
+            if (acc.rings.length) {                               // bounds dei soli anelli (compatibile v0.1)
+                var l = 1e30, tt = -1e30, rr = -1e30, bb = 1e30;
+                for (var q = 0; q < acc.rings.length; q++) {
+                    var rg = acc.rings[q];
+                    for (var j = 0; j < rg.length; j++) {
+                        var x = rg[j][0], y = rg[j][1];
+                        if (x < l) l = x;
+                        if (x > rr) rr = x;
+                        if (y > tt) tt = y;
+                        if (y < bb) bb = y;
+                    }
+                }
+                rb = [l, tt, rr, bb];
+            }
+            var idx = raw.length;
+            raw.push(it);
+            var o = { i: idx, name: nm, type: it.typename, layer: lname, rings: acc.rings, bounds: rb || acc.box, box: acc.box };
+            if (acc.rings.length) o.rg = acc.rg;                  // anello -> tracciato di provenienza (area riempita)
+            if (acc.cut.length) { o.cut = acc.cut; o.cutSpots = spots; }
+            if (acc.other.length) o.other = acc.other;
+            if (acc.text) o.text = acc.text;
+            if (acc.nonVector) { o.nonVector = acc.nonVector; o.nonVectorTypes = nv; }
+            out.push(o);
         }
-        if (items.length === 0) return corvo_err('La selezione non contiene tracciati chiusi');
+        if (raw.length === 0) {
+            if (excluded.length) return corvo_json({ error: 'Gli oggetti selezionati sono nascosti o bloccati', code: 'allExcluded', n: excluded.length });
+            return corvo_err('La selezione non contiene oggetti da disporre');
+        }
 
-        st.items = items; st.applied = applied; st.doc = doc;
+        st.raw = raw;
+        st.items = []; st.applied = [];
+        for (i = 0; i < raw.length; i++) { st.items.push([raw[i]]); st.applied.push({ a: 0, tx: 0, ty: 0 }); }
+        st.doc = doc;
         st.probe = corvo_probe(doc);
+        st.steps = 0;                                            // passi di annullamento creati dalla sessione
+        st.orig = [];                                            // ingombro originale di ogni elemento (annullo unico)
+        for (i = 0; i < raw.length; i++) { var ob = null; try { ob = raw[i].geometricBounds; } catch (eo) { ob = null; } st.orig.push(ob ? [ob[0], ob[1], ob[2], ob[3]] : null); }
 
         var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect;
+        var abs = [];
+        for (i = 0; i < doc.artboards.length; i++) abs.push(doc.artboards[i].artboardRect);
         return corvo_json({
-            doc: { name: doc.name, abLeft: ab[0], abTop: ab[1], abRight: ab[2], abBottom: ab[3] },
-            items: out
+            doc: { name: doc.name, abLeft: ab[0], abTop: ab[1], abRight: ab[2], abBottom: ab[3], artboards: abs },
+            items: out,
+            excluded: excluded,
+            lockedCuts: corvo_lockedCuts(doc, raw),
+            processCuts: corvo_processCutSwatches(doc)
         });
+    });
+}
+
+/*
+ * corvoGroup(groupsJson) — [[0,3],[1],[2,4],...]: indici degli elementi di corvoExport che formano ciascun pezzo.
+ * Il pezzo k (l'indice usato poi da corvoApply) sposta tutti i suoi membri con la stessa trasformazione; ogni membro
+ * resta sul suo livello. Gli elementi non elencati (es. crocini di registro) non vengono mai toccati.
+ */
+function corvoGroup(groupsJson) {
+    return corvo_withDocCoords(function () {
+        var st = corvo_state();
+        if (!st.raw || st.raw.length === 0) return corvo_err('Nessuna sessione attiva: esegui prima corvoExport');
+        if (corvo_docGone(st)) { corvo_resetState(); return corvo_err(CORVO_DOC_CLOSED); }
+        for (var c = 0; c < st.applied.length; c++) {
+            var ap = st.applied[c];
+            if (ap.a !== 0 || ap.tx !== 0 || ap.ty !== 0) return corvo_err('corvoGroup va chiamato prima di corvoApply');
+        }
+        var groups = corvo_parse(groupsJson);
+        if (!(groups instanceof Array)) return corvo_err('groupsJson deve essere un array');
+        var items = [], applied = [], used = {}, members = 0;
+        for (var g = 0; g < groups.length; g++) {
+            var gr = groups[g], mem = [];
+            if (!(gr instanceof Array) || gr.length === 0) return corvo_err('gruppo ' + g + ' vuoto');
+            for (var k = 0; k < gr.length; k++) {
+                var ix = Number(gr[k]);
+                if (!(ix >= 0 && ix < st.raw.length) || ix !== Math.floor(ix)) return corvo_err('indice ' + gr[k] + ' fuori intervallo');
+                if (used[ix]) return corvo_err('elemento ' + ix + ' in due pezzi');
+                used[ix] = true;
+                mem.push(st.raw[ix]);
+                members++;
+            }
+            items.push(mem);
+            applied.push({ a: 0, tx: 0, ty: 0 });
+        }
+        st.items = items; st.applied = applied;
+        return corvo_json({ ok: true, pieces: items.length, members: members });
     });
 }
 
@@ -307,7 +624,9 @@ function corvo_move(st, i, aNew, txNew, tyNew) {
     var m = app.getRotationMatrix(pr.sign * da);
     if (pr.post) m = app.concatenateTranslationMatrix(m, tx, ty);
     else m = app.concatenateTranslationMatrix(m, c * tx + s * ty, -s * tx + c * ty); // pre: M·(x + R⁻¹T)
-    st.items[i].transform(m, true, true, true, true, 1, Transformation.DOCUMENTORIGIN);
+    var mem = st.items[i];                       // pezzo = uno o piu oggetti (corvoGroup), ognuno resta sul suo livello
+    if (!(mem instanceof Array)) mem = [mem];
+    for (var k = 0; k < mem.length; k++) mem[k].transform(m, true, true, true, true, 1, Transformation.DOCUMENTORIGIN);
     st.applied[i] = { a: aNew, tx: txNew, ty: tyNew };
     return true;
 }
@@ -330,6 +649,7 @@ function corvoApply(movesJson) {
                 errors.push('pezzo ' + i + ': ' + e.message);
             }
         }
+        if (moved > 0) st.steps = (st.steps || 0) + 1;
         var t1 = new Date().getTime();
         corvo_redraw();
         var t2 = new Date().getTime();
@@ -355,7 +675,7 @@ var CORVO_DOC_CLOSED = 'Il documento della sessione Corvo è stato chiuso: sessi
 function corvo_docGone(st) { return !!st.doc && !corvo_alive(st.doc); }
 
 function corvo_resetState() {
-    $.global.corvo = { items: [], applied: [], doc: null, probe: null, roll: null, label: null };
+    $.global.corvo = { items: [], raw: [], applied: [], doc: null, probe: null, roll: null, label: null };
 }
 
 function corvo_layer(doc, create) {
@@ -385,6 +705,7 @@ function corvoRoll(rollJson) {
         if (corvo_docGone(st)) { corvo_resetState(); return corvo_err(CORVO_DOC_CLOSED); }
         var doc = st.doc || app.activeDocument;
         var ly = corvo_layer(doc, true);
+        st.steps = (st.steps || 0) + 1;
 
         var rect = corvo_alive(st.roll) ? st.roll : corvo_findIn(ly, 'pathItems', 'Corvo_Roll');
         if (!rect) {
@@ -456,16 +777,75 @@ function corvoRevert() {
     });
 }
 
+/* true se ogni elemento della sessione e' di nuovo al suo ingombro originale (tolleranza 0.01 pt); max = quanti controllarne */
+function corvo_atOrigin(st, max) {
+    var n = st.raw ? st.raw.length : 0, step = 1;
+    if (max && n > max) step = Math.ceil(n / max);
+    for (var i = 0; i < n; i += step) {
+        var o = st.orig[i], b = null;
+        if (!o) continue;
+        try { b = st.raw[i].geometricBounds; } catch (e) { return false; }
+        if (!b) return false;
+        for (var k = 0; k < 4; k++) if (Math.abs(b[k] - o[k]) > 0.01) return false;
+    }
+    return true;
+}
+
+/*
+ * Annullo unico (checklist E2): la ricerca dal vivo ha lasciato st.steps passi nella cronologia (uno per ogni
+ * corvoApply/corvoRoll). Li riavvolgiamo con app.undo() finche' tutto e' al punto di partenza e il rotolo non esiste,
+ * poi rifacciamo la disposizione finale in QUESTO script = un solo Ctrl+Z per tornare all'originale.
+ * Se il riavvolgimento non torna esattamente all'origine entro st.steps passi (es. l'utente ha modificato il
+ * documento durante la sessione) si rifanno i passi annullati (app.redo) e si lascia la cronologia com'era.
+ */
+function corvo_singleUndo(st, keepRoll) {
+    var steps = st.steps || 0;
+    if (steps <= 0 || steps > 3000 || !st.raw || !st.orig) return 'skip';
+    var doc = st.doc, fin = [], rollB = null, k, i;
+    for (i = 0; i < st.applied.length; i++) fin.push(st.applied[i]);
+    if (corvo_alive(st.roll)) { try { rollB = st.roll.geometricBounds; rollB = [rollB[0], rollB[1], rollB[2], rollB[3]]; } catch (e0) { rollB = null; } }
+    var undone = 0, ok = false;
+    for (k = 0; k < steps; k++) {
+        try { app.undo(); } catch (e1) { break; }
+        undone++;
+        var ly = null;
+        try { ly = doc.layers.getByName('Corvo'); } catch (e2) { ly = null; }
+        var rollGone = !ly || !corvo_findIn(ly, 'pathItems', 'Corvo_Roll');
+        if (rollGone && corvo_atOrigin(st, 8) && corvo_atOrigin(st, 0)) { ok = true; break; }
+    }
+    if (!ok) {
+        for (k = 0; k < undone; k++) { try { app.redo(); } catch (e3) { break; } }
+        return 'restored';
+    }
+    // tutto all'origine: stato "nessuna trasformazione", poi la disposizione finale in un colpo solo
+    for (i = 0; i < st.applied.length; i++) st.applied[i] = { a: 0, tx: 0, ty: 0 };
+    st.roll = null; st.label = null;
+    for (i = 0; i < fin.length; i++) corvo_move(st, i, fin[i].a, fin[i].tx, fin[i].ty);
+    if (keepRoll && rollB) {
+        var cl = corvo_layer(doc, true), r = cl.pathItems.add();
+        r.name = 'Corvo_Roll_rif'; r.filled = false; r.stroked = true; r.strokeWidth = 0.75;
+        var col = new RGBColor(); col.red = 255; col.green = 128; col.blue = 0; r.strokeColor = col;
+        r.setEntirePath([[rollB[0], rollB[3]], [rollB[2], rollB[3]], [rollB[2], rollB[1]], [rollB[0], rollB[1]]]);
+        r.closed = true;
+    }
+    return 'single';
+}
+
 function corvoFinish(optsJson) {
     return corvo_withDocCoords(function () {
         var st = corvo_state();
         if (corvo_docGone(st)) { corvo_resetState(); return corvo_err(CORVO_DOC_CLOSED); }
         var opts = corvo_parse(optsJson);
         var keepRoll = !(opts && opts.keepRoll === false);
+        var undo = 'off';
+        if (!(opts && opts.singleUndo === false)) {
+            try { undo = corvo_singleUndo(st, keepRoll); } catch (eu) { undo = 'error: ' + eu.message; }
+            if (undo === 'single') { corvo_resetState(); corvo_redraw(); return corvo_json({ ok: true, undo: undo }); }
+        }
         corvo_removeRollAndLabel(st, !keepRoll);
         if (keepRoll && corvo_alive(st.roll)) { try { st.roll.name = 'Corvo_Roll_rif'; } catch (e) {} }
         corvo_resetState();
         corvo_redraw();
-        return corvo_json({ ok: true });
+        return corvo_json({ ok: true, undo: undo });
     });
 }

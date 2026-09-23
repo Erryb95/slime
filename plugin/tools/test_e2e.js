@@ -3,6 +3,7 @@
 //
 // uso: node plugin/tools/test_e2e.js <scenario> [secs]
 //   scenario: insegna48 | lettering | group     (default insegna48)
+//   env SEED=n fixes the engine seed (reproducible lengths); KEEP=1 leaves the document open
 // Requires: Illustrator running with the Corvo panel open (PlayerDebugMode, .debug port 8093).
 // Documents are opened from bench/suite and closed WITHOUT saving at the end.
 'use strict';
@@ -129,7 +130,8 @@ async function checkLayout(label, gapPt) {
 // ---------------------------------------------------------------- panel driving
 async function setupPanel(secs, rot) {
   await js(`(function(){ function set(id,v){ var e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); }
-    set('rollWidth','${ROLL_MM}'); set('gap','${GAP_MM}'); set('rotations','${rot}'); set('time','${secs}'); return 1; })()`);
+    set('rollWidth','${ROLL_MM}'); set('gap','${GAP_MM}'); set('rotations','${rot}'); set('time','${secs}');
+    window.CorvoSeed=${+(process.env.SEED || 0)}; return 1; })()`);   // SEED=n -> reproducible search (0 = random)
 }
 async function instrument() {
   await js(`(function(){ if (window.__corvoLog) { window.__corvoLog.length=0; return 'reset'; }
@@ -187,7 +189,9 @@ function summarizeLog(log) {
 
 // ---------------------------------------------------------------- scenarios
 async function openDoc(file) {
-  return es(`(function(){ var d=app.open(new File('${file}')); return d.name; })()`);
+  // no modal dialogs (colour profile, missing fonts...): they would block ExtendScript and pop up on the user's desktop
+  return es(`(function(){ var u=app.userInteractionLevel; app.userInteractionLevel=UserInteractionLevel.DONTDISPLAYALERTS;
+    try { var d=app.open(new File('${file}')); return d.name; } finally { app.userInteractionLevel=u; } })()`);
 }
 async function makeGroupDoc() {
   return es(`(function(){ var d=app.documents.add(DocumentColorSpace.RGB, 2000, 1500); var ly=d.layers[0];
