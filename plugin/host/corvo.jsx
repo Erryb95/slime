@@ -469,3 +469,8 @@ function corvoFinish(optsJson) {
         return corvo_json({ ok: true });
     });
 }
+
+/* ------------------------------------------------------------------ MODULO 6 */
+// Crocini di registro (host/regmarks.jsx), caricati accanto a questo file. Se $.fileName non e' disponibile
+// il pannello carica regmarks.jsx da se' (main.js, rmEnsureHost).
+try { $.evalFile(new File(new File($.fileName).parent.fsName + '/regmarks.jsx')); } catch (eRM) { /* vedi pannello */ }

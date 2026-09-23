@@ -133,3 +133,80 @@ Correzioni emerse:
   protetto quando non c'e' nessun documento.
 - Pannello: un errore dell'host durante la ricerca ferma la sessione (`failSession`) invece di ripetere l'errore ogni
   250 ms; un `corvoApply` parziale (`ok:false` + `errors`, es. pezzo bloccato) ora viene mostrato come avviso.
+
+## Modulo 6 — Crocini di registro print&cut (2026-09-24)
+
+File: `client/js/regmarks.js` (specifiche e geometria, funzioni pure, testabile in Node), `host/regmarks.jsx`
+(disegno in Illustrator), agganci nel pannello marcati `// MODULO 6` in `main.js` e `index.html`.
+`corvo.jsx` carica `regmarks.jsx` alla fine con `$.evalFile` relativo a `$.fileName`; se non ci riesce, il pannello
+lo carica prima di chiamare `corvoRegmarks` (percorso `<estensione>/host/regmarks.jsx`).
+
+### Specifiche (mm, dati in `CorvoRegmarks.SPECS`, fonte di ogni numero nel campo `src`)
+
+| Sistema | Forma | Lato/diam. | Linea | Bordo lat. | Testa / coda | Rispetto | Passo max | Livello |
+|---|---|---|---|---|---|---|---|---|
+| Graphtec ARMS | L tipo 1 (vertice verso la grafica) | 10 (5-20) | 0.5 (0.3-1.0) | 30 | 15 / 35 | 6 | 1000* | `Regmarks` |
+| Summa OPOS | quadrato pieno | 3* | – | 20 (min 10) | 10 / 40 | 3* | 500* | `Regmarks` |
+| Roland | cerchio pieno | 10 (10-12.5) | – | 10 | 20 / 50 | 5* | 1600 | `Regmarks` |
+| Mimaki FineCut | L tipo 1 "outward" | 10 (4-40) | 0.5 (0.5-1.0) | 10 | 20 / 45 | 10 (= lato) | 3000 (min 50) | `Regmarks FineCut (guida)`, non stampabile |
+
+`*` = scelta di Corvo, il manuale non da' il numero. Manuali: `bench/real/regmarks/` (CE7000 cap.5, SummaCut cap.3,
+GS2-24 p.15/160/161, Mimaki CSD200035). Colore: nero K100 (in un documento RGB: 0,0,0), tracciati pieni senza traccia
+(le L sono poligoni a 6 vertici con lo spessore della linea, non tracce).
+
+### Come il nest riserva lo spazio
+
+Sistema del rotolo in mm: x lungo il rotolo (0 = testa/lato origine), y sulla larghezza (0..W). I crocini stanno in
+due fasce laterali; ogni crocino ha un box (forma piena) e una zona di rispetto = box + `clear`.
+
+- `reserve(id, W)` prima del nest: `band = edge + out + inn + clear` (out/inn = estensione del crocino verso il bordo
+  e verso la grafica rispetto all'ancora: L → size / line/2, quadrato e cerchio → size/2), `startX = lead + out`.
+  Sparrow riceve `strip_height = (W - 2·band)` e la striscia viene posata con origine
+  `S.origin = rollOrigin + (startX, band)`; `rollOrigin = (abLeft, abBottom - 20 mm - W)`.
+  Nessun pezzo puo' quindi toccare una fascia: tutte le zone di rispetto stanno in `y < band` o `y > W - band`.
+- `layout(id, W, Lnest)` dopo il nest: ancore agli angoli in `x0 = startX` e `x1 = x0 + max(Lnest, minSpan)`,
+  `n = ceil(span / maxSpan)` segmenti → `n-1` coppie di crocini intermedi equidistanti (per i sistemi a L sono croci
+  centrate nella riga dei bracci), rotolo usato `= x1 + out + trail`. Avvisi: `rmIntermediate` (lavoro piu' lungo del
+  passo massimo), `rmFineCut` (Mimaki), `rmTooNarrow`, `rmCrossTooWide/Narrow`. Il pannello aggiunge sempre la nota
+  sul materiale (nero su bianco opaco).
+- `check(layout, pieceBoxes)` verifica distanze, margini, bordo, zone di rispetto dentro il materiale, pezzi fuori dai
+  rispetti e dentro il telaio. `toDoc(layout, rollOrigin)` produce il payload in pt per l'host.
+
+### Contratto host (`host/regmarks.jsx`)
+
+- `corvoRegmarks(payloadJson)` — `{"system","layer","printable","color":{c,m,y,k},"marks":[{"poly":[[x,y],..]} |
+  {"circle":[cx,cy,r]}],"frame":[x0,y0,x1,y1]?}` in pt documento. Rimuove i crocini non confermati precedenti (gruppo
+  `Corvo_Regmarks` su qualsiasi livello), crea il livello se manca (in cima, `printable` dal payload), disegna il gruppo
+  `Corvo_Regmarks` e, per Mimaki, il rettangolo `Corvo_FineCut_Area` (telaio dei vertici) da usare con "Crea crocini"
+  di FineCut. Ritorna `{"ok":true,"marks":n,"layer":".."}`.
+- `corvoRegmarksClear()` — toglie gruppo e rettangolo non confermati, rimuove i livelli crocini rimasti vuoti.
+- `corvoRegmarksFinish()` — Applica: rinomina in `Corvo_Regmarks_rif` / `Corvo_FineCut_Area_rif`, cosi' una
+  sessione successiva non li sostituisce.
+
+### Flusso pannello
+
+Menu "Crocini" (Nessuno, Graphtec, Summa, Roland, Mimaki; ricordato in `localStorage`). Durante la ricerca il rotolo
+arancione e' gia' quello intero (margini di testa/coda compresi). A fine ricerca (Stop o fine tempo) i crocini vengono
+disegnati come anteprima e gli avvisi compaiono nella riga di stato; Applica li ridisegna sul layout finale, li conferma
+e chiude la sessione; Annulla (o chiusura del pannello) chiama `corvoRegmarksClear()` prima di `corvoRevert()`.
+La lunghezza mostrata a fine ricerca e' quella del materiale usato (nest + margini crocini).
+
+### Test
+
+`node plugin/tools/test_regmarks.js [s per nest=2]`: per i 4 sistemi × rotoli 600x1646, 1370x3000, 300x200 mm controlla
+passo ≤ max ed equidistante, numero di crocini, margini di testa/coda e di bordo, simmetria, zone di rispetto nelle
+fasce, avvisi, payload (forme, conversione pt, rettangolo FineCut), area dei poligoni; poi nest wasm di insegna48 sulla
+striscia ridotta per ogni sistema e larghezza: intersezione poligonale (clipper) contorni originali × zone di rispetto
+= 0 e pezzi dentro il telaio. Esito 2026-09-24: 333 controlli, 0 falliti; su 600 mm insegna48 passa da 1744 mm senza
+crocini a 1882-2080 mm di nest (fasce da 25-46 mm per lato).
+
+### Limiti noti
+
+- Summa: lato del marchio e passo non sono nel manuale scaricato (3 mm / 500 mm scelti da Corvo): vanno fatti
+  combaciare con i parametri OPOS del software Summa. Manca la linea OPOS XY e il barcode.
+- Mimaki: FineCut non legge crocini disegnati da Illustrator (doc. ufficiale C36): Corvo disegna solo la guida non
+  stampabile + il rettangolo per FineCut e riserva lo spazio.
+- Roland: se VersaWorks aggiunge i propri crocini al lavoro, quelli di Corvo vanno resi non stampabili (sarebbero doppi).
+- I crocini intermedi presuppongono un software che li usi (regolazione a segmenti Graphtec, OPOS con piu' marchi);
+  Roland/Mimaki possono richiedere di dividere il lavoro in pannelli: l'avviso `rmIntermediate` lo segnala.
+- Nessuna verifica ancora su plotter reale ne' in Illustrator (fase VERIFICA del loop).

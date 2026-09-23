@@ -22,6 +22,10 @@
         <option value="free" data-i18n="rotFree">Free</option>
       </select>
     </label>
+    <!-- MODULO 6: crocini di registro print&cut (opzioni riempite da js/regmarks.js) -->
+    <label class="field"><span data-i18n="regmarks">Reg. marks</span>
+      <select id="regmarks"><option value="none" data-i18n="rmNone">None</option></select>
+    </label>
     <label class="field"><span data-i18n="time">Time</span>
       <span class="unit"><input type="number" id="time" value="30" min="2" max="3600" step="5"><i>s</i></span>
     </label>
@@ -60,6 +64,7 @@
   }
 </script>
 <script src="js/geometry.js"></script>
+<script src="js/regmarks.js"></script><!-- MODULO 6 -->
 <script src="js/main.js"></script>
 </body>
 </html>

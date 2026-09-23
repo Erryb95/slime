@@ -8,6 +8,7 @@
   'use strict';
 
   var G = window.CorvoGeometry;
+  var RM = window.CorvoRegmarks;       // MODULO 6: crocini di registro (js/regmarks.js)
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -39,7 +40,16 @@
       noLayout: 'Stopped before a first layout was found.',
       workerFallback: 'Web Worker unavailable: running in the panel thread, the panel will freeze until the end.',
       engineError: 'Nesting engine error: {msg}',
-      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}'
+      partialApply: '{n} piece(s) could not be moved (locked or deleted?): {msg}',
+      // MODULO 6
+      regmarks: 'Reg. marks', rmNone: 'None',
+      rmTooNarrow: 'Roll too narrow for the {sys} marks: {band} mm per side are reserved.',
+      rmIntermediate: 'Job {len} mm longer than {max} mm: {n} intermediate mark pair(s) added.',
+      rmCrossTooWide: 'Marks {d} mm apart across the roll: the maximum is {max} mm.',
+      rmCrossTooNarrow: 'Marks {d} mm apart across the roll: the minimum is {min} mm.',
+      rmFineCut: 'Mimaki: FineCut reads only its own marks. Select Corvo_FineCut_Area and create the marks in FineCut.',
+      rmMaterial: 'Marks: black on white matte media only (no clear, glossy or coloured media).',
+      rmError: 'Registration marks not drawn: {msg}'
     },
     it: {
       rollWidth: 'Larghezza rotolo', gap: 'Distanza', rotations: 'Rotazioni', rotNone: 'Nessuna', rotFree: 'Libera', time: 'Tempo',
@@ -65,7 +75,16 @@
       noLayout: 'Fermato prima di trovare una prima disposizione.',
       workerFallback: 'Web Worker non disponibile: il calcolo gira nel pannello, che resterà bloccato fino alla fine.',
       engineError: 'Errore del motore di nesting: {msg}',
-      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}'
+      partialApply: '{n} pezzi non si possono spostare (bloccati o cancellati?): {msg}',
+      // MODULO 6
+      regmarks: 'Crocini', rmNone: 'Nessuno',
+      rmTooNarrow: 'Rotolo troppo stretto per i crocini {sys}: servono {band} mm per lato.',
+      rmIntermediate: 'Lavoro di {len} mm oltre i {max} mm: aggiunte {n} coppie di crocini intermedi.',
+      rmCrossTooWide: 'Crocini a {d} mm sulla larghezza: il massimo è {max} mm.',
+      rmCrossTooNarrow: 'Crocini a {d} mm sulla larghezza: il minimo è {min} mm.',
+      rmFineCut: 'Mimaki: FineCut legge solo i suoi crocini. Seleziona Corvo_FineCut_Area e crea i crocini con FineCut.',
+      rmMaterial: 'Crocini: solo nero su materiale bianco opaco (niente trasparenti, lucidi o colorati).',
+      rmError: 'Crocini non disegnati: {msg}'
     }
   };
   var lang = 'en';
@@ -128,7 +147,9 @@
   }
   // fn(arg) with arg passed as a JSON string literal; calls never overlap
   function hostCall(fn, arg) {
-    var script = fn + '(' + (arg === undefined ? '' : JSON.stringify(JSON.stringify(arg))) + ')';
+    return hostScript(fn + '(' + (arg === undefined ? '' : JSON.stringify(JSON.stringify(arg))) + ')');
+  }
+  function hostScript(script) {       // MODULO 6: anche script arbitrari, stessa coda
     hostBusy++;
     var p = hostChain.then(function () { return evalHost(script); }).then(parseHost);
     hostChain = p.then(done, done);
@@ -229,7 +250,7 @@
     $('btnStop').disabled = !running;
     $('btnApply').disabled = !(running || review);
     $('btnCancel').disabled = !(running || review || st === 'preparing');
-    ['rollWidth', 'gap', 'rotations', 'time'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
+    ['rollWidth', 'gap', 'rotations', 'time', 'regmarks'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
   }
 
   function readParams() {
@@ -237,7 +258,8 @@
       rollMm: parseFloat($('rollWidth').value),
       gapMm: parseFloat($('gap').value),
       rot: $('rotations').value,
-      time: parseFloat($('time').value)
+      time: parseFloat($('time').value),
+      rm: ($('regmarks') && $('regmarks').value) || 'none'      // MODULO 6
     };
     if (!(p.rollMm > 0) || !(p.gapMm >= 0) || !(p.time >= 2)) throw new Error(t('badInput'));
     return p;
@@ -286,7 +308,7 @@
     var calls = [hostCall('corvoApply', movesFor(rep))];
     if (rep.strip_width !== S.lastRollW) {
       S.lastRollW = rep.strip_width;
-      calls.push(hostCall('corvoRoll', { ox: S.origin[0], oy: S.origin[1], w: rep.strip_width, h: S.H }));
+      calls.push(hostCall('corvoRoll', rollRect(rep)));     // MODULO 6: rotolo intero, crocini compresi
     }
     return Promise.all(calls).then(function (res) {
       S.pushing = false;
@@ -301,6 +323,52 @@
       else setError(err);
       throw err;
     });
+  }
+
+  // ---------------------------------------------------------------- MODULO 6: crocini di registro
+  function rmActive() { return !!(RM && S.rm && S.rm.id !== 'none'); }
+  function rmLayout(rep) { return RM.layout(S.rm.id, S.rm.rollMm, rep.strip_width / MM); }
+  // lunghezza del materiale usato: nest + margini dei crocini
+  function rollLengthMm(rep) { return rmActive() ? rmLayout(rep).rollLength : rep.strip_width / MM; }
+  function rollRect(rep) {
+    if (!rmActive()) return { ox: S.origin[0], oy: S.origin[1], w: rep.strip_width, h: S.H };
+    return { ox: S.rollOrigin[0], oy: S.rollOrigin[1], w: rollLengthMm(rep) * MM, h: S.rm.rollMm * MM };
+  }
+  function rmHostPath() { return baseDir.replace(/\/client$/, '') + '/host/regmarks.jsx'; }
+  // disegna i crocini del layout migliore; ritorna (promessa) il testo degli avvisi
+  function drawRegmarks() {
+    if (!rmActive() || !S.best) return Promise.resolve('');
+    var L = rmLayout(S.best), notes = [t('rmMaterial')];
+    L.warnings.forEach(function (w) {
+      var v = w.vars || {};
+      if (w.code === 'rmTooNarrow') v.sys = RM.spec(L.id).label;
+      notes.push(t(w.code, v));
+    });
+    var payload = RM.toDoc(L, S.rollOrigin);
+    var script = '(function(){if(typeof corvoRegmarks!=="function"){$.evalFile(new File(' + JSON.stringify(rmHostPath()) + '));}' +
+      'return corvoRegmarks(' + JSON.stringify(JSON.stringify(payload)) + ');})()';
+    return hostScript(script).then(function () { return notes.join(' '); },
+      function (err) { return t('rmError', { msg: String(err && err.message || err) }); });
+  }
+  // prima di corvoRevert: la sessione conosce ancora il suo documento
+  function clearRegmarks() {
+    if (!RM) return Promise.resolve();
+    return hostScript('(typeof corvoRegmarksClear==="function")?corvoRegmarksClear():"{}"')
+      .catch(function () { /* niente crocini da togliere */ });
+  }
+  function fillRegmarksSelect() {
+    var sel = $('regmarks');
+    if (!sel || !RM) return;
+    var cur = sel.value || 'none';
+    try { cur = localStorage.getItem('corvo.regmarks') || cur; } catch (e) { /* storage blocked */ }
+    sel.innerHTML = '';
+    RM.ORDER.forEach(function (id) {
+      var o = document.createElement('option');
+      o.value = id;
+      o.textContent = id === 'none' ? t('rmNone') : RM.SPECS[id].label;
+      sel.appendChild(o);
+    });
+    sel.value = RM.SPECS[cur] ? cur : 'none';
   }
 
   function liveTick() {
@@ -343,8 +411,8 @@
       return;
     }
     setState('review');
-    hostIdle().then(pushBest).then(function () {
-      setStatus(msgKey, { len: fmt(S.best.strip_width / MM, 0), fill: fmt(density(S.best) * 100, 1) }, 'ok');
+    hostIdle().then(pushBest).then(drawRegmarks).then(function (note) {   // MODULO 6: anteprima crocini
+      setStatus(msgKey, { len: fmt(rollLengthMm(S.best), 0), fill: fmt(density(S.best) * 100, 1) }, note ? 'warn' : 'ok', note);
     }, function () { /* error already shown */ });
   }
 
@@ -352,7 +420,7 @@
     stopEngine();
     var hadSession = S.session;
     setState('busy');
-    var p = hadSession ? hostIdle().then(function () { return hostCall('corvoRevert'); }) : Promise.resolve();
+    var p = hadSession ? hostIdle().then(clearRegmarks).then(function () { return hostCall('corvoRevert'); }) : Promise.resolve();
     p.catch(function () { /* keep the original error */ }).then(function () {
       S.session = false;
       setState('idle');
@@ -370,7 +438,14 @@
     setState('preparing');
     setStatus('exporting');
 
-    var H = p.rollMm * MM, gapPt = p.gapMm * MM, orient = G.rotationsFor(p.rot);
+    // MODULO 6: i crocini riservano due fasce laterali e un margine di testa -> striscia del nest ridotta
+    var rmRes = RM ? RM.reserve(p.rm, p.rollMm) : { id: 'none', nestHeight: p.rollMm, offset: [0, 0], band: 0 };
+    if (!(rmRes.nestHeight > 0)) {
+      S.state = 'idle'; setState('idle');
+      setError(t('rmTooNarrow', { sys: RM.spec(p.rm).label, band: fmt(rmRes.band, 1) }));
+      return;
+    }
+    var H = rmRes.nestHeight * MM, gapPt = p.gapMm * MM, orient = G.rotationsFor(p.rot);
     hostCall('corvoExport', { flatness: FLATNESS }).then(function (exp) {
       if (S !== me || S.state !== 'preparing') return;
       S.session = true;
@@ -382,12 +457,15 @@
       var bad = pieces.filter(function (x) { return x.error; });
       if (bad.length) throw new Error(t('badPieces', { names: bad.map(function (x) { return x.name; }).join(', ') }));
       var big = pieces.filter(function (x) { return G.minExtent(x.polygon, orient) > H - 1e-6; });
-      if (big.length) throw new Error(t('tooBig', { w: fmt(p.rollMm), names: big.map(function (x) { return x.name; }).join(', ') }));
+      if (big.length) throw new Error(t('tooBig', { w: fmt(rmRes.nestHeight), names: big.map(function (x) { return x.name; }).join(', ') }));
       var hulls = pieces.filter(function (x) { return /hull/.test(x.method) && x.parts > 1; }).length;
 
       var doc = exp.doc || {};
       S.H = H;
-      S.origin = [+doc.abLeft || 0, (+doc.abBottom || 0) - ROLL_MARGIN_MM * MM - H];
+      // MODULO 6: rollOrigin = angolo del rotolo intero; origin = angolo della striscia del nest
+      S.rm = { id: rmRes.id, rollMm: p.rollMm };
+      S.rollOrigin = [+doc.abLeft || 0, (+doc.abBottom || 0) - ROLL_MARGIN_MM * MM - p.rollMm * MM];
+      S.origin = [S.rollOrigin[0] + rmRes.offset[0] * MM, S.rollOrigin[1] + rmRes.offset[1] * MM];
       S.pieces = pieces;
       S.pieceById = {};
       pieces.forEach(function (x) { S.pieceById[x.id] = x; });
@@ -437,10 +515,14 @@
     if (S.state === 'running') { S.phase = S.phase || 'done'; stopEngine(); }
     if (S.state !== 'running' && S.state !== 'review') return;
     setState('busy');
-    hostIdle().then(pushBest).then(function () { return hostCall('corvoFinish'); }).then(function () {
+    var rmNote = '';                   // MODULO 6: crocini definitivi prima di confermare
+    hostIdle().then(pushBest).then(drawRegmarks).then(function (note) {
+      rmNote = note;
+      return rmActive() ? hostScript('(typeof corvoRegmarksFinish==="function")?corvoRegmarksFinish():"{}"') : null;   // i crocini confermati non vengono piu' sostituiti
+    }).then(function () { return hostCall('corvoFinish'); }).then(function () {
       S.session = false;
       setState('idle');
-      setStatus('applied', null, 'ok');
+      setStatus('applied', null, rmNote ? 'warn' : 'ok', rmNote);
     }, function (err) {
       setState('review');
       setError(err);
@@ -451,7 +533,7 @@
     stopEngine();
     setState('busy');
     var had = S.session;
-    var p = had ? hostIdle().then(function () { return hostCall('corvoRevert'); }) : Promise.resolve();
+    var p = had ? hostIdle().then(clearRegmarks).then(function () { return hostCall('corvoRevert'); }) : Promise.resolve();
     p.then(function () {
       S.session = false;
       setState('idle');
@@ -471,6 +553,7 @@
   function onUnload() {
     if (S.session && cs) {
       stopEngine();
+      try { cs.evalScript('if (typeof corvoRegmarksClear === "function") corvoRegmarksClear();'); } catch (e2) { /* MODULO 6 */ }
       try { cs.evalScript('corvoRevert()'); } catch (e) { /* panel is going away */ }
       S.session = false;
     }
@@ -485,10 +568,16 @@
     lang = lang === 'en' ? 'it' : 'en';
     try { localStorage.setItem('corvo.lang', lang); } catch (e) { /* storage blocked */ }
     applyLang();
+    fillRegmarksSelect();              // MODULO 6
   });
   window.addEventListener('beforeunload', onUnload);
   window.addEventListener('unload', onUnload);
 
+  // MODULO 6
+  fillRegmarksSelect();
+  if ($('regmarks')) $('regmarks').addEventListener('change', function () {
+    try { localStorage.setItem('corvo.regmarks', $('regmarks').value); } catch (e) { /* storage blocked */ }
+  });
   setState('idle');
   applyLang();
   if (!cs) setStatus('notCep', null, 'warn');
