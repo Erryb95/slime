@@ -1,0 +1,13 @@
+{
+ "open": "sel=49 container=4068x601 types=PathItem",
+ "cfg": "y-grav=true allow-turn=true allow-turn-180=false quality=1 spacing=5.67",
+ "secs": 8.058,
+ "status": "Layout applied to 48 items.",
+ "meas": {
+  "L": 2088.21049438375,
+  "H": 596.924053917034,
+  "rasters": 1
+ },
+ "key": "insegna48",
+ "density": 0.5565036818329046
+}

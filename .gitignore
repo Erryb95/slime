@@ -19,3 +19,12 @@ Cargo.lock
 
 **/.live_solution.svg
 
+
+# segreti locali
+*.key
+.env
+
+# output generati
+bench/output/
+wasm/demo/corvo*
+wasm/demo/*.json

@@ -1,0 +1,244 @@
+[
+ {
+  "key": "insegna48",
+  "desc": "Insegna: 48 sagome (lettere, frecce, stelle)",
+  "pieces": 48,
+  "types": 48,
+  "area_mm2": 697258.09714,
+  "Lmin_mm": 1162.0968285666665,
+  "container_mm": 4067.338899983333,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "lettering",
+  "desc": "Insegna con font vero (Arial Black, lettere con buchi)",
+  "pieces": 28,
+  "types": 28,
+  "area_mm2": 374301.953058,
+  "Lmin_mm": 623.83658843,
+  "container_mm": 2183.428059505,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 14
+ },
+ {
+  "key": "frecce_am",
+  "desc": "50 frecce dal file di esempio di Arrange Master",
+  "pieces": 50,
+  "types": 1,
+  "area_mm2": 176954.699575,
+  "Lmin_mm": 294.9244992916667,
+  "container_mm": 1500,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "swim",
+  "desc": "Costumi da bagno (ESICUP swim, 48 pezzi curvi)",
+  "pieces": 48,
+  "types": 10,
+  "area_mm2": 276864.6241335,
+  "Lmin_mm": 461.44104022249996,
+  "container_mm": 1615.04364077875,
+  "rots": [
+   [
+    0.0,
+    180.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "albano",
+  "desc": "Abbigliamento (ESICUP albano)",
+  "pieces": 24,
+  "types": 8,
+  "area_mm2": 639584.4051539999,
+  "Lmin_mm": 1065.9740085899998,
+  "container_mm": 3730.9090300649996,
+  "rots": [
+   [
+    0.0,
+    180.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "dagli",
+  "desc": "Abbigliamento (ESICUP dagli)",
+  "pieces": 30,
+  "types": 10,
+  "area_mm2": 303450.0,
+  "Lmin_mm": 505.75,
+  "container_mm": 1770.125,
+  "rots": [
+   [
+    0.0,
+    180.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "mao",
+  "desc": "Abbigliamento (ESICUP mao)",
+  "pieces": 20,
+  "types": 9,
+  "area_mm2": 208089.904331,
+  "Lmin_mm": 346.81650721833336,
+  "container_mm": 1500,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "marques",
+  "desc": "Abbigliamento (ESICUP marques)",
+  "pieces": 24,
+  "types": 8,
+  "area_mm2": 239445.420266,
+  "Lmin_mm": 399.07570044333335,
+  "container_mm": 1500,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "shapes1",
+  "desc": "Puzzle geometrico (ESICUP shapes1)",
+  "pieces": 43,
+  "types": 4,
+  "area_mm2": 359029.443465,
+  "Lmin_mm": 598.382405775,
+  "container_mm": 2094.3384202125003,
+  "rots": [
+   [
+    0.0,
+    180.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "jakobs1",
+  "desc": "Lamiera, pezzi rettilinei (ESICUP jakobs1)",
+  "pieces": 25,
+  "types": 25,
+  "area_mm2": 88182.758342,
+  "Lmin_mm": 146.97126390333332,
+  "container_mm": 1500,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "fu",
+  "desc": "Poligoni convessi (ESICUP fu)",
+  "pieces": 12,
+  "types": 12,
+  "area_mm2": 269946.4289735,
+  "Lmin_mm": 449.91071495583327,
+  "container_mm": 1574.6875023454165,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "blaz1",
+  "desc": "Pezzi meccanici (ESICUP blaz1)",
+  "pieces": 28,
+  "types": 7,
+  "area_mm2": 518296.325184,
+  "Lmin_mm": 863.82720864,
+  "container_mm": 3023.39523024,
+  "rots": [
+   [
+    0.0,
+    180.0
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "gardeyn9",
+  "desc": "Pezzi industriali curvi, tutti diversi (Gardeyn 9)",
+  "pieces": 47,
+  "types": 47,
+  "area_mm2": 466897.62885449996,
+  "Lmin_mm": 778.1627147574999,
+  "container_mm": 2723.5695016512495,
+  "rots": [
+   [
+    0,
+    90,
+    180,
+    270
+   ]
+  ],
+  "holes": 0
+ },
+ {
+  "key": "gardeyn1",
+  "desc": "Pezzi industriali curvi (Gardeyn 1)",
+  "pieces": 50,
+  "types": 10,
+  "area_mm2": 262806.83775,
+  "Lmin_mm": 438.01139625,
+  "container_mm": 1533.039886875,
+  "rots": [
+   [
+    0.0,
+    90.0,
+    180.0,
+    270.0
+   ]
+  ],
+  "holes": 0
+ }
+]

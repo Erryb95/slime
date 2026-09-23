@@ -118,3 +118,21 @@ Finanza ($99 una tantum, fee ~8%): 12m netto pess/base/ott = $1,3k / $6,45k / $2
 
 Verdetto: SIDE BUSINESS sì, business principale no. Kill: 3 mesi <30 trial/mese o <10 licenze; 6 mesi <40 licenze. Go: ≥8 licenze/mese al mese 6 → porting CorelDRAW + API web-to-print.
 Prima mossa: comprare Arrange Master ($39) e confrontarlo con Sparrow su 3 file reali.
+
+# AGGIORNAMENTO 2026-09-23 (sera): concorrenza Sparrow + Illustrator
+
+## Correzioni a quanto sopra
+- **Esiste già un plugin Illustrator su Sparrow**: **MXNestSpirit** (github.com/Arimx140/mxnest-spirit e github.com/MXSPIRIT/mxnestspirit), GPLv3, gratis, v4.2, 0-1 stelle. Pannello CEP (AI CC 2014+), target kit grafici motocross su rotolo vinile, officina di Montpellier. Sparrow come `bin/sparrow.exe` **solo Windows**; su Mac ripiega su un motore raster interno. Dichiara ~10% di materiale in meno con Sparrow (0,721 m vs 0,800 m). Ha fori, gruppi, bleed, crocini, scatter di loghi nello sfrido.
+- **L'autore di Sparrow ha lanciato sparrow/studio** (sparrowstudio.app, MIT, annunciato l'8/9/2026 sul forum McNeel): editor web gratuito, SVG/DXF in/out, WASM nei Web Worker. Niente pezzi nei fori, niente multi-foglio.
+- **SparrowGH** (plugin Grasshopper/Rhino, Food4Rhino + PackageManager, espone anche il multi-sheet bin packing).
+- **eCut**: Nesting Pack $59 (true shape + rettangolare), pagamento **solo in criptovalute**; versione Mac (AINesting) **congelata e non acquistabile**.
+- **AINest-Pro**: supporta solo AI 2024/2025.
+- **Arrange Master**: v1.5.0, anche su Creative Market e lava.top; true-shape solo in "Dense Packing" (motore Chromium); i layout standard sono a bounding box.
+- **Nuovo concorrente**: **Decal Mate Pro** ($19/mese, Win+Mac, AI 2023-2026, target kit grafici/decal, non dichiara se è true-shape).
+- **O2 Creative Nesting PowerScript**: $25, solo rettangoli.
+- **TruFit**: MSRP $1.995 (conferma).
+- **Adobe Exchange**: 90% allo sviluppatore, pagamenti FastSpring, ZXP (CEP) accettati. UXP per Illustrator ancora non pubblico nel 2026.
+- **Silhouette Studio Designer Edition** ha il nesting ($24,99 upgrade); Cricut Design Space no.
+
+## Conseguenza
+Il differenziale "Sparrow dentro Illustrator" NON è più unico (MXNestSpirit, gratis ma di nicchia, solo Win per Sparrow). Il differenziale di Corvo diventa: Sparrow in WASM **anche su Mac**, multi-foglio, pezzi nei fori, UX commerciale, supporto.

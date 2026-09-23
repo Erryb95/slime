@@ -1,0 +1,13 @@
+{
+ "open": "sel=51 container=1534x601 types=PathItem",
+ "cfg": "y-grav=true allow-turn=true allow-turn-180=false quality=15 spacing=5.67",
+ "secs": 75.648,
+ "status": "Layout applied to 50 items.",
+ "meas": {
+  "L": 629.742666680574,
+  "H": 597.578675047212,
+  "rasters": 1
+ },
+ "key": "gardeyn1",
+ "density": 0.6955402887957307
+}

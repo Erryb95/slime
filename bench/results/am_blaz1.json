@@ -1,0 +1,13 @@
+{
+ "open": "sel=29 container=3024x601 types=PathItem",
+ "cfg": "y-grav=true allow-turn=false allow-turn-180=true quality=15 spacing=5.67",
+ "secs": 73.548,
+ "status": "Layout applied to 28 items.",
+ "meas": {
+  "L": 1280.15200001391,
+  "H": 595.538648412544,
+  "rasters": 1
+ },
+ "key": "blaz1",
+ "density": 0.6747848760386375
+}

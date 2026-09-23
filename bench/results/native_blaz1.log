@@ -1,0 +1,1600 @@
+[INFO] [00:00:00] <main> [EPOCH]: 2026-09-23T20:09:28.5194937Z
+[WARN] [00:00:00] <main> [MAIN] overriding RNG seed: 1
+[WARN] [00:00:00] <main> [MAIN] overriding minimum item separation: 2
+[INFO] [00:00:00] <main> [MAIN] configured to explore for 48s and compress for 12s
+[INFO] [00:00:00] <main> [MAIN] using seed: 1
+[INFO] [00:00:00] <main> [MAIN] system time: 2026-09-23T20:09:28.5197542Z
+[INFO] [00:00:00] <->    [PS] simplified from 68 to 4 edges with 0.013% area difference
+[INFO] [00:00:00] <->    [PS] no simplification possible within area change constraints
+[INFO] [00:00:00] <->    [PS] simplified from 67 to 3 edges with 0.021% area difference
+[INFO] [00:00:00] <->    [PS] simplified from 72 to 8 edges with 0.001% area difference
+[INFO] [00:00:00] <->    [PS] simplified from 77 to 7 edges with 0.003% area difference
+[INFO] [00:00:00] <->    [PS] no simplification possible within area change constraints
+[INFO] [00:00:00] <->    [PS] no simplification possible within area change constraints
+[INFO] [00:00:00] <->    [PS] no simplification possible within area change constraints
+[INFO] [00:00:00] <->    [PS] simplified from 81 to 8 edges with 0.004% area difference
+[INFO] [00:00:00] <->    [PS] simplified from 68 to 6 edges with 0.001% area difference
+[INFO] [00:00:00] <->    [PS] no simplification possible within area change constraints
+[INFO] [00:00:00] <->    [PS] no simplification possible within area change constraints
+[INFO] [00:00:00] <->    [PS] simplified from 106 to 8 edges with 0.033% area difference
+[INFO] [00:00:00] <->    [PS] no simplification possible within area change constraints
+[INFO] [00:00:00] <main> [MAIN] loaded instance blaz1 with #28 items
+[INFO] [00:00:00] <main> [EXPL] starting optimization with initial width: 1229.335 (70.268%)
+[INFO] [00:00:00] <main> [SEP] separating at width: 1229.335 and loss: 0 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 0 K, evals/move: NaN, moves/s: 0, iter/s: 0, #workers: 3, total 6.2s
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1229.335 -> 1228.106
+[INFO] [00:00:00] <main> [SEP] separating at width: 1228.106 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 6.15 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 5.52 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1748 K, evals/move: 177, moves/s: 9.86 K, iter/s: 897, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1228.106, dens: 70.338%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1228.106 -> 1226.877
+[INFO] [00:00:00] <main> [SEP] separating at width: 1226.877 and loss: 14.5 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.10 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 6.65 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 5.86 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 4.86 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1808 K, evals/move: 178, moves/s: 10.1 K, iter/s: 921, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1226.877, dens: 70.409%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1226.877 -> 1225.651
+[INFO] [00:00:00] <main> [SEP] separating at width: 1225.651 and loss: 11.9 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 8.57 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 7.04 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 5.45 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 4.06 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:6] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1781 K, evals/move: 174, moves/s: 10.1 K, iter/s: 885, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1225.651, dens: 70.479%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1225.651 -> 1224.425
+[INFO] [00:00:00] <main> [SEP] separating at width: 1224.425 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.17 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 3.79 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1910 K, evals/move: 179, moves/s: 10.6 K, iter/s: 995, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1224.425, dens: 70.550%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1224.425 -> 1223.201
+[INFO] [00:00:00] <main> [SEP] separating at width: 1223.201 and loss: 14.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.94 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2089 K, evals/move: 178, moves/s: 11.7 K, iter/s: 557, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1223.201, dens: 70.620%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1223.201 -> 1221.978
+[INFO] [00:00:00] <main> [SEP] separating at width: 1221.978 and loss: 14.6 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 9.82 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 8.06 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 4.62 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 3.76 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2282 K, evals/move: 180, moves/s: 12.6 K, iter/s: 1.11 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1221.978, dens: 70.691%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1221.978 -> 1220.756
+[INFO] [00:00:00] <main> [SEP] separating at width: 1220.756 and loss: 14.5 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.98 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 4.97 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 2.96 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2088 K, evals/move: 176, moves/s: 11.8 K, iter/s: 1.07 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1220.756, dens: 70.762%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1220.756 -> 1219.535
+[INFO] [00:00:00] <main> [SEP] separating at width: 1219.535 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 11.0 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 7.78 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 4.27 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 3.84 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1587 K, evals/move: 180, moves/s: 8.80 K, iter/s: 1.40 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1219.535, dens: 70.833%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1219.535 -> 1218.315
+[INFO] [00:00:00] <main> [SEP] separating at width: 1218.315 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 9.76 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.72 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 2.04 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 713
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1908 K, evals/move: 177, moves/s: 10.7 K, iter/s: 1.12 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1218.315, dens: 70.903%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1218.315 -> 1217.097
+[INFO] [00:00:00] <main> [SEP] separating at width: 1217.097 and loss: 10.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.70 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 1.34 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.34 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:6] (*) min_l: 1.33 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2028 K, evals/move: 173, moves/s: 11.7 K, iter/s: 2.12 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1217.097, dens: 70.974%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1217.097 -> 1215.880
+[INFO] [00:00:00] <main> [SEP] separating at width: 1215.880 and loss: 10.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.35 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 5.92 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1751 K, evals/move: 179, moves/s: 9.78 K, iter/s: 1.11 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1215.880, dens: 71.045%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1215.880 -> 1214.664
+[INFO] [00:00:00] <main> [SEP] separating at width: 1214.664 and loss: 14.4 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 3.13 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1661 K, evals/move: 186, moves/s: 8.89 K, iter/s: 1.11 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1214.664, dens: 71.117%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1214.664 -> 1213.450
+[INFO] [00:00:00] <main> [SEP] separating at width: 1213.450 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 10.9 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.90 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 3.90 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 3.89 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:20] (*) min_l: 2.60 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:23] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1859 K, evals/move: 175, moves/s: 10.6 K, iter/s: 1.20 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1213.450, dens: 71.188%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1213.450 -> 1212.236
+[INFO] [00:00:00] <main> [SEP] separating at width: 1212.236 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 2.59 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1380 K, evals/move: 179, moves/s: 7.68 K, iter/s: 591, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1212.236, dens: 71.259%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1212.236 -> 1211.024
+[INFO] [00:00:00] <main> [SEP] separating at width: 1211.024 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1805 K, evals/move: 178, moves/s: 10.1 K, iter/s: 0, #workers: 3, total 6.9s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1211.024, dens: 71.330%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1211.024 -> 1209.813
+[INFO] [00:00:00] <main> [SEP] separating at width: 1209.813 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.71 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.16 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 2.07 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1744 K, evals/move: 177, moves/s: 9.82 K, iter/s: 1.22 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1209.813, dens: 71.402%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1209.813 -> 1208.603
+[INFO] [00:00:00] <main> [SEP] separating at width: 1208.603 and loss: 14.5 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.75 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.02 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1639 K, evals/move: 181, moves/s: 9.01 K, iter/s: 819, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1208.603, dens: 71.473%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1208.603 -> 1207.395
+[INFO] [00:00:00] <main> [SEP] separating at width: 1207.395 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.75 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.53 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 3.45 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.35 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:9] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2045 K, evals/move: 177, moves/s: 11.5 K, iter/s: 1.62 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1207.395, dens: 71.545%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1207.395 -> 1206.187
+[INFO] [00:00:00] <main> [SEP] separating at width: 1206.187 and loss: 14.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 6.55 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.32 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 5.31 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 4.10 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 1.77 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:6] (*) min_l: 1.36 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:10] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2028 K, evals/move: 177, moves/s: 11.4 K, iter/s: 1.58 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1206.187, dens: 71.616%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1206.187 -> 1204.981
+[INFO] [00:00:00] <main> [SEP] separating at width: 1204.981 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 6.02 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 4.58 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 2.48 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 2.04 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 2.04 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:9] (*) min_l: 2.03 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:12] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1780 K, evals/move: 178, moves/s: 9.98 K, iter/s: 1.87 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1204.981, dens: 71.688%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1204.981 -> 1203.776
+[INFO] [00:00:00] <main> [SEP] separating at width: 1203.776 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 8.54 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 8.09 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 5.24 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 5.16 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 3.33 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 2.68 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2219 K, evals/move: 177, moves/s: 12.5 K, iter/s: 1.22 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1203.776, dens: 71.760%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1203.776 -> 1202.572
+[INFO] [00:00:00] <main> [SEP] separating at width: 1202.572 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 6.48 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.97 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1772 K, evals/move: 176, moves/s: 10.0 K, iter/s: 1.34 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1202.572, dens: 71.832%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1202.572 -> 1201.370
+[INFO] [00:00:00] <main> [SEP] separating at width: 1201.370 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.73 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.45 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 2.66 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 2.34 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:13] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1674 K, evals/move: 180, moves/s: 9.26 K, iter/s: 1.74 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1201.370, dens: 71.904%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1201.370 -> 1200.168
+[INFO] [00:00:00] <main> [SEP] separating at width: 1200.168 and loss: 2.81 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 2.57 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 2.35 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 2.07 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1468 K, evals/move: 176, moves/s: 8.31 K, iter/s: 1.80 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1200.168, dens: 71.976%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1200.168 -> 1198.968
+[INFO] [00:00:00] <main> [SEP] separating at width: 1198.968 and loss: 10.6 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.71 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.12 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 2.69 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1908 K, evals/move: 178, moves/s: 10.6 K, iter/s: 1.15 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1198.968, dens: 72.048%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1198.968 -> 1197.769
+[INFO] [00:00:00] <main> [SEP] separating at width: 1197.769 and loss: 6.78 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.72 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.47 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 1.41 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.41 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:6] (*) min_l: 1.40 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:9] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1998 K, evals/move: 183, moves/s: 10.8 K, iter/s: 2.33 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1197.769, dens: 72.120%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1197.769 -> 1196.572
+[INFO] [00:00:00] <main> [SEP] separating at width: 1196.572 and loss: 6.78 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.75 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 3.55 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.41 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:10] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1963 K, evals/move: 181, moves/s: 10.8 K, iter/s: 1.90 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1196.572, dens: 72.192%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1196.572 -> 1195.375
+[INFO] [00:00:00] <main> [SEP] separating at width: 1195.375 and loss: 6.77 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.77 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.32 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 1.42 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (*) min_l: 989
+[INFO] [00:00:00] <main> [SEP] [s:0,i:9] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2126 K, evals/move: 176, moves/s: 12.0 K, iter/s: 2.16 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1195.375, dens: 72.264%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1195.375 -> 1194.180
+[INFO] [00:00:00] <main> [SEP] separating at width: 1194.180 and loss: 10.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 6.44 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 3.15 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 2.05 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:6] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1622 K, evals/move: 178, moves/s: 9.10 K, iter/s: 1.36 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1194.180, dens: 72.336%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1194.180 -> 1192.985
+[INFO] [00:00:00] <main> [SEP] separating at width: 1192.985 and loss: 10.9 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.12 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.41 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 1.49 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.43 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:10] (*) min_l: 1.02 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:11] (*) min_l: 1.00 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:16] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2073 K, evals/move: 178, moves/s: 11.5 K, iter/s: 2.57 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1192.985, dens: 72.409%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1192.985 -> 1191.792
+[INFO] [00:00:00] <main> [SEP] separating at width: 1191.792 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 8.93 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 7.38 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 2.73 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.42 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:11] (*) min_l: 1.08 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:12] (*) min_l: 1.02 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:15] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2163 K, evals/move: 180, moves/s: 11.9 K, iter/s: 2.11 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1191.792, dens: 72.481%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1191.792 -> 1190.601
+[INFO] [00:00:00] <main> [SEP] separating at width: 1190.601 and loss: 14.9 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 9.00 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 8.16 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 6.14 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 5.82 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 5.71 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:6] (*) min_l: 3.02 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (*) min_l: 2.94 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:9] (*) min_l: 2.91 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:11] (*) min_l: 2.68 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:14] (*) min_l: 1.71 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:19] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2088 K, evals/move: 180, moves/s: 11.6 K, iter/s: 1.68 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1190.601, dens: 72.554%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1190.601 -> 1189.410
+[INFO] [00:00:00] <main> [SEP] separating at width: 1189.410 and loss: 10.9 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.28 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.05 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 1.70 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.30 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 1.30 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:15] (*) min_l: 1.29 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:17] (*) min_l: 1.28 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:31] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1884 K, evals/move: 176, moves/s: 10.6 K, iter/s: 2.46 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1189.410, dens: 72.627%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1189.410 -> 1188.221
+[INFO] [00:00:00] <main> [SEP] separating at width: 1188.221 and loss: 14.8 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 9.79 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 6.78 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 3.04 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 2.79 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 2.69 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (*) min_l: 1.71 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:12] (*) min_l: 1.68 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:15] (*) min_l: 1.63 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:47] (*) min_l: 1.54 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:48] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1877 K, evals/move: 179, moves/s: 10.4 K, iter/s: 1.87 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1188.221, dens: 72.699%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1188.221 -> 1187.032
+[INFO] [00:00:00] <main> [SEP] separating at width: 1187.032 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 9.25 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 8.40 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 3.05 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 2.86 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 2.86 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:13] (*) min_l: 1.82 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:14] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2146 K, evals/move: 178, moves/s: 12.0 K, iter/s: 1.57 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1187.032, dens: 72.772%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1187.032 -> 1185.845
+[INFO] [00:00:00] <main> [SEP] separating at width: 1185.845 and loss: 10.7 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.35 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.94 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 3.06 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (*) min_l: 3.05 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:11] (*) min_l: 2.69 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:22] (*) min_l: 1.53 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:23] (*) min_l: 1.24 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:24] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2134 K, evals/move: 180, moves/s: 11.8 K, iter/s: 1.58 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1185.845, dens: 72.845%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1185.845 -> 1184.660
+[INFO] [00:00:00] <main> [SEP] separating at width: 1184.660 and loss: 14.6 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 9.88 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 7.25 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 4.51 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 3.21 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 2.97 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:11] (*) min_l: 2.88 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:12] (*) min_l: 1.87 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:92] (*) min_l: 1.83 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:97] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2013 K, evals/move: 178, moves/s: 11.2 K, iter/s: 1.06 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1184.660, dens: 72.918%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1184.660 -> 1183.475
+[INFO] [00:00:00] <main> [SEP] separating at width: 1183.475 and loss: 8.09 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 1.97 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1863 K, evals/move: 180, moves/s: 10.3 K, iter/s: 1.96 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1183.475, dens: 72.991%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1183.475 -> 1182.292
+[INFO] [00:00:00] <main> [SEP] separating at width: 1182.292 and loss: 6.81 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 3.86 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1612 K, evals/move: 175, moves/s: 9.16 K, iter/s: 1.71 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1182.292, dens: 73.064%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1182.292 -> 1181.109
+[INFO] [00:00:00] <main> [SEP] separating at width: 1181.109 and loss: 6.77 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 2.05 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1913 K, evals/move: 175, moves/s: 10.9 K, iter/s: 1.98 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1181.109, dens: 73.137%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1181.109 -> 1179.928
+[INFO] [00:00:00] <main> [SEP] separating at width: 1179.928 and loss: 6.81 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1679 K, evals/move: 178, moves/s: 9.41 K, iter/s: 0, #workers: 3, total 5.3s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1179.928, dens: 73.210%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1179.928 -> 1178.748
+[INFO] [00:00:00] <main> [SEP] separating at width: 1178.748 and loss: 4.01 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 3.70 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 2.07 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1663 K, evals/move: 173, moves/s: 9.61 K, iter/s: 1.92 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1178.748, dens: 73.283%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1178.748 -> 1177.569
+[INFO] [00:00:00] <main> [SEP] separating at width: 1177.569 and loss: 6.75 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 3.75 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1723 K, evals/move: 180, moves/s: 9.56 K, iter/s: 1.19 K, #workers: 3, total 8.3s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1177.569, dens: 73.357%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1177.569 -> 1176.392
+[INFO] [00:00:00] <main> [SEP] separating at width: 1176.392 and loss: 6.81 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1411 K, evals/move: 172, moves/s: 8.16 K, iter/s: 0, #workers: 3, total 8.5s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1176.392, dens: 73.430%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1176.392 -> 1175.215
+[INFO] [00:00:00] <main> [SEP] separating at width: 1175.215 and loss: 10.5 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 3.64 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 1.80 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1945 K, evals/move: 180, moves/s: 10.8 K, iter/s: 2.40 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1175.215, dens: 73.504%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1175.215 -> 1174.040
+[INFO] [00:00:00] <main> [SEP] separating at width: 1174.040 and loss: 8.04 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2136 K, evals/move: 177, moves/s: 12.0 K, iter/s: 0, #workers: 3, total 9.1s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1174.040, dens: 73.577%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1174.040 -> 1172.866
+[INFO] [00:00:00] <main> [SEP] separating at width: 1172.866 and loss: 10.6 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.60 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 3.86 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 1.94 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.33 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:19] (*) min_l: 968
+[INFO] [00:00:00] <main> [SEP] [s:0,i:20] (*) min_l: 968
+[INFO] [00:00:00] <main> [SEP] [s:0,i:22] (*) min_l: 709
+[INFO] [00:00:00] <main> [SEP] [s:0,i:24] (*) min_l: 701
+[INFO] [00:00:00] <main> [SEP] [s:0,i:137] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1892 K, evals/move: 178, moves/s: 10.5 K, iter/s: 1.36 K, #workers: 3, total 0.1s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1172.866, dens: 73.651%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1172.866 -> 1171.693
+[INFO] [00:00:00] <main> [SEP] separating at width: 1171.693 and loss: 11.3 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 10.0 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 7.04 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 4.51 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 4.01 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 3.05 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:8] (*) min_l: 2.79 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:10] (*) min_l: 2.64 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:11] (*) min_l: 1.78 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:12] (*) min_l: 1.33 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:13] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1810 K, evals/move: 177, moves/s: 10.1 K, iter/s: 1.48 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1171.693, dens: 73.725%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1171.693 -> 1170.522
+[INFO] [00:00:00] <main> [SEP] separating at width: 1170.522 and loss: 7.77 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 2.62 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 1.79 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 1.33 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1923 K, evals/move: 177, moves/s: 10.8 K, iter/s: 2.16 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1170.522, dens: 73.798%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1170.522 -> 1169.351
+[INFO] [00:00:00] <main> [SEP] separating at width: 1169.351 and loss: 7.83 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 6.47 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.92 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 2.35 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 1.46 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 1.42 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:7] (*) min_l: 1.37 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:22] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1769 K, evals/move: 180, moves/s: 9.82 K, iter/s: 1.80 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1169.351, dens: 73.872%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1169.351 -> 1168.182
+[INFO] [00:00:00] <main> [SEP] separating at width: 1168.182 and loss: 11.3 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 8.19 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 7.06 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 6.46 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 3.36 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:13] (*) min_l: 2.31 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:14] (*) min_l: 1.75 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:15] (*) min_l: 1.37 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:16] (*) min_l: 1.33 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:44] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1775 K, evals/move: 178, moves/s: 9.94 K, iter/s: 1.82 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1168.182, dens: 73.946%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1168.182 -> 1167.014
+[INFO] [00:00:00] <main> [SEP] separating at width: 1167.014 and loss: 11.2 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 7.89 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.79 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 3.28 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:5] (*) min_l: 1.44 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:19] (*) min_l: 1.35 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:36] (*) min_l: 874
+[INFO] [00:00:00] <main> [SEP] [s:0,i:37] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 1862 K, evals/move: 179, moves/s: 10.3 K, iter/s: 1.90 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1167.014, dens: 74.020%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1167.014 -> 1165.847
+[INFO] [00:00:00] <main> [SEP] separating at width: 1165.847 and loss: 11.3 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.84 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.07 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:2] (*) min_l: 2.71 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:3] (*) min_l: 2.54 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:4] (*) min_l: 2.08 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:10] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2027 K, evals/move: 179, moves/s: 11.2 K, iter/s: 1.54 K, #workers: 3, total 0.0s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1165.847, dens: 74.094%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1165.847 -> 1164.681
+[INFO] [00:00:00] <main> [SEP] separating at width: 1164.681 and loss: 11.2 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 5.82 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:1] (*) min_l: 5.26 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:23] (*) min_l: 4.13 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:30] (*) min_l: 3.61 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:31] (*) min_l: 2.64 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:35] (*) min_l: 2.23 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:156] (*) min_l: 2.17 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:157] (*) min_l: 2.15 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:158] (*) min_l: 2.11 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:195] (*) min_l: 1.93 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:197] (*) min_l: 1.92 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:252] (*) min_l: 1.85 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:437] (*) min_l: 1.37 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:438] (*) min_l: 1.36 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:442] (*) min_l: 1.32 K
+[INFO] [00:00:00] <main> [SEP] [s:0,i:540] (S)  min_l: 0
+[INFO] [00:00:00] <main> [SEP] finished, evals/s: 2034 K, evals/move: 178, moves/s: 11.3 K, iter/s: 1.43 K, #workers: 3, total 0.3s
+[INFO] [00:00:00] <main> [EXPL] feasible solution found! (width: 1164.681, dens: 74.169%)
+[INFO] [00:00:00] <main> [EXPL] shrinking strip by 0.1%: 1164.681 -> 1163.516
+[INFO] [00:00:00] <main> [SEP] separating at width: 1163.516 and loss: 14.4 K 
+[INFO] [00:00:00] <main> [SEP] [s:0,i:0] (*) min_l: 10.7 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 7.08 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 6.33 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:8] (*) min_l: 4.68 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:10] (*) min_l: 4.66 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:11] (*) min_l: 3.24 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:12] (*) min_l: 1.96 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:17] (*) min_l: 1.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:18] (*) min_l: 1.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:20] (*) min_l: 1.40 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:37] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1675 K, evals/move: 179, moves/s: 9.31 K, iter/s: 1.80 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1163.516, dens: 74.243%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1163.516 -> 1162.353
+[INFO] [00:00:01] <main> [SEP] separating at width: 1162.353 and loss: 11.5 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 4.88 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 3.89 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:5] (*) min_l: 3.16 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 3.12 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:12] (*) min_l: 1.96 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:14] (*) min_l: 1.96 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:20] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1717 K, evals/move: 180, moves/s: 9.52 K, iter/s: 1.45 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1162.353, dens: 74.317%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1162.353 -> 1161.190
+[INFO] [00:00:01] <main> [SEP] separating at width: 1161.190 and loss: 11.6 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 8.52 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 1.93 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 1.40 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 1.40 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:92] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1639 K, evals/move: 178, moves/s: 9.16 K, iter/s: 1.16 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1161.190, dens: 74.392%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1161.190 -> 1160.029
+[INFO] [00:00:01] <main> [SEP] separating at width: 1160.029 and loss: 11.6 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 7.11 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 5.83 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 4.19 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 1.40 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (*) min_l: 1.22 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 1.20 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:48] (*) min_l: 1.20 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:58] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 957 K, evals/move: 179, moves/s: 5.34 K, iter/s: 1.04 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1160.029, dens: 74.466%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1160.029 -> 1158.869
+[INFO] [00:00:01] <main> [SEP] separating at width: 1158.869 and loss: 11.8 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 7.70 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 5.51 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 4.72 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 2.97 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:45] (*) min_l: 2.67 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:53] (*) min_l: 2.66 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:70] (*) min_l: 2.36 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:71] (*) min_l: 1.45 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:72] (*) min_l: 1.34 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:82] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 909 K, evals/move: 178, moves/s: 5.09 K, iter/s: 659, #workers: 3, total 0.1s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1158.869, dens: 74.541%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1158.869 -> 1157.710
+[INFO] [00:00:01] <main> [SEP] separating at width: 1157.710 and loss: 14.3 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 5.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 4.07 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 2.05 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:13] (*) min_l: 2.04 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:17] (*) min_l: 2.00 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:18] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1118 K, evals/move: 179, moves/s: 6.23 K, iter/s: 1.32 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1157.710, dens: 74.615%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1157.710 -> 1156.553
+[INFO] [00:00:01] <main> [SEP] separating at width: 1156.553 and loss: 14.1 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 7.16 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 6.24 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:9] (*) min_l: 5.47 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:10] (*) min_l: 3.82 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:11] (*) min_l: 3.78 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:13] (*) min_l: 2.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:14] (*) min_l: 2.40 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:18] (*) min_l: 1.95 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:42] (*) min_l: 1.94 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:54] (*) min_l: 1.38 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:55] (*) min_l: 1.22 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:57] (*) min_l: 1.19 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:106] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1462 K, evals/move: 178, moves/s: 8.19 K, iter/s: 1.52 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1156.553, dens: 74.690%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1156.553 -> 1155.396
+[INFO] [00:00:01] <main> [SEP] separating at width: 1155.396 and loss: 14.3 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 8.51 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 6.24 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 5.61 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 4.52 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 4.21 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:8] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1524 K, evals/move: 177, moves/s: 8.58 K, iter/s: 1.02 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1155.396, dens: 74.765%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1155.396 -> 1154.241
+[INFO] [00:00:01] <main> [SEP] separating at width: 1154.241 and loss: 7.76 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 6.76 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 6.71 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 6.59 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:7] (*) min_l: 3.65 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:8] (*) min_l: 3.12 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:11] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1211 K, evals/move: 177, moves/s: 6.84 K, iter/s: 1.07 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1154.241, dens: 74.839%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1154.241 -> 1153.087
+[INFO] [00:00:01] <main> [SEP] separating at width: 1153.087 and loss: 14.3 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 7.49 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 3.97 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 3.81 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (*) min_l: 3.73 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:5] (*) min_l: 2.83 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 1.44 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:7] (*) min_l: 1.44 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:8] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1383 K, evals/move: 179, moves/s: 7.70 K, iter/s: 1.36 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1153.087, dens: 74.914%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1153.087 -> 1151.934
+[INFO] [00:00:01] <main> [SEP] separating at width: 1151.934 and loss: 7.73 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 6.68 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 3.74 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 2.80 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 1.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1731 K, evals/move: 178, moves/s: 9.71 K, iter/s: 1.38 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1151.934, dens: 74.989%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1151.934 -> 1150.782
+[INFO] [00:00:01] <main> [SEP] separating at width: 1150.782 and loss: 11.3 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 6.75 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 3.40 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1331 K, evals/move: 183, moves/s: 7.26 K, iter/s: 691, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1150.782, dens: 75.064%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1150.782 -> 1149.631
+[INFO] [00:00:01] <main> [SEP] separating at width: 1149.631 and loss: 7.66 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 3.69 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 2.77 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 1.39 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 1.28 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 1.17 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:247] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1699 K, evals/move: 178, moves/s: 9.50 K, iter/s: 1.02 K, #workers: 3, total 0.2s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1149.631, dens: 75.140%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1149.631 -> 1148.481
+[INFO] [00:00:01] <main> [SEP] separating at width: 1148.481 and loss: 14.2 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 9.97 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 8.26 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 7.96 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 5.63 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 4.81 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:7] (*) min_l: 3.22 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:17] (*) min_l: 3.11 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:39] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1717 K, evals/move: 178, moves/s: 9.59 K, iter/s: 1.18 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1148.481, dens: 75.215%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1148.481 -> 1147.333
+[INFO] [00:00:01] <main> [SEP] separating at width: 1147.333 and loss: 14.0 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 6.97 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 6.78 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (*) min_l: 4.22 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 3.89 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:8] (*) min_l: 3.89 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:31] (*) min_l: 3.75 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:32] (*) min_l: 2.86 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:33] (*) min_l: 1.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:34] (*) min_l: 1.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:40] (*) min_l: 1.34 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:59] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1768 K, evals/move: 179, moves/s: 9.88 K, iter/s: 1.59 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1147.333, dens: 75.290%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1147.333 -> 1146.185
+[INFO] [00:00:01] <main> [SEP] separating at width: 1146.185 and loss: 14.3 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 5.99 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 4.22 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 4.14 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (*) min_l: 2.86 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:5] (*) min_l: 1.57 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:6] (*) min_l: 1.34 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:10] (*) min_l: 1.34 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:127] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1900 K, evals/move: 179, moves/s: 10.5 K, iter/s: 2.13 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1146.185, dens: 75.365%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1146.185 -> 1145.039
+[INFO] [00:00:01] <main> [SEP] separating at width: 1145.039 and loss: 10.3 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 5.79 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 3.78 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 2.81 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 1.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:7] (*) min_l: 1.29 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:10] (*) min_l: 1.21 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:43] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 2004 K, evals/move: 180, moves/s: 11.1 K, iter/s: 2.75 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1145.039, dens: 75.441%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1145.039 -> 1143.894
+[INFO] [00:00:01] <main> [SEP] separating at width: 1143.894 and loss: 14.2 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 4.89 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 3.71 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 2.83 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 1.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (*) min_l: 1.25 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:7] (*) min_l: 1.21 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:159] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 2046 K, evals/move: 179, moves/s: 11.4 K, iter/s: 2.73 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1143.894, dens: 75.516%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1143.894 -> 1142.750
+[INFO] [00:00:01] <main> [SEP] separating at width: 1142.750 and loss: 14.6 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 6.43 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 3.41 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:8] (*) min_l: 1.64 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:10] (*) min_l: 1.64 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:12] (*) min_l: 1.42 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:14] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 2122 K, evals/move: 177, moves/s: 11.9 K, iter/s: 1.59 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1142.750, dens: 75.592%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1142.750 -> 1141.608
+[INFO] [00:00:01] <main> [SEP] separating at width: 1141.608 and loss: 10.6 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 9.20 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 8.20 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 2.04 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1956 K, evals/move: 175, moves/s: 11.1 K, iter/s: 836, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1141.608, dens: 75.668%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1141.608 -> 1140.466
+[INFO] [00:00:01] <main> [SEP] separating at width: 1140.466 and loss: 10.6 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 9.21 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 8.20 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 2055 K, evals/move: 179, moves/s: 11.4 K, iter/s: 588, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1140.466, dens: 75.743%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1140.466 -> 1139.326
+[INFO] [00:00:01] <main> [SEP] separating at width: 1139.326 and loss: 10.6 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 9.22 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 8.19 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:3] (*) min_l: 4.73 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (*) min_l: 2.65 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:5] (*) min_l: 1.37 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:14] (*) min_l: 1.32 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:23] (*) min_l: 1.29 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:95] (S)  min_l: 0
+[INFO] [00:00:01] <main> [SEP] finished, evals/s: 1877 K, evals/move: 177, moves/s: 10.5 K, iter/s: 1.51 K, #workers: 3, total 0.0s
+[INFO] [00:00:01] <main> [EXPL] feasible solution found! (width: 1139.326, dens: 75.819%)
+[INFO] [00:00:01] <main> [EXPL] shrinking strip by 0.1%: 1139.326 -> 1138.186
+[INFO] [00:00:01] <main> [SEP] separating at width: 1138.186 and loss: 10.6 K 
+[INFO] [00:00:01] <main> [SEP] [s:0,i:0] (*) min_l: 7.46 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:1] (*) min_l: 5.34 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:2] (*) min_l: 4.18 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:4] (*) min_l: 3.73 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:7] (*) min_l: 1.34 K
+[INFO] [00:00:01] <main> [SEP] [s:0,i:32] (*) min_l: 1.34 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:79] (S)  min_l: 0
+[INFO] [00:00:02] <main> [SEP] finished, evals/s: 1929 K, evals/move: 179, moves/s: 10.7 K, iter/s: 2.25 K, #workers: 3, total 0.0s
+[INFO] [00:00:02] <main> [EXPL] feasible solution found! (width: 1138.186, dens: 75.895%)
+[INFO] [00:00:02] <main> [EXPL] shrinking strip by 0.1%: 1138.186 -> 1137.048
+[INFO] [00:00:02] <main> [SEP] separating at width: 1137.048 and loss: 14.3 K 
+[INFO] [00:00:02] <main> [SEP] [s:0,i:0] (*) min_l: 9.96 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:1] (*) min_l: 5.78 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:2] (*) min_l: 3.27 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:3] (*) min_l: 1.41 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:5] (*) min_l: 1.41 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:205] (*) min_l: 1.41 K
+[INFO] [00:00:02] <main> [SEP] [s:2,i:606] (*) min_l: 1.40 K
+[INFO] [00:00:02] <main> [SEP] [s:2,i:625] (*) min_l: 1.40 K
+[INFO] [00:00:02] <main> [SEP] [s:2,i:632] (*) min_l: 1.39 K
+[INFO] [00:00:02] <main> [SEP] finished, evals/s: 2045 K, evals/move: 178, moves/s: 11.4 K, iter/s: 943, #workers: 3, total 0.8s
+[INFO] [00:00:02] <main> [EXPL] unable to reach feasibility (width: 1137.048, dens: 75.971%, min loss: 1.39 K)
+[INFO] [00:00:02] <main> [EXPL] starting solution 0/1 selected from solution pool (l: 1.39 K) to disrupt
+[INFO] [00:00:02] <main> [EXPL] disrupting by swapping two large items (id: 4 <-> 1)
+[INFO] [00:00:02] <main> [SEP] separating at width: 1137.048 and loss: 44.2 K 
+[INFO] [00:00:02] <main> [SEP] [s:0,i:0] (*) min_l: 24.3 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:2] (*) min_l: 24.0 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:3] (*) min_l: 20.6 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:46] (*) min_l: 19.5 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:47] (*) min_l: 18.3 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:50] (*) min_l: 17.9 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:51] (*) min_l: 9.87 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:61] (*) min_l: 9.35 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:78] (*) min_l: 7.36 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:80] (*) min_l: 6.20 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:81] (*) min_l: 5.78 K
+[INFO] [00:00:02] <main> [SEP] [s:0,i:89] (*) min_l: 5.76 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:212] (*) min_l: 4.84 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:218] (*) min_l: 2.95 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:220] (*) min_l: 2.95 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:225] (*) min_l: 2.95 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:265] (*) min_l: 2.95 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:298] (*) min_l: 2.91 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:300] (*) min_l: 2.89 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:309] (*) min_l: 2.89 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:327] (*) min_l: 2.49 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:335] (*) min_l: 2.17 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:352] (*) min_l: 2.11 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:381] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1406 K, evals/move: 180, moves/s: 7.80 K, iter/s: 834, #workers: 3, total 0.4s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1137.048, dens: 75.971%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1137.048 -> 1135.911
+[INFO] [00:00:03] <main> [SEP] separating at width: 1135.911 and loss: 5.47 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 4.45 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 3.56 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (*) min_l: 3.08 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:7] (*) min_l: 1.74 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:11] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1359 K, evals/move: 181, moves/s: 7.47 K, iter/s: 1.61 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1135.911, dens: 76.047%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1135.911 -> 1134.775
+[INFO] [00:00:03] <main> [SEP] separating at width: 1134.775 and loss: 9.36 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.60 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (*) min_l: 1.00 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:6] (*) min_l: 978
+[INFO] [00:00:03] <main> [SEP] [s:0,i:8] (*) min_l: 975
+[INFO] [00:00:03] <main> [SEP] [s:0,i:12] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1535 K, evals/move: 178, moves/s: 8.57 K, iter/s: 1.68 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1134.775, dens: 76.123%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1134.775 -> 1133.640
+[INFO] [00:00:03] <main> [SEP] separating at width: 1133.640 and loss: 9.40 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 4.55 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 957
+[INFO] [00:00:03] <main> [SEP] [s:0,i:19] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1582 K, evals/move: 181, moves/s: 8.70 K, iter/s: 1.92 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1133.640, dens: 76.199%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1133.640 -> 1132.507
+[INFO] [00:00:03] <main> [SEP] separating at width: 1132.507 and loss: 5.57 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.61 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 3.05 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:2] (*) min_l: 2.63 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (*) min_l: 2.46 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:8] (*) min_l: 1.08 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:209] (*) min_l: 1.08 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:216] (*) min_l: 1.02 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:219] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1499 K, evals/move: 178, moves/s: 8.40 K, iter/s: 747, #workers: 3, total 0.2s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1132.507, dens: 76.276%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1132.507 -> 1131.374
+[INFO] [00:00:03] <main> [SEP] separating at width: 1131.374 and loss: 9.31 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 4.57 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 1.97 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (*) min_l: 1.94 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:5] (*) min_l: 1.03 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:8] (*) min_l: 1.03 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:26] (*) min_l: 1.02 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:82] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1446 K, evals/move: 181, moves/s: 7.97 K, iter/s: 1.52 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1131.374, dens: 76.352%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1131.374 -> 1130.243
+[INFO] [00:00:03] <main> [SEP] separating at width: 1130.243 and loss: 12.0 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1752 K, evals/move: 173, moves/s: 10.0 K, iter/s: 0, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1130.243, dens: 76.428%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1130.243 -> 1129.113
+[INFO] [00:00:03] <main> [SEP] separating at width: 1129.113 and loss: 3.63 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.60 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1211 K, evals/move: 179, moves/s: 6.75 K, iter/s: 1.22 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1129.113, dens: 76.505%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1129.113 -> 1127.984
+[INFO] [00:00:03] <main> [SEP] separating at width: 1127.984 and loss: 3.71 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.63 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 2.83 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:2] (*) min_l: 1.98 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1247 K, evals/move: 176, moves/s: 7.06 K, iter/s: 1.34 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1127.984, dens: 76.582%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1127.984 -> 1126.856
+[INFO] [00:00:03] <main> [SEP] separating at width: 1126.856 and loss: 6.44 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.66 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 2.94 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:2] (*) min_l: 1.41 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1301 K, evals/move: 182, moves/s: 7.11 K, iter/s: 1.42 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1126.856, dens: 76.658%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1126.856 -> 1125.729
+[INFO] [00:00:03] <main> [SEP] separating at width: 1125.729 and loss: 6.44 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.71 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (*) min_l: 3.02 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:5] (*) min_l: 1.51 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:6] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1347 K, evals/move: 179, moves/s: 7.51 K, iter/s: 1.61 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1125.729, dens: 76.735%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1125.729 -> 1124.603
+[INFO] [00:00:03] <main> [SEP] separating at width: 1124.603 and loss: 10.2 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.65 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 2.88 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:2] (*) min_l: 1.47 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:3] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1676 K, evals/move: 176, moves/s: 9.48 K, iter/s: 1.13 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1124.603, dens: 76.812%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1124.603 -> 1123.478
+[INFO] [00:00:03] <main> [SEP] separating at width: 1123.478 and loss: 10.3 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.68 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:3] (*) min_l: 2.20 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (S)  min_l: 0
+[INFO] [00:00:03] <main> [SEP] finished, evals/s: 1434 K, evals/move: 181, moves/s: 7.92 K, iter/s: 1.21 K, #workers: 3, total 0.0s
+[INFO] [00:00:03] <main> [EXPL] feasible solution found! (width: 1123.478, dens: 76.889%)
+[INFO] [00:00:03] <main> [EXPL] shrinking strip by 0.1%: 1123.478 -> 1122.355
+[INFO] [00:00:03] <main> [SEP] separating at width: 1122.355 and loss: 10.1 K 
+[INFO] [00:00:03] <main> [SEP] [s:0,i:0] (*) min_l: 3.79 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:1] (*) min_l: 3.79 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:4] (*) min_l: 3.78 K
+[INFO] [00:00:03] <main> [SEP] [s:0,i:6] (*) min_l: 2.24 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:208] (*) min_l: 2.24 K
+[INFO] [00:00:04] <main> [SEP] [s:1,i:408] (*) min_l: 2.23 K
+[INFO] [00:00:04] <main> [SEP] [s:1,i:411] (*) min_l: 2.20 K
+[INFO] [00:00:04] <main> [SEP] [s:1,i:515] (S)  min_l: 0
+[INFO] [00:00:04] <main> [SEP] finished, evals/s: 1592 K, evals/move: 178, moves/s: 8.90 K, iter/s: 739, #workers: 3, total 0.6s
+[INFO] [00:00:04] <main> [EXPL] feasible solution found! (width: 1122.355, dens: 76.966%)
+[INFO] [00:00:04] <main> [EXPL] shrinking strip by 0.1%: 1122.355 -> 1121.233
+[INFO] [00:00:04] <main> [SEP] separating at width: 1121.233 and loss: 6.37 K 
+[INFO] [00:00:04] <main> [SEP] [s:0,i:0] (*) min_l: 2.04 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:1] (*) min_l: 1.92 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:4] (*) min_l: 1.90 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:9] (*) min_l: 1.66 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:10] (*) min_l: 1.49 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:33] (*) min_l: 1.48 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:66] (S)  min_l: 0
+[INFO] [00:00:04] <main> [SEP] finished, evals/s: 1467 K, evals/move: 179, moves/s: 8.15 K, iter/s: 2.10 K, #workers: 3, total 0.0s
+[INFO] [00:00:04] <main> [EXPL] feasible solution found! (width: 1121.233, dens: 77.043%)
+[INFO] [00:00:04] <main> [EXPL] shrinking strip by 0.1%: 1121.233 -> 1120.111
+[INFO] [00:00:04] <main> [SEP] separating at width: 1120.111 and loss: 6.34 K 
+[INFO] [00:00:04] <main> [SEP] [s:0,i:0] (*) min_l: 5.66 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:4] (*) min_l: 4.61 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:10] (*) min_l: 3.69 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:37] (*) min_l: 3.65 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:212] (*) min_l: 3.65 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:214] (*) min_l: 2.25 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:216] (*) min_l: 2.25 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:229] (*) min_l: 1.98 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:230] (*) min_l: 1.92 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:231] (*) min_l: 1.89 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:236] (S)  min_l: 0
+[INFO] [00:00:04] <main> [SEP] finished, evals/s: 1607 K, evals/move: 180, moves/s: 8.92 K, iter/s: 687, #workers: 3, total 0.3s
+[INFO] [00:00:04] <main> [EXPL] feasible solution found! (width: 1120.111, dens: 77.120%)
+[INFO] [00:00:04] <main> [EXPL] shrinking strip by 0.1%: 1120.111 -> 1118.991
+[INFO] [00:00:04] <main> [SEP] separating at width: 1118.991 and loss: 10.1 K 
+[INFO] [00:00:04] <main> [SEP] [s:0,i:0] (*) min_l: 5.68 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:4] (*) min_l: 4.86 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:6] (*) min_l: 4.14 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:10] (*) min_l: 3.66 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:16] (*) min_l: 3.65 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:18] (*) min_l: 2.87 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:19] (*) min_l: 1.45 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:21] (*) min_l: 1.43 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:91] (*) min_l: 1.43 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:92] (*) min_l: 1.42 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:95] (*) min_l: 1.42 K
+[INFO] [00:00:04] <main> [SEP] [s:0,i:224] (*) min_l: 1.41 K
+[INFO] [00:00:05] <main> [SEP] [s:1,i:425] (*) min_l: 1.41 K
+[INFO] [00:00:05] <main> [SEP] [s:2,i:626] (*) min_l: 1.41 K
+[INFO] [00:00:05] <main> [SEP] [s:2,i:638] (*) min_l: 1.30 K
+[INFO] [00:00:05] <main> [SEP] [s:0,i:841] (*) min_l: 1.22 K
+[INFO] [00:00:05] <main> [SEP] [s:0,i:881] (S)  min_l: 0
+[INFO] [00:00:05] <main> [SEP] finished, evals/s: 1494 K, evals/move: 179, moves/s: 8.30 K, iter/s: 976, #workers: 3, total 0.9s
+[INFO] [00:00:05] <main> [EXPL] feasible solution found! (width: 1118.991, dens: 77.197%)
+[INFO] [00:00:05] <main> [EXPL] shrinking strip by 0.1%: 1118.991 -> 1117.872
+[INFO] [00:00:05] <main> [SEP] separating at width: 1117.872 and loss: 10.2 K 
+[INFO] [00:00:05] <main> [SEP] [s:0,i:0] (*) min_l: 5.69 K
+[INFO] [00:00:05] <main> [SEP] [s:0,i:1] (*) min_l: 5.58 K
+[INFO] [00:00:05] <main> [SEP] [s:0,i:7] (*) min_l: 4.37 K
+[INFO] [00:00:05] <main> [SEP] [s:0,i:19] (*) min_l: 2.49 K
+[INFO] [00:00:05] <main> [SEP] [s:0,i:43] (*) min_l: 1.81 K
+[INFO] [00:00:06] <main> [SEP] [s:0,i:244] (*) min_l: 1.78 K
+[INFO] [00:00:06] <main> [SEP] [s:1,i:445] (*) min_l: 1.78 K
+[INFO] [00:00:06] <main> [SEP] [s:2,i:646] (*) min_l: 1.78 K
+[INFO] [00:00:06] <main> [SEP] [s:2,i:652] (*) min_l: 1.73 K
+[INFO] [00:00:06] <main> [SEP] [s:2,i:655] (*) min_l: 1.72 K
+[INFO] [00:00:06] <main> [SEP] [s:0,i:854] (*) min_l: 1.72 K
+[INFO] [00:00:07] <main> [SEP] finished, evals/s: 1510 K, evals/move: 178, moves/s: 8.44 K, iter/s: 728, #workers: 3, total 1.9s
+[INFO] [00:00:07] <main> [EXPL] unable to reach feasibility (width: 1117.872, dens: 77.274%, min loss: 1.72 K)
+[INFO] [00:00:07] <main> [EXPL] starting solution 0/1 selected from solution pool (l: 1.72 K) to disrupt
+[INFO] [00:00:07] <main> [EXPL] disrupting by swapping two large items (id: 3 <-> 0)
+[INFO] [00:00:07] <main> [SEP] separating at width: 1117.872 and loss: 31.3 K 
+[INFO] [00:00:07] <main> [SEP] [s:0,i:0] (*) min_l: 14.6 K
+[INFO] [00:00:07] <main> [SEP] [s:0,i:2] (*) min_l: 11.3 K
+[INFO] [00:00:08] <main> [SEP] [s:0,i:203] (*) min_l: 10.8 K
+[INFO] [00:00:08] <main> [SEP] [s:0,i:377] (*) min_l: 10.6 K
+[INFO] [00:00:08] <main> [SEP] [s:0,i:378] (*) min_l: 8.31 K
+[INFO] [00:00:08] <main> [SEP] [s:0,i:579] (*) min_l: 7.46 K
+[INFO] [00:00:08] <main> [SEP] [s:0,i:594] (*) min_l: 6.29 K
+[INFO] [00:00:08] <main> [SEP] [s:0,i:667] (*) min_l: 6.24 K
+[INFO] [00:00:08] <main> [SEP] [s:0,i:686] (*) min_l: 5.84 K
+[INFO] [00:00:09] <main> [SEP] [s:0,i:778] (*) min_l: 5.71 K
+[INFO] [00:00:09] <main> [SEP] [s:0,i:979] (*) min_l: 5.71 K
+[INFO] [00:00:09] <main> [SEP] [s:1,i:1180] (*) min_l: 5.70 K
+[INFO] [00:00:10] <main> [SEP] finished, evals/s: 1617 K, evals/move: 179, moves/s: 9.03 K, iter/s: 612, #workers: 3, total 2.5s
+[INFO] [00:00:10] <main> [EXPL] unable to reach feasibility (width: 1117.872, dens: 77.274%, min loss: 5.70 K)
+[INFO] [00:00:10] <main> [EXPL] starting solution 0/2 selected from solution pool (l: 1.72 K) to disrupt
+[INFO] [00:00:10] <main> [EXPL] disrupting by swapping two large items (id: 3 <-> 0)
+[INFO] [00:00:10] <main> [SEP] separating at width: 1117.872 and loss: 18.9 K 
+[INFO] [00:00:10] <main> [SEP] [s:0,i:0] (*) min_l: 6.20 K
+[INFO] [00:00:10] <main> [SEP] [s:0,i:2] (*) min_l: 4.54 K
+[INFO] [00:00:10] <main> [SEP] [s:0,i:203] (*) min_l: 4.24 K
+[INFO] [00:00:10] <main> [SEP] [s:0,i:404] (*) min_l: 4.24 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:499] (*) min_l: 4.11 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:526] (*) min_l: 3.99 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:529] (*) min_l: 3.87 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:536] (*) min_l: 3.23 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:650] (*) min_l: 2.67 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:666] (*) min_l: 2.30 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:667] (*) min_l: 2.29 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:670] (*) min_l: 2.28 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:686] (*) min_l: 1.66 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:887] (*) min_l: 1.65 K
+[INFO] [00:00:11] <main> [SEP] [s:1,i:1088] (*) min_l: 1.65 K
+[INFO] [00:00:11] <main> [SEP] [s:1,i:1190] (*) min_l: 1.57 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:1432] (*) min_l: 1.51 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:1433] (*) min_l: 1.50 K
+[INFO] [00:00:11] <main> [SEP] [s:0,i:1436] (*) min_l: 1.16 K
+[INFO] [00:00:12] <main> [SEP] [s:0,i:1637] (*) min_l: 1.14 K
+[INFO] [00:00:12] <main> [SEP] [s:0,i:1838] (*) min_l: 1.13 K
+[INFO] [00:00:12] <main> [SEP] [s:0,i:1839] (*) min_l: 1.13 K
+[INFO] [00:00:12] <main> [SEP] [s:1,i:2046] (*) min_l: 1.06 K
+[INFO] [00:00:12] <main> [SEP] [s:0,i:2247] (*) min_l: 1.06 K
+[INFO] [00:00:13] <main> [SEP] [s:1,i:2448] (*) min_l: 1.05 K
+[INFO] [00:00:13] <main> [SEP] [s:1,i:2453] (*) min_l: 1.05 K
+[INFO] [00:00:13] <main> [SEP] [s:2,i:2650] (*) min_l: 1.05 K
+[INFO] [00:00:13] <main> [SEP] [s:2,i:2651] (*) min_l: 1.05 K
+[INFO] [00:00:13] <main> [SEP] [s:2,i:2676] (*) min_l: 1.01 K
+[INFO] [00:00:13] <main> [SEP] [s:0,i:2877] (*) min_l: 1.01 K
+[INFO] [00:00:13] <main> [SEP] [s:0,i:2878] (*) min_l: 1.01 K
+[INFO] [00:00:13] <main> [SEP] [s:2,i:3279] (*) min_l: 1.01 K
+[INFO] [00:00:13] <main> [SEP] [s:2,i:3375] (*) min_l: 1.00 K
+[INFO] [00:00:13] <main> [SEP] [s:2,i:3393] (*) min_l: 998
+[INFO] [00:00:13] <main> [SEP] [s:2,i:3395] (*) min_l: 997
+[INFO] [00:00:13] <main> [SEP] finished, evals/s: 1629 K, evals/move: 179, moves/s: 9.09 K, iter/s: 955, #workers: 3, total 3.6s
+[INFO] [00:00:13] <main> [EXPL] unable to reach feasibility (width: 1117.872, dens: 77.274%, min loss: 997)
+[INFO] [00:00:13] <main> [EXPL] starting solution 0/3 selected from solution pool (l: 997) to disrupt
+[INFO] [00:00:13] <main> [EXPL] disrupting by swapping two large items (id: 4 <-> 3)
+[INFO] [00:00:13] <main> [SEP] separating at width: 1117.872 and loss: 55.7 K 
+[INFO] [00:00:13] <main> [SEP] [s:0,i:0] (*) min_l: 16.3 K
+[INFO] [00:00:13] <main> [SEP] [s:0,i:1] (*) min_l: 15.7 K
+[INFO] [00:00:14] <main> [SEP] [s:0,i:41] (*) min_l: 11.1 K
+[INFO] [00:00:14] <main> [SEP] [s:0,i:61] (*) min_l: 9.60 K
+[INFO] [00:00:14] <main> [SEP] [s:0,i:138] (*) min_l: 2.71 K
+[INFO] [00:00:14] <main> [SEP] [s:0,i:139] (*) min_l: 2.71 K
+[INFO] [00:00:14] <main> [SEP] [s:0,i:340] (*) min_l: 2.71 K
+[INFO] [00:00:14] <main> [SEP] [s:0,i:351] (*) min_l: 2.67 K
+[INFO] [00:00:14] <main> [SEP] [s:1,i:542] (*) min_l: 2.67 K
+[INFO] [00:00:14] <main> [SEP] [s:2,i:744] (*) min_l: 2.67 K
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 1523 K, evals/move: 179, moves/s: 8.46 K, iter/s: 867, #workers: 3, total 1.0s
+[INFO] [00:00:15] <main> [EXPL] unable to reach feasibility (width: 1117.872, dens: 77.274%, min loss: 2.67 K)
+[INFO] [00:00:15] <main> [EXPL] starting solution 0/4 selected from solution pool (l: 997) to disrupt
+[INFO] [00:00:15] <main> [EXPL] disrupting by swapping two large items (id: 4 <-> 1)
+[INFO] [00:00:15] <main> [SEP] separating at width: 1117.872 and loss: 46.3 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (*) min_l: 22.5 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:2] (*) min_l: 19.8 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:118] (*) min_l: 19.6 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:120] (*) min_l: 15.5 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:121] (*) min_l: 15.1 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:131] (*) min_l: 12.5 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:209] (*) min_l: 10.0 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:312] (*) min_l: 9.65 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:316] (*) min_l: 7.21 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:366] (*) min_l: 6.37 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:371] (*) min_l: 4.31 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:386] (*) min_l: 2.81 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:389] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 1634 K, evals/move: 178, moves/s: 9.16 K, iter/s: 509, #workers: 3, total 0.7s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1117.872, dens: 77.274%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1117.872 -> 1116.755
+[INFO] [00:00:15] <main> [SEP] separating at width: 1116.755 and loss: 1.93 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (*) min_l: 1.47 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:1] (*) min_l: 1.03 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 1684 K, evals/move: 178, moves/s: 9.43 K, iter/s: 1.71 K, #workers: 3, total 0.0s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1116.755, dens: 77.352%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1116.755 -> 1115.638
+[INFO] [00:00:15] <main> [SEP] separating at width: 1115.638 and loss: 7.87 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 2253 K, evals/move: 172, moves/s: 13.0 K, iter/s: 0, #workers: 3, total 8.4s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1115.638, dens: 77.429%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1115.638 -> 1114.522
+[INFO] [00:00:15] <main> [SEP] separating at width: 1114.522 and loss: 3.99 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (*) min_l: 1.16 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:6] (*) min_l: 1.05 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:10] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 2266 K, evals/move: 180, moves/s: 12.5 K, iter/s: 3.21 K, #workers: 3, total 0.0s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1114.522, dens: 77.507%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1114.522 -> 1113.408
+[INFO] [00:00:15] <main> [SEP] separating at width: 1113.408 and loss: 6.27 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (*) min_l: 1.15 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:2] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 2074 K, evals/move: 176, moves/s: 11.7 K, iter/s: 1.23 K, #workers: 3, total 0.0s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1113.408, dens: 77.584%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1113.408 -> 1112.294
+[INFO] [00:00:15] <main> [SEP] separating at width: 1112.294 and loss: 7.69 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 2466 K, evals/move: 180, moves/s: 13.6 K, iter/s: 0, #workers: 3, total 6.5s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1112.294, dens: 77.662%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1112.294 -> 1111.182
+[INFO] [00:00:15] <main> [SEP] separating at width: 1111.182 and loss: 7.81 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (*) min_l: 3.77 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:1] (*) min_l: 1.36 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:2] (*) min_l: 1.24 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:5] (*) min_l: 1.16 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:9] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 1865 K, evals/move: 183, moves/s: 10.1 K, iter/s: 2.03 K, #workers: 3, total 0.0s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1111.182, dens: 77.739%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1111.182 -> 1110.071
+[INFO] [00:00:15] <main> [SEP] separating at width: 1110.071 and loss: 9.16 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (*) min_l: 3.49 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:2] (*) min_l: 3.01 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:3] (*) min_l: 1.80 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:6] (S)  min_l: 0
+[INFO] [00:00:15] <main> [SEP] finished, evals/s: 2007 K, evals/move: 179, moves/s: 11.1 K, iter/s: 1.31 K, #workers: 3, total 0.0s
+[INFO] [00:00:15] <main> [EXPL] feasible solution found! (width: 1110.071, dens: 77.817%)
+[INFO] [00:00:15] <main> [EXPL] shrinking strip by 0.1%: 1110.071 -> 1108.961
+[INFO] [00:00:15] <main> [SEP] separating at width: 1108.961 and loss: 9.84 K 
+[INFO] [00:00:15] <main> [SEP] [s:0,i:0] (*) min_l: 3.09 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:2] (*) min_l: 2.77 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:3] (*) min_l: 1.63 K
+[INFO] [00:00:15] <main> [SEP] [s:0,i:5] (*) min_l: 1.53 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:128] (*) min_l: 1.38 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:194] (*) min_l: 1.34 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:395] (*) min_l: 1.34 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:409] (*) min_l: 1.31 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:410] (*) min_l: 1.27 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:412] (*) min_l: 1.23 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:440] (S)  min_l: 0
+[INFO] [00:00:16] <main> [SEP] finished, evals/s: 1638 K, evals/move: 179, moves/s: 9.10 K, iter/s: 1.15 K, #workers: 3, total 0.3s
+[INFO] [00:00:16] <main> [EXPL] feasible solution found! (width: 1108.961, dens: 77.895%)
+[INFO] [00:00:16] <main> [EXPL] shrinking strip by 0.1%: 1108.961 -> 1107.852
+[INFO] [00:00:16] <main> [SEP] separating at width: 1107.852 and loss: 8.95 K 
+[INFO] [00:00:16] <main> [SEP] [s:0,i:0] (*) min_l: 2.98 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:10] (*) min_l: 2.32 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:11] (*) min_l: 1.37 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:13] (*) min_l: 1.30 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:24] (S)  min_l: 0
+[INFO] [00:00:16] <main> [SEP] finished, evals/s: 1743 K, evals/move: 180, moves/s: 9.66 K, iter/s: 1.41 K, #workers: 3, total 0.0s
+[INFO] [00:00:16] <main> [EXPL] feasible solution found! (width: 1107.852, dens: 77.973%)
+[INFO] [00:00:16] <main> [EXPL] shrinking strip by 0.1%: 1107.852 -> 1106.744
+[INFO] [00:00:16] <main> [SEP] separating at width: 1106.744 and loss: 11.0 K 
+[INFO] [00:00:16] <main> [SEP] [s:0,i:0] (*) min_l: 4.47 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:2] (*) min_l: 4.35 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:3] (*) min_l: 3.89 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:19] (*) min_l: 3.85 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:21] (*) min_l: 2.75 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:27] (*) min_l: 1.68 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:28] (*) min_l: 1.40 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:30] (*) min_l: 1.40 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:82] (*) min_l: 1.38 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:83] (*) min_l: 1.36 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:84] (*) min_l: 1.33 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:89] (S)  min_l: 0
+[INFO] [00:00:16] <main> [SEP] finished, evals/s: 1687 K, evals/move: 180, moves/s: 9.35 K, iter/s: 1.31 K, #workers: 3, total 0.0s
+[INFO] [00:00:16] <main> [EXPL] feasible solution found! (width: 1106.744, dens: 78.051%)
+[INFO] [00:00:16] <main> [EXPL] shrinking strip by 0.1%: 1106.744 -> 1105.637
+[INFO] [00:00:16] <main> [SEP] separating at width: 1105.637 and loss: 8.97 K 
+[INFO] [00:00:16] <main> [SEP] [s:0,i:0] (*) min_l: 3.26 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:7] (*) min_l: 3.04 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:28] (*) min_l: 2.66 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:70] (*) min_l: 1.37 K
+[INFO] [00:00:16] <main> [SEP] [s:0,i:271] (*) min_l: 1.37 K
+[INFO] [00:00:16] <main> [SEP] [s:1,i:472] (*) min_l: 1.37 K
+[INFO] [00:00:16] <main> [SEP] [s:1,i:476] (*) min_l: 1.37 K
+[INFO] [00:00:16] <main> [SEP] [s:2,i:674] (*) min_l: 1.37 K
+[INFO] [00:00:17] <main> [SEP] finished, evals/s: 1593 K, evals/move: 179, moves/s: 8.89 K, iter/s: 949, #workers: 3, total 0.9s
+[INFO] [00:00:17] <main> [EXPL] unable to reach feasibility (width: 1105.637, dens: 78.129%, min loss: 1.37 K)
+[INFO] [00:00:17] <main> [EXPL] starting solution 0/1 selected from solution pool (l: 1.37 K) to disrupt
+[INFO] [00:00:17] <main> [EXPL] disrupting by swapping two large items (id: 2 <-> 3)
+[INFO] [00:00:17] <main> [SEP] separating at width: 1105.637 and loss: 45.9 K 
+[INFO] [00:00:17] <main> [SEP] [s:0,i:0] (*) min_l: 16.7 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:201] (*) min_l: 16.7 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:316] (*) min_l: 14.9 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:326] (*) min_l: 14.9 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:338] (*) min_l: 13.2 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:342] (*) min_l: 11.2 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:393] (*) min_l: 11.0 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:395] (*) min_l: 10.0 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:396] (*) min_l: 7.74 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:405] (*) min_l: 7.68 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:407] (*) min_l: 7.51 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:416] (*) min_l: 7.21 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:452] (*) min_l: 7.20 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:475] (*) min_l: 7.13 K
+[INFO] [00:00:17] <main> [SEP] [s:0,i:484] (*) min_l: 7.13 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:620] (*) min_l: 7.06 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:654] (*) min_l: 7.06 K
+[INFO] [00:00:18] <main> [SEP] [s:2,i:1022] (*) min_l: 7.05 K
+[INFO] [00:00:18] <main> [SEP] finished, evals/s: 1532 K, evals/move: 181, moves/s: 8.43 K, iter/s: 976, #workers: 3, total 1.2s
+[INFO] [00:00:18] <main> [EXPL] unable to reach feasibility (width: 1105.637, dens: 78.129%, min loss: 7.05 K)
+[INFO] [00:00:18] <main> [EXPL] starting solution 0/2 selected from solution pool (l: 1.37 K) to disrupt
+[INFO] [00:00:18] <main> [EXPL] disrupting by swapping two large items (id: 1 <-> 2)
+[INFO] [00:00:18] <main> [SEP] separating at width: 1105.637 and loss: 41.8 K 
+[INFO] [00:00:18] <main> [SEP] [s:0,i:0] (*) min_l: 16.3 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:1] (*) min_l: 13.6 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:2] (*) min_l: 11.3 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:47] (*) min_l: 10.6 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:53] (*) min_l: 10.3 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:69] (*) min_l: 9.37 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:70] (*) min_l: 9.33 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:80] (*) min_l: 7.96 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:281] (*) min_l: 7.92 K
+[INFO] [00:00:18] <main> [SEP] [s:0,i:293] (*) min_l: 7.69 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:308] (*) min_l: 7.61 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:495] (*) min_l: 7.59 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:658] (*) min_l: 7.06 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:859] (*) min_l: 7.02 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:870] (*) min_l: 6.08 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:877] (*) min_l: 6.08 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:878] (*) min_l: 5.89 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:899] (*) min_l: 5.88 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:940] (*) min_l: 5.88 K
+[INFO] [00:00:19] <main> [SEP] [s:0,i:988] (*) min_l: 5.88 K
+[INFO] [00:00:20] <main> [SEP] [s:1,i:1290] (*) min_l: 5.88 K
+[INFO] [00:00:20] <main> [SEP] [s:2,i:1483] (*) min_l: 5.88 K
+[INFO] [00:00:20] <main> [SEP] finished, evals/s: 1665 K, evals/move: 179, moves/s: 9.28 K, iter/s: 718, #workers: 3, total 2.3s
+[INFO] [00:00:20] <main> [EXPL] unable to reach feasibility (width: 1105.637, dens: 78.129%, min loss: 5.88 K)
+[INFO] [00:00:20] <main> [EXPL] starting solution 0/3 selected from solution pool (l: 1.37 K) to disrupt
+[INFO] [00:00:20] <main> [EXPL] disrupting by swapping two large items (id: 2 <-> 0)
+[INFO] [00:00:20] <main> [SEP] separating at width: 1105.637 and loss: 27.1 K 
+[INFO] [00:00:20] <main> [SEP] [s:0,i:0] (*) min_l: 8.22 K
+[INFO] [00:00:20] <main> [SEP] [s:0,i:1] (*) min_l: 6.18 K
+[INFO] [00:00:20] <main> [SEP] [s:0,i:14] (*) min_l: 6.15 K
+[INFO] [00:00:21] <main> [SEP] [s:0,i:382] (*) min_l: 6.13 K
+[INFO] [00:00:21] <main> [SEP] [s:1,i:404] (*) min_l: 6.11 K
+[INFO] [00:00:21] <main> [SEP] [s:1,i:421] (*) min_l: 6.11 K
+[INFO] [00:00:21] <main> [SEP] [s:1,i:440] (*) min_l: 6.11 K
+[INFO] [00:00:21] <main> [SEP] [s:2,i:607] (*) min_l: 6.11 K
+[INFO] [00:00:21] <main> [SEP] [s:2,i:655] (*) min_l: 6.07 K
+[INFO] [00:00:21] <main> [SEP] [s:2,i:685] (*) min_l: 6.02 K
+[INFO] [00:00:21] <main> [SEP] [s:2,i:712] (*) min_l: 5.91 K
+[INFO] [00:00:21] <main> [SEP] [s:2,i:723] (*) min_l: 5.91 K
+[INFO] [00:00:21] <main> [SEP] [s:2,i:727] (*) min_l: 5.91 K
+[INFO] [00:00:21] <main> [SEP] [s:0,i:813] (*) min_l: 5.91 K
+[INFO] [00:00:21] <main> [SEP] [s:0,i:833] (*) min_l: 5.90 K
+[INFO] [00:00:21] <main> [SEP] [s:1,i:1015] (*) min_l: 5.90 K
+[INFO] [00:00:21] <main> [SEP] [s:2,i:1216] (*) min_l: 5.90 K
+[INFO] [00:00:22] <main> [SEP] [s:2,i:1322] (*) min_l: 5.81 K
+[INFO] [00:00:22] <main> [SEP] finished, evals/s: 1615 K, evals/move: 181, moves/s: 8.89 K, iter/s: 1.10 K, #workers: 3, total 1.2s
+[INFO] [00:00:22] <main> [EXPL] unable to reach feasibility (width: 1105.637, dens: 78.129%, min loss: 5.81 K)
+[INFO] [00:00:22] <main> [EXPL] starting solution 0/4 selected from solution pool (l: 1.37 K) to disrupt
+[INFO] [00:00:22] <main> [EXPL] disrupting by swapping two large items (id: 4 <-> 3)
+[INFO] [00:00:22] <main> [SEP] separating at width: 1105.637 and loss: 77.3 K 
+[INFO] [00:00:22] <main> [SEP] [s:0,i:0] (*) min_l: 24.2 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:1] (*) min_l: 22.3 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:5] (*) min_l: 9.72 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:6] (*) min_l: 8.32 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:86] (*) min_l: 7.54 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:88] (*) min_l: 5.45 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:91] (*) min_l: 5.37 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:259] (*) min_l: 4.48 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:280] (*) min_l: 4.48 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:286] (*) min_l: 4.48 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:314] (*) min_l: 3.89 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:328] (*) min_l: 3.03 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:398] (*) min_l: 1.95 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:404] (*) min_l: 1.95 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:405] (*) min_l: 1.95 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:612] (*) min_l: 1.95 K
+[INFO] [00:00:22] <main> [SEP] [s:0,i:614] (*) min_l: 1.95 K
+[INFO] [00:00:22] <main> [SEP] [s:1,i:804] (*) min_l: 1.95 K
+[INFO] [00:00:23] <main> [SEP] finished, evals/s: 1691 K, evals/move: 179, moves/s: 9.40 K, iter/s: 940, #workers: 3, total 1.2s
+[INFO] [00:00:23] <main> [EXPL] unable to reach feasibility (width: 1105.637, dens: 78.129%, min loss: 1.95 K)
+[INFO] [00:00:23] <main> [EXPL] starting solution 0/5 selected from solution pool (l: 1.37 K) to disrupt
+[INFO] [00:00:23] <main> [EXPL] disrupting by swapping two large items (id: 4 <-> 3)
+[INFO] [00:00:23] <main> [SEP] separating at width: 1105.637 and loss: 75.8 K 
+[INFO] [00:00:23] <main> [SEP] [s:0,i:0] (*) min_l: 36.9 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:3] (*) min_l: 36.3 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:4] (*) min_l: 13.0 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:5] (*) min_l: 12.7 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:6] (*) min_l: 11.3 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:7] (*) min_l: 10.5 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:9] (*) min_l: 5.08 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:13] (*) min_l: 4.21 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:18] (*) min_l: 3.48 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:29] (*) min_l: 2.72 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:65] (*) min_l: 2.52 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:96] (*) min_l: 2.51 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:149] (*) min_l: 2.49 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:268] (*) min_l: 2.49 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:285] (*) min_l: 2.49 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:365] (*) min_l: 2.33 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:384] (*) min_l: 1.88 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:385] (*) min_l: 1.83 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:387] (*) min_l: 1.82 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:394] (*) min_l: 1.80 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:405] (*) min_l: 1.63 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:406] (*) min_l: 1.63 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:474] (*) min_l: 1.61 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:481] (*) min_l: 1.47 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:483] (*) min_l: 1.38 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:493] (*) min_l: 1.35 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:495] (*) min_l: 1.34 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:695] (*) min_l: 1.34 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:720] (*) min_l: 1.15 K
+[INFO] [00:00:23] <main> [SEP] [s:0,i:738] (S)  min_l: 0
+[INFO] [00:00:23] <main> [SEP] finished, evals/s: 1633 K, evals/move: 180, moves/s: 9.03 K, iter/s: 1.27 K, #workers: 3, total 0.5s
+[INFO] [00:00:23] <main> [EXPL] feasible solution found! (width: 1105.637, dens: 78.129%)
+[INFO] [00:00:23] <main> [EXPL] shrinking strip by 0.1%: 1105.637 -> 1104.532
+[INFO] [00:00:23] <main> [SEP] separating at width: 1104.532 and loss: 6.99 K 
+[INFO] [00:00:23] <main> [SEP] [s:0,i:0] (*) min_l: 3.15 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:2] (*) min_l: 3.07 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:4] (*) min_l: 1.45 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:14] (*) min_l: 1.40 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:22] (*) min_l: 1.40 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:25] (*) min_l: 1.40 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:129] (S)  min_l: 0
+[INFO] [00:00:24] <main> [SEP] finished, evals/s: 1552 K, evals/move: 180, moves/s: 8.61 K, iter/s: 1.24 K, #workers: 3, total 0.1s
+[INFO] [00:00:24] <main> [EXPL] feasible solution found! (width: 1104.532, dens: 78.208%)
+[INFO] [00:00:24] <main> [EXPL] shrinking strip by 0.1%: 1104.532 -> 1103.427
+[INFO] [00:00:24] <main> [SEP] separating at width: 1103.427 and loss: 3.13 K 
+[INFO] [00:00:24] <main> [SEP] [s:0,i:0] (*) min_l: 1.96 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:3] (*) min_l: 1.91 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:19] (*) min_l: 1.79 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:21] (*) min_l: 1.79 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:24] (*) min_l: 1.33 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:26] (S)  min_l: 0
+[INFO] [00:00:24] <main> [SEP] finished, evals/s: 1356 K, evals/move: 181, moves/s: 7.45 K, iter/s: 2.08 K, #workers: 3, total 0.0s
+[INFO] [00:00:24] <main> [EXPL] feasible solution found! (width: 1103.427, dens: 78.286%)
+[INFO] [00:00:24] <main> [EXPL] shrinking strip by 0.1%: 1103.427 -> 1102.324
+[INFO] [00:00:24] <main> [SEP] separating at width: 1102.324 and loss: 7.16 K 
+[INFO] [00:00:24] <main> [SEP] [s:0,i:0] (*) min_l: 1.89 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:3] (*) min_l: 1.84 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:7] (S)  min_l: 0
+[INFO] [00:00:24] <main> [SEP] finished, evals/s: 1564 K, evals/move: 178, moves/s: 8.76 K, iter/s: 1.91 K, #workers: 3, total 0.0s
+[INFO] [00:00:24] <main> [EXPL] feasible solution found! (width: 1102.324, dens: 78.364%)
+[INFO] [00:00:24] <main> [EXPL] shrinking strip by 0.1%: 1102.324 -> 1101.222
+[INFO] [00:00:24] <main> [SEP] separating at width: 1101.222 and loss: 5.38 K 
+[INFO] [00:00:24] <main> [SEP] [s:0,i:0] (*) min_l: 3.52 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:1] (*) min_l: 2.04 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:2] (*) min_l: 2.04 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:71] (*) min_l: 1.87 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:74] (*) min_l: 1.34 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:80] (*) min_l: 1.33 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:81] (*) min_l: 1.33 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:84] (*) min_l: 1.33 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:88] (S)  min_l: 0
+[INFO] [00:00:24] <main> [SEP] finished, evals/s: 1386 K, evals/move: 177, moves/s: 7.81 K, iter/s: 1.37 K, #workers: 3, total 0.0s
+[INFO] [00:00:24] <main> [EXPL] feasible solution found! (width: 1101.222, dens: 78.443%)
+[INFO] [00:00:24] <main> [EXPL] shrinking strip by 0.1%: 1101.222 -> 1100.120
+[INFO] [00:00:24] <main> [SEP] separating at width: 1100.120 and loss: 15.1 K 
+[INFO] [00:00:24] <main> [SEP] [s:0,i:0] (*) min_l: 5.64 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:11] (*) min_l: 4.83 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:12] (*) min_l: 4.72 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:16] (*) min_l: 4.68 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:35] (*) min_l: 4.60 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:36] (*) min_l: 4.01 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:237] (*) min_l: 4.00 K
+[INFO] [00:00:24] <main> [SEP] [s:0,i:238] (*) min_l: 3.99 K
+[INFO] [00:00:24] <main> [SEP] [s:1,i:439] (*) min_l: 3.98 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:648] (*) min_l: 3.42 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:675] (*) min_l: 3.37 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:686] (*) min_l: 1.82 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:687] (*) min_l: 1.77 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:688] (*) min_l: 1.76 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:708] (*) min_l: 1.76 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:710] (*) min_l: 1.57 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:711] (*) min_l: 1.57 K
+[INFO] [00:00:25] <main> [SEP] [s:2,i:714] (*) min_l: 1.57 K
+[INFO] [00:00:25] <main> [SEP] [s:0,i:913] (*) min_l: 1.57 K
+[INFO] [00:00:25] <main> [SEP] [s:0,i:919] (*) min_l: 1.54 K
+[INFO] [00:00:25] <main> [SEP] [s:0,i:921] (*) min_l: 1.54 K
+[INFO] [00:00:26] <main> [SEP] [s:2,i:1322] (*) min_l: 1.51 K
+[INFO] [00:00:26] <main> [SEP] finished, evals/s: 1496 K, evals/move: 177, moves/s: 8.40 K, iter/s: 567, #workers: 3, total 2.6s
+[INFO] [00:00:26] <main> [EXPL] unable to reach feasibility (width: 1100.120, dens: 78.521%, min loss: 1.51 K)
+[INFO] [00:00:26] <main> [EXPL] starting solution 0/1 selected from solution pool (l: 1.51 K) to disrupt
+[INFO] [00:00:26] <main> [EXPL] disrupting by swapping two large items (id: 1 <-> 0)
+[INFO] [00:00:26] <main> [SEP] separating at width: 1100.120 and loss: 36.2 K 
+[INFO] [00:00:26] <main> [SEP] [s:0,i:0] (*) min_l: 26.6 K
+[INFO] [00:00:26] <main> [SEP] [s:0,i:3] (*) min_l: 26.5 K
+[INFO] [00:00:26] <main> [SEP] [s:0,i:4] (*) min_l: 21.2 K
+[INFO] [00:00:27] <main> [SEP] [s:0,i:142] (*) min_l: 18.6 K
+[INFO] [00:00:27] <main> [SEP] [s:0,i:151] (*) min_l: 17.4 K
+[INFO] [00:00:27] <main> [SEP] [s:0,i:352] (*) min_l: 17.3 K
+[INFO] [00:00:27] <main> [SEP] [s:0,i:356] (*) min_l: 17.0 K
+[INFO] [00:00:27] <main> [SEP] [s:0,i:383] (*) min_l: 15.8 K
+[INFO] [00:00:27] <main> [SEP] [s:0,i:535] (*) min_l: 15.2 K
+[INFO] [00:00:27] <main> [SEP] [s:0,i:579] (*) min_l: 11.6 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:780] (*) min_l: 11.6 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:884] (*) min_l: 10.9 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:895] (*) min_l: 10.9 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:897] (*) min_l: 10.2 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:942] (*) min_l: 8.83 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:943] (*) min_l: 4.89 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:944] (*) min_l: 4.03 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:945] (*) min_l: 2.68 K
+[INFO] [00:00:28] <main> [SEP] [s:0,i:1146] (*) min_l: 2.68 K
+[INFO] [00:00:29] <main> [SEP] finished, evals/s: 1501 K, evals/move: 179, moves/s: 8.37 K, iter/s: 678, #workers: 3, total 2.5s
+[INFO] [00:00:29] <main> [EXPL] unable to reach feasibility (width: 1100.120, dens: 78.521%, min loss: 2.68 K)
+[INFO] [00:00:29] <main> [EXPL] starting solution 0/2 selected from solution pool (l: 1.51 K) to disrupt
+[INFO] [00:00:29] <main> [EXPL] disrupting by swapping two large items (id: 2 <-> 0)
+[INFO] [00:00:29] <main> [SEP] separating at width: 1100.120 and loss: 27.1 K 
+[INFO] [00:00:29] <main> [SEP] [s:0,i:0] (*) min_l: 16.1 K
+[INFO] [00:00:29] <main> [SEP] [s:0,i:8] (*) min_l: 15.5 K
+[INFO] [00:00:29] <main> [SEP] [s:0,i:12] (*) min_l: 10.8 K
+[INFO] [00:00:29] <main> [SEP] [s:0,i:16] (*) min_l: 10.1 K
+[INFO] [00:00:29] <main> [SEP] [s:0,i:217] (*) min_l: 9.90 K
+[INFO] [00:00:30] <main> [SEP] [s:0,i:418] (*) min_l: 9.88 K
+[INFO] [00:00:30] <main> [SEP] [s:1,i:619] (*) min_l: 9.88 K
+[INFO] [00:00:31] <main> [SEP] finished, evals/s: 1421 K, evals/move: 178, moves/s: 7.98 K, iter/s: 499, #workers: 3, total 2.0s
+[INFO] [00:00:31] <main> [EXPL] unable to reach feasibility (width: 1100.120, dens: 78.521%, min loss: 9.88 K)
+[INFO] [00:00:31] <main> [EXPL] starting solution 0/3 selected from solution pool (l: 1.51 K) to disrupt
+[INFO] [00:00:31] <main> [EXPL] disrupting by swapping two large items (id: 0 <-> 1)
+[INFO] [00:00:31] <main> [SEP] separating at width: 1100.120 and loss: 32.8 K 
+[INFO] [00:00:31] <main> [SEP] [s:0,i:0] (*) min_l: 25.0 K
+[INFO] [00:00:31] <main> [SEP] [s:0,i:42] (*) min_l: 24.3 K
+[INFO] [00:00:31] <main> [SEP] [s:0,i:62] (*) min_l: 22.9 K
+[INFO] [00:00:31] <main> [SEP] [s:0,i:263] (*) min_l: 17.2 K
+[INFO] [00:00:31] <main> [SEP] [s:0,i:264] (*) min_l: 17.1 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:314] (*) min_l: 13.5 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:315] (*) min_l: 13.4 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:329] (*) min_l: 13.0 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:375] (*) min_l: 10.6 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:437] (*) min_l: 10.4 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:439] (*) min_l: 10.3 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:442] (*) min_l: 9.34 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:608] (*) min_l: 7.81 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:743] (*) min_l: 7.23 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:746] (*) min_l: 6.90 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:947] (*) min_l: 6.60 K
+[INFO] [00:00:32] <main> [SEP] [s:0,i:958] (*) min_l: 5.78 K
+[INFO] [00:00:33] <main> [SEP] [s:0,i:1159] (*) min_l: 5.75 K
+[INFO] [00:00:33] <main> [SEP] [s:1,i:1467] (*) min_l: 5.27 K
+[INFO] [00:00:34] <main> [SEP] [s:1,i:1868] (*) min_l: 5.18 K
+[INFO] [00:00:34] <main> [SEP] [s:1,i:1869] (*) min_l: 5.17 K
+[INFO] [00:00:34] <main> [SEP] [s:1,i:1891] (*) min_l: 5.10 K
+[INFO] [00:00:34] <main> [SEP] [s:0,i:2071] (*) min_l: 5.10 K
+[INFO] [00:00:34] <main> [SEP] [s:1,i:2272] (*) min_l: 5.10 K
+[INFO] [00:00:35] <main> [SEP] finished, evals/s: 1652 K, evals/move: 179, moves/s: 9.18 K, iter/s: 714, #workers: 3, total 3.7s
+[INFO] [00:00:35] <main> [EXPL] unable to reach feasibility (width: 1100.120, dens: 78.521%, min loss: 5.10 K)
+[INFO] [00:00:35] <main> [EXPL] starting solution 0/4 selected from solution pool (l: 1.51 K) to disrupt
+[INFO] [00:00:35] <main> [EXPL] disrupting by swapping two large items (id: 3 <-> 1)
+[INFO] [00:00:35] <main> [SEP] separating at width: 1100.120 and loss: 28.8 K 
+[INFO] [00:00:35] <main> [SEP] [s:0,i:0] (*) min_l: 16.2 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:35] (*) min_l: 15.7 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:58] (*) min_l: 15.4 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:59] (*) min_l: 11.5 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:64] (*) min_l: 7.64 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:66] (*) min_l: 6.61 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:67] (*) min_l: 5.62 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:69] (*) min_l: 5.60 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:71] (*) min_l: 4.08 K
+[INFO] [00:00:35] <main> [SEP] [s:0,i:272] (*) min_l: 4.06 K
+[INFO] [00:00:36] <main> [SEP] [s:1,i:473] (*) min_l: 3.92 K
+[INFO] [00:00:36] <main> [SEP] [s:1,i:591] (*) min_l: 3.78 K
+[INFO] [00:00:36] <main> [SEP] [s:1,i:592] (*) min_l: 3.70 K
+[INFO] [00:00:36] <main> [SEP] [s:1,i:593] (*) min_l: 1.67 K
+[INFO] [00:00:36] <main> [SEP] [s:1,i:595] (*) min_l: 1.03 K
+[INFO] [00:00:36] <main> [SEP] [s:1,i:606] (S)  min_l: 0
+[INFO] [00:00:36] <main> [SEP] finished, evals/s: 1542 K, evals/move: 178, moves/s: 8.65 K, iter/s: 594, #workers: 3, total 1.0s
+[INFO] [00:00:36] <main> [EXPL] feasible solution found! (width: 1100.120, dens: 78.521%)
+[INFO] [00:00:36] <main> [EXPL] shrinking strip by 0.1%: 1100.120 -> 1099.020
+[INFO] [00:00:36] <main> [SEP] separating at width: 1099.020 and loss: 7.85 K 
+[INFO] [00:00:36] <main> [SEP] [s:0,i:0] (*) min_l: 4.00 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:2] (*) min_l: 2.45 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:3] (*) min_l: 1.99 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:33] (*) min_l: 1.92 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:239] (S)  min_l: 0
+[INFO] [00:00:36] <main> [SEP] finished, evals/s: 1558 K, evals/move: 180, moves/s: 8.63 K, iter/s: 739, #workers: 3, total 0.3s
+[INFO] [00:00:36] <main> [EXPL] feasible solution found! (width: 1099.020, dens: 78.600%)
+[INFO] [00:00:36] <main> [EXPL] shrinking strip by 0.1%: 1099.020 -> 1097.921
+[INFO] [00:00:36] <main> [SEP] separating at width: 1097.921 and loss: 11.2 K 
+[INFO] [00:00:36] <main> [SEP] [s:0,i:0] (*) min_l: 3.68 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:2] (*) min_l: 2.00 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:7] (*) min_l: 1.98 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:15] (*) min_l: 1.45 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:18] (*) min_l: 1.44 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:217] (*) min_l: 1.43 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:292] (*) min_l: 1.38 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:293] (*) min_l: 1.38 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:294] (*) min_l: 1.06 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:382] (S)  min_l: 0
+[INFO] [00:00:36] <main> [SEP] finished, evals/s: 1551 K, evals/move: 179, moves/s: 8.62 K, iter/s: 1.17 K, #workers: 3, total 0.3s
+[INFO] [00:00:36] <main> [EXPL] feasible solution found! (width: 1097.921, dens: 78.678%)
+[INFO] [00:00:36] <main> [EXPL] shrinking strip by 0.1%: 1097.921 -> 1096.823
+[INFO] [00:00:36] <main> [SEP] separating at width: 1096.823 and loss: 5.77 K 
+[INFO] [00:00:36] <main> [SEP] [s:0,i:0] (*) min_l: 3.64 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:3] (*) min_l: 2.09 K
+[INFO] [00:00:36] <main> [SEP] [s:0,i:4] (*) min_l: 1.99 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:205] (*) min_l: 1.97 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:217] (*) min_l: 1.67 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:220] (*) min_l: 1.67 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:222] (*) min_l: 1.66 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:420] (*) min_l: 1.65 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:441] (*) min_l: 1.64 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:443] (*) min_l: 1.64 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:459] (*) min_l: 1.62 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:460] (*) min_l: 1.61 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:503] (*) min_l: 1.54 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:509] (*) min_l: 1.54 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:598] (*) min_l: 1.52 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:637] (*) min_l: 1.48 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:838] (*) min_l: 1.48 K
+[INFO] [00:00:37] <main> [SEP] [s:0,i:840] (*) min_l: 1.48 K
+[INFO] [00:00:38] <main> [SEP] [s:1,i:1040] (*) min_l: 1.47 K
+[INFO] [00:00:38] <main> [SEP] [s:2,i:1241] (*) min_l: 1.47 K
+[INFO] [00:00:38] <main> [SEP] finished, evals/s: 1498 K, evals/move: 179, moves/s: 8.35 K, iter/s: 893, #workers: 3, total 1.6s
+[INFO] [00:00:38] <main> [EXPL] unable to reach feasibility (width: 1096.823, dens: 78.757%, min loss: 1.47 K)
+[INFO] [00:00:38] <main> [EXPL] starting solution 0/1 selected from solution pool (l: 1.47 K) to disrupt
+[INFO] [00:00:38] <main> [EXPL] disrupting by swapping two large items (id: 3 <-> 4)
+[INFO] [00:00:38] <main> [SEP] separating at width: 1096.823 and loss: 59.0 K 
+[INFO] [00:00:38] <main> [SEP] [s:0,i:0] (*) min_l: 10.6 K
+[INFO] [00:00:38] <main> [SEP] [s:0,i:1] (*) min_l: 9.49 K
+[INFO] [00:00:38] <main> [SEP] [s:0,i:102] (*) min_l: 6.82 K
+[INFO] [00:00:38] <main> [SEP] [s:0,i:104] (*) min_l: 6.10 K
+[INFO] [00:00:38] <main> [SEP] [s:0,i:305] (*) min_l: 6.09 K
+[INFO] [00:00:38] <main> [SEP] [s:0,i:321] (*) min_l: 6.09 K
+[INFO] [00:00:39] <main> [SEP] [s:1,i:507] (*) min_l: 6.05 K
+[INFO] [00:00:39] <main> [SEP] [s:2,i:708] (*) min_l: 6.05 K
+[INFO] [00:00:39] <main> [SEP] finished, evals/s: 1528 K, evals/move: 178, moves/s: 8.56 K, iter/s: 632, #workers: 3, total 1.4s
+[INFO] [00:00:39] <main> [EXPL] unable to reach feasibility (width: 1096.823, dens: 78.757%, min loss: 6.05 K)
+[INFO] [00:00:39] <main> [EXPL] starting solution 0/2 selected from solution pool (l: 1.47 K) to disrupt
+[INFO] [00:00:39] <main> [EXPL] disrupting by swapping two large items (id: 4 <-> 0)
+[INFO] [00:00:39] <main> [SEP] separating at width: 1096.823 and loss: 56.4 K 
+[INFO] [00:00:39] <main> [SEP] [s:0,i:0] (*) min_l: 13.6 K
+[INFO] [00:00:39] <main> [SEP] [s:0,i:1] (*) min_l: 12.9 K
+[INFO] [00:00:39] <main> [SEP] [s:0,i:7] (*) min_l: 10.8 K
+[INFO] [00:00:40] <main> [SEP] [s:0,i:208] (*) min_l: 9.44 K
+[INFO] [00:00:40] <main> [SEP] [s:0,i:409] (*) min_l: 9.39 K
+[INFO] [00:00:41] <main> [SEP] [s:1,i:610] (*) min_l: 9.37 K
+[INFO] [00:00:41] <main> [SEP] [s:1,i:635] (*) min_l: 6.37 K
+[INFO] [00:00:41] <main> [SEP] [s:0,i:840] (*) min_l: 6.23 K
+[INFO] [00:00:41] <main> [SEP] [s:0,i:842] (*) min_l: 5.69 K
+[INFO] [00:00:41] <main> [SEP] [s:0,i:1043] (*) min_l: 5.22 K
+[INFO] [00:00:41] <main> [SEP] [s:0,i:1046] (*) min_l: 4.60 K
+[INFO] [00:00:42] <main> [SEP] [s:0,i:1247] (*) min_l: 4.60 K
+[INFO] [00:00:43] <main> [SEP] [s:2,i:1648] (*) min_l: 4.59 K
+[INFO] [00:00:43] <main> [SEP] finished, evals/s: 1596 K, evals/move: 178, moves/s: 8.95 K, iter/s: 536, #workers: 3, total 3.4s
+[INFO] [00:00:43] <main> [EXPL] unable to reach feasibility (width: 1096.823, dens: 78.757%, min loss: 4.59 K)
+[INFO] [00:00:43] <main> [EXPL] starting solution 0/3 selected from solution pool (l: 1.47 K) to disrupt
+[INFO] [00:00:43] <main> [EXPL] disrupting by swapping two large items (id: 0 <-> 3)
+[INFO] [00:00:43] <main> [SEP] separating at width: 1096.823 and loss: 44.1 K 
+[INFO] [00:00:43] <main> [SEP] [s:0,i:0] (*) min_l: 27.2 K
+[INFO] [00:00:43] <main> [SEP] [s:0,i:64] (*) min_l: 23.6 K
+[INFO] [00:00:43] <main> [SEP] [s:0,i:66] (*) min_l: 14.4 K
+[INFO] [00:00:43] <main> [SEP] [s:0,i:154] (*) min_l: 13.0 K
+[INFO] [00:00:43] <main> [SEP] [s:0,i:169] (*) min_l: 12.9 K
+[INFO] [00:00:43] <main> [SEP] [s:0,i:170] (*) min_l: 11.9 K
+[INFO] [00:00:44] <main> [SEP] [s:0,i:359] (*) min_l: 10.2 K
+[INFO] [00:00:44] <main> [SEP] [s:0,i:360] (*) min_l: 9.87 K
+[INFO] [00:00:44] <main> [SEP] [s:0,i:383] (*) min_l: 7.78 K
+[INFO] [00:00:44] <main> [SEP] [s:0,i:394] (*) min_l: 7.65 K
+[INFO] [00:00:44] <main> [SEP] [s:0,i:395] (*) min_l: 7.57 K
+[INFO] [00:00:44] <main> [SEP] [s:0,i:586] (*) min_l: 7.51 K
+[INFO] [00:00:44] <main> [SEP] [s:1,i:793] (*) min_l: 7.18 K
+[INFO] [00:00:45] <main> [SEP] [s:0,i:995] (*) min_l: 7.02 K
+[INFO] [00:00:45] <main> [SEP] [s:0,i:1196] (*) min_l: 7.02 K
+[INFO] [00:00:46] <main> [SEP] [s:1,i:1397] (*) min_l: 7.02 K
+[INFO] [00:00:46] <main> [SEP] finished, evals/s: 1512 K, evals/move: 178, moves/s: 8.46 K, iter/s: 527, #workers: 3, total 3.4s
+[INFO] [00:00:46] <main> [EXPL] unable to reach feasibility (width: 1096.823, dens: 78.757%, min loss: 7.02 K)
+[INFO] [00:00:46] <main> [EXPL] starting solution 1/4 selected from solution pool (l: 4.59 K) to disrupt
+[INFO] [00:00:46] <main> [EXPL] disrupting by swapping two large items (id: 2 <-> 0)
+[INFO] [00:00:46] <main> [SEP] separating at width: 1096.823 and loss: 25.5 K 
+[INFO] [00:00:46] <main> [SEP] [s:0,i:0] (*) min_l: 9.99 K
+[INFO] [00:00:47] <main> [SEP] [s:0,i:180] (*) min_l: 9.13 K
+[INFO] [00:00:47] <main> [SEP] [s:0,i:187] (*) min_l: 8.41 K
+[INFO] [00:00:47] <main> [SEP] [s:0,i:189] (*) min_l: 8.38 K
+[INFO] [00:00:47] <main> [SEP] [s:0,i:389] (*) min_l: 8.08 K
+[INFO] [00:00:47] <main> [SEP] [s:0,i:590] (*) min_l: 7.37 K
+[INFO] [00:00:47] <main> [SEP] [s:0,i:634] (*) min_l: 7.36 K
+[INFO] [00:00:48] <main> [SEP] finished, evals/s: 1608 K, evals/move: 178, moves/s: 9.00 K, iter/s: 575, #workers: 3, total 1.3s
+[INFO] [00:00:48] <main> [EXPL] unable to reach feasibility (width: 1096.823, dens: 78.757%, min loss: 7.36 K)
+[INFO] [00:00:48] <main> [EXPL] starting solution 0/5 selected from solution pool (l: 1.47 K) to disrupt
+[INFO] [00:00:48] <main> [EXPL] disrupting by swapping two large items (id: 2 <-> 3)
+[INFO] [00:00:48] <main> [EXPL] finished, best feasible solution: width: 1097.921 (78.678%)
+[INFO] [00:00:48] <main> [CMPR] success at 0.050% (1097.372 | 78.718%)
+[INFO] [00:00:49] <main> [CMPR] failed at 0.047%
+[INFO] [00:00:50] <main> [CMPR] failed at 0.044%
+[INFO] [00:00:51] <main> [CMPR] failed at 0.040%
+[INFO] [00:00:52] <main> [CMPR] failed at 0.038%
+[INFO] [00:00:52] <main> [CMPR] failed at 0.034%
+[INFO] [00:00:53] <main> [CMPR] failed at 0.032%
+[INFO] [00:00:53] <main> [CMPR] failed at 0.029%
+[INFO] [00:00:54] <main> [CMPR] failed at 0.026%
+[INFO] [00:00:54] <main> [CMPR] failed at 0.025%
+[INFO] [00:00:55] <main> [CMPR] failed at 0.023%
+[INFO] [00:00:56] <main> [CMPR] failed at 0.020%
+[INFO] [00:00:56] <main> [CMPR] failed at 0.018%
+[INFO] [00:00:57] <main> [CMPR] failed at 0.016%
+[INFO] [00:00:57] <main> [CMPR] success at 0.013% (1097.225 | 78.728%)
+[INFO] [00:00:57] <main> [CMPR] success at 0.010% (1097.115 | 78.736%)
+[INFO] [00:00:58] <main> [CMPR] failed at 0.010%
+[INFO] [00:00:59] <main> [CMPR] failed at 0.007%
+[INFO] [00:00:59] <main> [CMPR] success at 0.003% (1097.077 | 78.739%)
+[INFO] [00:00:59] <main> [CMPR] success at 0.003% (1097.039 | 78.742%)
+[INFO] [00:00:59] <main> [CMPR] success at 0.003% (1097.001 | 78.744%)
+[INFO] [00:00:59] <main> [CMPR] success at 0.003% (1096.967 | 78.747%)
+[INFO] [00:00:59] <main> [CMPR] success at 0.003% (1096.933 | 78.749%)
+[INFO] [00:01:00] <main> [CMPR] failed at 0.003%
+[INFO] [00:01:00] <main> [CMPR] finished, compressed from 78.678% to 78.749% (+0.071%)
+[INFO] [00:01:00] <main> [IO] svg exported to file://\\?\C:\Users\erryb\Desktop\Plugin\bench\output\final_blaz1.svg
+[INFO] [00:01:00] <main> [IO] json exported to file://\\?\C:\Users\erryb\Desktop\Plugin\bench\output\final_blaz1.json

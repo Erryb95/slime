@@ -1,0 +1,13 @@
+{
+ "open": "sel=21 container=1501x601 types=PathItem",
+ "cfg": "y-grav=true allow-turn=true allow-turn-180=false quality=15 spacing=5.67",
+ "secs": 74.649,
+ "status": "Layout applied to 20 items.",
+ "meas": {
+  "L": 510.024000013908,
+  "H": 597.462642895009,
+  "rasters": 1
+ },
+ "key": "mao",
+ "density": 0.6800003670589538
+}

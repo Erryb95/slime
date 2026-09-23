@@ -1,0 +1,13 @@
+{
+ "open": "sel=25 container=3732x601 types=PathItem",
+ "cfg": "y-grav=true allow-turn=false allow-turn-180=true quality=15 spacing=5.67",
+ "secs": 73.647,
+ "status": "Layout applied to 24 items.",
+ "meas": {
+  "L": 1471.66800001391,
+  "H": 598.139961256981,
+  "rasters": 1
+ },
+ "key": "albano",
+ "density": 0.7243304934128652
+}

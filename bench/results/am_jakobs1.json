@@ -1,0 +1,13 @@
+{
+ "open": "sel=26 container=1501x601 types=PathItem",
+ "cfg": "y-grav=true allow-turn=true allow-turn-180=false quality=15 spacing=5.67",
+ "secs": 73.672,
+ "status": "Layout applied to 25 items.",
+ "meas": {
+  "L": 466.336000013908,
+  "H": 596.115994381931,
+  "rasters": 1
+ },
+ "key": "jakobs1",
+ "density": 0.3151617372429966
+}

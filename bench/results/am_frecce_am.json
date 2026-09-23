@@ -1,0 +1,13 @@
+{
+ "open": "sel=51 container=1501x601 types=PathItem",
+ "cfg": "y-grav=true allow-turn=true allow-turn-180=false quality=15 spacing=5.67",
+ "secs": 76.705,
+ "status": "Layout applied to 50 items.",
+ "meas": {
+  "L": 516.289333347241,
+  "H": 597.001355894619,
+  "rasters": 1
+ },
+ "key": "frecce_am",
+ "density": 0.5712388001115435
+}
