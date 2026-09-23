@@ -298,6 +298,7 @@
       $('sLength').textContent = fmt(b.strip_width / MM, 0) + ' mm';
       $('sFill').textContent = fmt(d * 100, 1) + ' %';
       $('fillBarFill').style.width = Math.max(0, Math.min(100, d * 100)) + '%';
+      if (window.CorvoReportPanel) window.CorvoReportPanel.update(b);   // MODULO 5: live material/cost report
     }
     if (S.t0) {
       var el = ((S.tEnd || Date.now()) - S.t0) / 1000;
@@ -394,6 +395,7 @@
     var p = hadSession ? hostIdle().then(function () { return hostCall('corvoRevert'); }) : Promise.resolve();
     p.catch(function () { /* keep the original error */ }).then(function () {
       S.session = false;
+      if (window.CorvoReportPanel) window.CorvoReportPanel.clear();   // MODULO 5
       setState('idle');
       setError(err);
     });
@@ -465,6 +467,8 @@
       S.budget = p.time;
       if (hulls) pl.notes.push(t('hullNote', { n: hulls }));
       S.note = pl.notes.join(' ');
+      // MODULO 5: new report session (rectangle baseline + original length computed once)
+      if (window.CorvoReportPanel) window.CorvoReportPanel.begin({ pieces: pieces, items: items, H: H, gapPt: gapPt, orient: orient, docName: doc.name || '' });
 
       var msg = {
         type: 'nest',
@@ -525,6 +529,7 @@
     var p = had ? hostIdle().then(function () { return hostCall('corvoRevert'); }) : Promise.resolve();
     p.then(function () {
       S.session = false;
+      if (window.CorvoReportPanel) window.CorvoReportPanel.clear();   // MODULO 5: layout undone
       setState('idle');
       if (had) setStatus('reverted');
     }, function (err) {
@@ -570,5 +575,6 @@
   getWasm().catch(function (e) { console.warn('[corvo] wasm preload failed:', e); });
 
   // exposed for the verifier / debugging
-  window.CorvoPanel = { state: function () { return S; }, hostCall: hostCall, startEngine: startEngine, t: t };
+  window.CorvoPanel = { state: function () { return S; }, hostCall: hostCall, startEngine: startEngine, t: t,
+    evalRaw: function (script) { return hostIdle().then(function () { return evalHost(script); }); } };   // MODULO 5: raw read-only host query (document path for the CSV)
 })();

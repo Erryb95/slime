@@ -236,3 +236,50 @@ Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, i
   confronti di regressione meno rumorosi; 0/assente = casuale come in produzione.
 - Aperture di file nei test: `app.userInteractionLevel = DONTDISPLAYALERTS` (un avviso sui profili colore CMYK bloccava
   ExtendScript con una finestra modale).
+
+## Modulo 5 — Report materiale e costo (2026-09-24, branch `modulo5-report`)
+
+File nuovi, isolati dal resto: `client/js/report.js` (logica pura, `window.CorvoReport` / `module.exports`),
+`client/js/report-panel.js` (solo DOM, `window.CorvoReportPanel`), `client/css/report.css`, sezione `<details id="m5">`
+in `index.html` (etichette con `data-m5`, non `data-i18n`, cosi' `applyLang` di main.js non le tocca),
+`tools/test_report.js`. In `main.js` solo agganci marcati `// MODULO 5`:
+`CorvoReportPanel.begin(ctx)` in `nest()` dopo la preparazione dei pezzi, `update(S.best)` in `renderStats()`
+(ogni 250 ms, ricalcolo solo se cambia la disposizione o il materiale), `clear()` su Annulla/errore,
+`CorvoPanel.evalRaw(script)` (query host in sola lettura, serve il percorso del documento per il CSV).
+
+Definizioni (ingresso in pt come il resto del pannello, uscita in mm/m/m²):
+- lunghezza usata L = `strip_width` di Sparrow; area usata = L x larghezza rotolo; area pezzi = area vera
+  (`piece.area`, fori esclusi); riempimento = pezzi / usata; sfrido = usata - pezzi (m² e %).
+- costo materiale: `m` = L(m) x prezzo; `m2` = area usata x prezzo; `sheet` = ceil(L / lunghezza foglio) x prezzo;
+  poi x (1 + scarto extra %). Manodopera opzionale = tariffa/h x min spellicolatura/m² x area usata / 60.
+  Costo per pezzo = (materiale + manodopera) / n pezzi.
+- risparmio (a) vs disposizione a rettangoli: bounding box di ogni pezzo (0/90° se consentiti), scaffali FFD
+  attraverso il rotolo con la stessa distanza, migliore di 3 politiche di orientamento (lato lungo attraverso,
+  lungo il rotolo, come disegnato) → baseline onesta, non un fantoccio; (b) vs disposizione originale: unione
+  dei `bounds` degli oggetti, com'e' o ruotata di 90°, solo se entra nella larghezza del rotolo (altrimenti assente).
+  Risparmio in m, m², % ed € (stessa formula di costo); proiezione mensile se "lavori/mese" > 0.
+  Se i rettangoli non sono piu' lunghi del nest il pannello scrive "nessun risparmio" invece di un numero negativo.
+- `combine(reports)`: riga TOTALE per il multicolore del modulo 4 (somme, riempimento ricalcolato).
+
+Impostazioni materiale in localStorage: `corvo.m5.current` (campi correnti), `corvo.m5.materials` (preset per nome,
+Salva/Elimina), `corvo.m5.preset`, `corvo.m5.open`. Valute EUR (default) e USD.
+
+CSV (`toCSV(report, lang)`): UTF-8 con BOM, `it` → separatore `;` e virgola decimale (Excel italiano), `en` → `,` e `.`.
+Blocco 1 = riepilogo con le colonne di FINDINGS-modulo4-6 §4 (deviazioni: importi senza suffisso `_eur` + colonna
+`valuta`; aggiunte `riempimento_pct`, `unita_prezzo`, `scarto_extra_pct`, `fogli`, `costo_manodopera`, `costo_totale`,
+`lunghezza_taglio_m` (perimetro dei poligoni semplificati), `lunghezza_rettangoli_mm`, `risparmio_m`,
+`lunghezza_originale_mm`, `risparmio_originale`; `tempo_macchina_min` e `colore_vinile` vuoti finche' non ci sono
+velocita' cutter e modulo 4). Riga vuota, poi blocco 2 = un pezzo per riga: `n, nome, livello, area_mm2,
+rotazione_gradi, x_mm, y_mm, larghezza_mm, altezza_mm` (bbox del pezzo posato, coordinate del rotolo, origine in basso
+a sinistra). Celle con separatore/virgolette/a capo tra virgolette; testo che inizia con `= + - @` prefissato da `'`.
+`livello` = `item.layer` di `corvoExport` se l'host lo fornisce (modulo 1), altrimenti vuoto.
+Esporta: `window.cep.fs.showSaveDialogEx` nella cartella del documento (o Desktop se non salvato), scrittura con
+`fs.writeFileSync`; senza dialogo scrive accanto al documento; nel browser scarica il file.
+"Copia riepilogo": testo per preventivi (`toText`), `execCommand('copy')` con ripiego su `navigator.clipboard`.
+
+Test: `node plugin/tools/test_report.js [s]` — unit (costi m/m²/fogli/scarto, scaffali, CSV quoting/BOM/iniezione,
+report vuoto senza NaN) + nest wasm su insegna48 e lettering (600 mm, 2 mm, 0/90/180/270): somma aree righe = area
+pezzi, riempimento = pezzi/usata, costo = L x prezzo, costo/pezzo x n = totale, baseline rettangoli e disposizione
+originale piu' lunghe del nest, pezzi dentro la striscia, CSV con righe/colonne coerenti.
+Risultati (4 s): insegna48 1.75 m, riempimento 66 %, rettangoli +0.68 m (28 %); lettering 0.88 m, 71 %, rettangoli +0.23 m (21 %).
+Non verificato in Illustrator (dialogo di salvataggio CEP, appunti in CEP): da fare nel passo VERIFICA del loop.

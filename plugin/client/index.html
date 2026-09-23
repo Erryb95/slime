@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>Corvo</title>
 <link rel="stylesheet" href="css/panel.css">
+<link rel="stylesheet" href="css/report.css">
 </head>
 <body>
 <main class="panel">
@@ -52,6 +53,57 @@
 
   <p class="status" id="status" data-i18n="ready">Select the pieces and press Nest.</p>
 
+  <!-- MODULO 5: report materiale e costo (js/report.js + js/report-panel.js, css/report.css) -->
+  <details class="m5" id="m5">
+    <summary data-m5="title">Material &amp; cost</summary>
+    <section class="m5-fields">
+      <label class="field wide"><span data-m5="preset">Material</span>
+        <span class="m5-row">
+          <select id="m5Preset"></select>
+          <button type="button" id="m5Save" class="btn mini" data-m5="save">Save</button>
+          <button type="button" id="m5Del" class="btn mini" data-m5="del">Delete</button>
+        </span>
+      </label>
+      <label class="field wide"><span data-m5="name">Name</span><input type="text" id="m5Name" maxlength="60"></label>
+      <label class="field"><span data-m5="price">Price</span>
+        <span class="unit"><input type="number" id="m5Price" min="0" step="0.1" value="0"><i id="m5Cur">€</i></span>
+      </label>
+      <label class="field"><span data-m5="priceUnit">Per</span>
+        <select id="m5Unit">
+          <option value="m" data-m5="perM">linear metre</option>
+          <option value="m2" data-m5="perM2">m²</option>
+          <option value="sheet" data-m5="perSheet">sheet</option>
+        </select>
+      </label>
+      <label class="field" id="m5SheetWrap" hidden><span data-m5="sheetLen">Sheet length</span>
+        <span class="unit"><input type="number" id="m5Sheet" min="1" step="10" value="1000"><i>mm</i></span>
+      </label>
+      <label class="field"><span data-m5="allowance">Waste allowance</span>
+        <span class="unit"><input type="number" id="m5Waste" min="0" max="100" step="1" value="0"><i>%</i></span>
+      </label>
+      <label class="field"><span data-m5="currency">Currency</span>
+        <select id="m5Currency"><option value="EUR">EUR €</option><option value="USD">USD $</option></select>
+      </label>
+      <label class="field"><span data-m5="labor">Labour</span>
+        <span class="unit"><input type="number" id="m5Labor" min="0" step="1" value="0"><i data-m5="perHour">/h</i></span>
+      </label>
+      <label class="field"><span data-m5="weed">Weeding</span>
+        <span class="unit"><input type="number" id="m5Weed" min="0" step="1" value="0"><i>min/m²</i></span>
+      </label>
+      <label class="field"><span data-m5="jobs">Jobs / month</span>
+        <input type="number" id="m5Jobs" min="0" step="1" value="0">
+      </label>
+      <label class="field wide"><span data-m5="job">Job / client</span><input type="text" id="m5Job" maxlength="80"></label>
+    </section>
+    <dl class="m5-out" id="m5Out"><dt data-m5="none">–</dt></dl>
+    <p class="m5-save" id="m5Savings"></p>
+    <section class="actions">
+      <button type="button" id="m5Csv" class="btn" data-m5="csv" disabled>Export CSV</button>
+      <button type="button" id="m5Copy" class="btn" data-m5="copy" disabled>Copy summary</button>
+    </section>
+    <p class="status" id="m5Status"></p>
+  </details>
+
   <footer>
     <span class="brand">CORVO</span>
     <button type="button" id="btnLang" class="link" title="Language">EN</button>
@@ -69,5 +121,7 @@
 <script src="js/geometry.js"></script>
 <script src="js/cluster.js"></script>
 <script src="js/main.js"></script>
+<script src="js/report.js"></script>
+<script src="js/report-panel.js"></script>
 </body>
 </html>
