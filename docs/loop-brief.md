@@ -26,6 +26,8 @@ Obiettivo: portare il plugin Corvo (plugin/) alla beta, modulo per modulo, usand
 - Modelli: ricerca web e raccolta file = sonnet (haiku per compiti meccanici: download, conteggi); codice e verifica = opus. Parallelizzare sempre: ricerca dei moduli futuri mentre si implementa quello corrente. Budget indicativo: max 6 agenti attivi insieme; DeepSeek (`tools/deepseek.py`, credito ~1 $) solo per testi brevi.
 - Non copiare codice da MXNestSpirit (GPL) o NestorCut (PolyForm). Sparrow/jagua-rs MIT ok.
 - Nessuna chiave o segreto nel repo.
+- Mai `find /` o ricerche su tutto il disco: i sorgenti Rust stanno in ~/.cargo/registry/src/*/ (es. jagua-rs-0.8.3).
+  Comandi lunghi sempre con timeout.
 - Mai inviare dati personali di Enrico (email, nome, account) a servizi esterni, nemmeno negli header User-Agent dei
   download: usare un User-Agent generico tipo "CorvoResearchBot/0.1".
 
