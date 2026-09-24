@@ -450,6 +450,20 @@
         if (!okH) { hb.checked = false; hb.disabled = true; hb.setAttribute('data-m9', '1'); }
         else if (hb.getAttribute('data-m9')) { hb.removeAttribute('data-m9'); hb.disabled = false; }
       }
+      // gating visivo dei moduli 4 (colore/livello) e 7 (fogli): opzioni bloccate, valore riportato al default
+      // (main.js ricontrolla has() in readParams: un preset caricato non aggira il blocco)
+      [['groupBy', ['color', 'layer'], 'colorNest', 'none'], ['container', ['sheets'], 'multiSheet', 'roll']].forEach(function (g) {
+        var sel = doc.getElementById(g[0]);
+        if (!sel || !sel.options) return;
+        var ok = hasIn(s, g[2]);
+        for (var i = 0; i < sel.options.length; i++) {
+          var o = sel.options[i];
+          if (g[1].indexOf(o.value) < 0) continue;
+          o.disabled = !ok;
+          o.title = ok ? '' : L.proFeatureMsg(g[2]);
+        }
+        if (!ok && g[1].indexOf(sel.value) >= 0) { sel.value = g[3]; try { sel.dispatchEvent(new Event('change')); } catch (e) { /* old CEF */ } }
+      });
     }
     L.render = render;
 

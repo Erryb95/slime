@@ -24,7 +24,8 @@ const C = require(path.join(CLIENT, 'lib', 'clipper.js'));
 
 const SECS = +(process.argv[2] || 10), SEED = +(process.env.SEED || 7);
 const MM = 72 / 25.4, ROLL_MM = 600, GAP_MM = 2, GAP = GAP_MM * MM, FLAT = 0.5, ROT = '90', SYS = 'graphtec';
-const DTF = path.join(ROOT, 'bench', 'real', 'dtf');
+let DTF = path.join(ROOT, 'bench', 'real', 'dtf');
+if (!fs.existsSync(DTF)) DTF = path.join(ROOT, '..', 'Plugin', 'bench', 'real', 'dtf');   // worktree: bench/real e' gitignored
 let fails = 0, checks = 0;
 function check(ok, msg) { checks++; if (!ok) { fails++; console.log('  FAIL: ' + msg); } }
 

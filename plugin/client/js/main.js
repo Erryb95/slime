@@ -325,6 +325,10 @@
     ['rollWidth', 'gap', 'rotations', 'time', 'shapeSrc', 'merge', 'regmarks', 'preset', 'rasterMode'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
     if ($('useHoles')) $('useHoles').disabled = st !== 'idle' || !m9has('holes');   // MODULO 2 + MODULO 9 (Pro)
     if (QP()) QP().setEnabled(st === 'idle');                     // MODULO 3
+    // MODULO 4/7: raggruppamento, fogli, preset; Applica solo a fine sequenza multi-job
+    MN_IDS.forEach(function (id) { if ($(id)) $(id).disabled = st !== 'idle'; });
+    if (S.mn && running) $('btnApply').disabled = true;
+    if (MN && $('container')) mnSyncUi();
   }
 
   function readParams() {
@@ -337,11 +341,22 @@
       merge: !!$('merge').checked,
       rm: ($('regmarks') && $('regmarks').value) || 'none',     // MODULO 6
       holes: !!($('useHoles') && $('useHoles').checked) && m9has('holes'),  // MODULO 2 + MODULO 9 (Pro)
-      rasterMode: $('rasterMode').value           // MODULO 8
+      rasterMode: $('rasterMode').value,          // MODULO 8
+      // MODULO 4: nesting per colore / livello
+      group: ($('groupBy') && $('groupBy').value) || 'none',
+      colorTol: $('colorTol') ? parseFloat($('colorTol').value) : 8,
+      // MODULO 7: fogli
+      container: ($('container') && $('container').value) || 'roll',
+      sheetId: $('sheetPreset') ? $('sheetPreset').value : '600x400',
+      sheetW: $('sheetW') ? parseFloat($('sheetW').value) : 0,
+      sheetH: $('sheetH') ? parseFloat($('sheetH').value) : 0,
+      sheetMargin: $('sheetMargin') ? parseFloat($('sheetMargin').value) : 10,
+      grain: !!($('grain') && $('grain').checked)
     };
     try { localStorage.setItem('corvo.opts', JSON.stringify({ shape: p.shape, merge: p.merge })); } catch (e) { /* storage blocked */ }
     try { localStorage.setItem('corvo.holes', p.holes ? '1' : '0'); } catch (e) { /* storage blocked */ }   // MODULO 2
     if (!(p.rollMm > 0) || !(p.gapMm >= 0) || !(p.time >= 2)) throw new Error(t('badInput'));
+    mnReadParams(p);                   // MODULO 4/7: validation + panel settings remembered
     return p;
   }
 
@@ -355,6 +370,7 @@
   function density(rep) { return rep ? S.areaSum / (rep.strip_width * S.H) : 0; }
 
   function renderStats() {
+    if (S.mn) { mnRenderStats(); return; }   // MODULO 4/7
     var b = S.best;
     if (b) {
       var d = density(b);
@@ -372,6 +388,7 @@
   }
 
   function movesFor(rep) {
+    if (S.mn) return mnMoves(rep);     // MODULO 4/7: finished jobs + the current one
     if (HO) return HO.movesFor(rep.placements, S.nestPieces, S.origin, S.holes);   // MODULO 2: + children in holes
     var out = [];
     for (var k = 0; k < rep.placements.length; k++) {
@@ -388,7 +405,10 @@
     S.lastSent = rep;
     S.pushing = true;
     var calls = [hostCall('corvoApply', movesFor(rep))];
-    if (rep.strip_width !== S.lastRollW) {
+    if (S.mn) {                        // MODULO 4/7: all the containers (rolls per colour / sheets) with their labels
+      var pay = mnContainers(rep), js = JSON.stringify(pay);
+      if (js !== S.mn.lastPay) { S.mn.lastPay = js; calls.push(mnHostCall('corvoContainers', pay)); }
+    } else if (rep.strip_width !== S.lastRollW) {
       S.lastRollW = rep.strip_width;
       calls.push(hostCall('corvoRoll', rollRect(rep)));     // MODULO 6: rotolo intero, crocini compresi
     }
@@ -410,11 +430,11 @@
   // ---------------------------------------------------------------- MODULO 3: copie e coppie specchiate
   // corvoExport, oppure l'esportazione di "Leggi selezione" se la selezione non e' cambiata (firma veloce: tipo +
   // ingombro di ogni oggetto): sui file densi l'esportazione costa minuti, non va fatta due volte. Usata una volta sola.
-  function m3Export() {
-    var c = M3.cache;
+  function m3Export(o) {
+    var c = M3.cache, paint = !!(o && o.paint);   // MODULO 4: i colori (paint) servono solo col nest per colore
     M3.cache = null;
-    function fresh() { return hostCall('corvoExport', { flatness: FLATNESS, raster: true }); }
-    if (!c) return fresh();
+    function fresh() { return hostCall('corvoExport', { flatness: FLATNESS, raster: true, paint: paint }); }
+    if (!c || (paint && !c.paint)) return fresh();
     return hostCall('corvoM3SelSig').then(function (r) { return r && r.sig === c.sig ? c.exp : fresh(); }, fresh);
   }
   // sagome delle copie nell'host (indici base + k), prima del primo corvoApply
@@ -433,7 +453,8 @@
     setState('busy');
     setStatus('exporting');
     M3.cache = null;
-    hostCall('corvoExport', { flatness: FLATNESS, raster: true }).then(function (exp) {
+    var paint = p.group === 'color';   // MODULO 4: stessa esportazione e stesso piano di Nest (chiavi della tabella)
+    hostCall('corvoExport', { flatness: FLATNESS, raster: true, paint: paint }).then(function (exp) {
       var keep = JSON.parse(JSON.stringify(exp));   // Nest la riusa intatta (raster.prepareItems lavora sulla copia)
       var items = (exp && exp.items) || [];
       if (!items.length) throw new Error(t('noSelection'));
@@ -442,12 +463,13 @@
         items = R.prepareItems(items, { mode: p.rasterMode, offset: R.SAFETY_MM * MM }).items;
       }
       var doc = exp.doc || {};
-      var plan = CL.planPieces(items, { merge: p.merge, shape: p.shape, artboards: doc.artboards || [], lockedCuts: exp.lockedCuts || [] });
+      var planOpts = { merge: p.merge, shape: p.shape, artboards: doc.artboards || [], lockedCuts: exp.lockedCuts || [] };
+      var plan = (p.group !== 'none' && CG) ? CG.planGroups(items, { by: p.group, tol: p.colorTol }, planOpts, CL) : CL.planPieces(items, planOpts);
       if (!plan.pieces.length) throw new Error(t('errNothing'));   // altri errori del piano: li mostra Nest
       QP().fill(plan.pieces);
       if ($('m3')) $('m3').open = true;
       return hostCall('corvoM3SelSig').then(function (r) {
-        M3.cache = { sig: r && r.sig, exp: keep };
+        M3.cache = { sig: r && r.sig, exp: keep, paint: paint };
         setState('idle');
         setStatus('qtyLoaded', { n: plan.pieces.length }, 'ok');
       });
@@ -570,6 +592,8 @@
     setState('preparing');
     setStatus('exporting');
 
+    // MODULO 4/7: multi-job (per colore/livello, fogli) = contenitori separati, niente crocini (nota nella riga di stato)
+    if (mnMode(p) && p.rm !== 'none') { p.rmSkipped = true; p.rm = 'none'; }
     // MODULO 6: i crocini riservano due fasce laterali e un margine di testa -> striscia del nest ridotta
     var rmRes = RM ? RM.reserve(p.rm, p.rollMm) : { id: 'none', nestHeight: p.rollMm, offset: [0, 0], band: 0 };
     if (!(rmRes.nestHeight > 0)) {
@@ -578,7 +602,8 @@
       return;
     }
     var H = rmRes.nestHeight * MM, gapPt = p.gapMm * MM, orient = G.rotationsFor(p.rot);
-    m3Export().then(function (exp) {   // MODULO 8: raster (MODULO 3: corvoExport, o quella di "Leggi selezione")
+    if (p.container === 'sheets' && p.sheet) H = p.sheet.Hu * MM;   // MODULO 7: striscia = altezza utile del foglio
+    m3Export({ paint: p.group === 'color' }).then(function (exp) {   // MODULO 8: raster; MODULO 3: export di "Leggi selezione" se valida; MODULO 4: colori
       if (S !== me || S.state !== 'preparing') return;
       S.session = true;
       var items = (exp && exp.items) || [];
@@ -596,7 +621,9 @@
       }
 
       // module 1: registration marks, overlapping objects -> one piece, shape from the cut line
-      var plan = CL.planPieces(items, { merge: p.merge, shape: p.shape, artboards: doc.artboards || [], lockedCuts: exp.lockedCuts || [] });
+      var planOpts = { merge: p.merge, shape: p.shape, artboards: doc.artboards || [], lockedCuts: exp.lockedCuts || [] };
+      // MODULO 4: un piano per gruppo (colore o livello): l'unione del modulo 1 non incolla mai due colori
+      var plan = (p.group !== 'none' && CG) ? CG.planGroups(items, { by: p.group, tol: p.colorTol }, planOpts, CL) : CL.planPieces(items, planOpts);
       if (plan.error) {
         var en = plan.error.names || [];
         throw new Error(t({ text: p.shape === 'cut' ? 'errTextCut' : 'errText', lockedCut: 'errLockedCut' }[plan.error.code] || 'errRasterOnly',
@@ -613,6 +640,8 @@
       if (w.cutFallback) notes.push(t('noteFallback', { n: w.cutFallback }));
       if (w.noContour) notes.push(t('noteNoContour', { n: w.noContour }));
       if (rasterNote) notes.push(rasterNote);   // MODULO 8
+      if (plan.groups && plan.mixed && plan.mixed.length) notes.push(t('mnMixed', { n: plan.mixed.length }));   // MODULO 4
+      if (p.rmSkipped) notes.push(t('mnNoRegmarks'));   // MODULO 4/7
       S.plan = plan;
       if (QP()) QP().fill(plan.pieces);   // MODULO 3: tabella delle copie
       setStatus('preparing', { n: plan.pieces.length });
@@ -641,6 +670,7 @@
       } else S.qx = null;
       S.keepClose = !!(qs && qs.keepClose);
       var big = pieces.filter(function (x) { return G.minExtent(x.polygon, orient) > H - 1e-6; });
+      if (big.length && p.container === 'sheets') throw new Error(t('mnTooBig', { w: fmt(p.sheet.Lu), h: fmt(p.sheet.Hu), names: big.map(function (x) { return x.name; }).join(', ') }));   // MODULO 7
       if (big.length) throw new Error(t('tooBig', { w: fmt(rmRes.nestHeight), names: big.map(function (x) { return x.name; }).join(', ') }));
       var hulls = pieces.filter(function (x) { return /hull/.test(x.method) && x.parts > 1; }).length;
 
@@ -657,6 +687,7 @@
       S.budget = p.time;
       if (hulls) pl.notes.push(t('hullNote', { n: hulls }));
       S.note = pl.notes.join(' ');
+      if (mnMode(p)) return mnStart(me, p, pieces, items, doc, gapPt, orient);   // MODULO 4/7: sequenza di nest
 
       // MODULO 2: small pieces inside the holes of big ones; children travel with their parent (one Sparrow item)
       S.holes = (HO && p.holes) ? HO.planHoles(items, pieces, { gap: gapPt, orientations: orient }) : null;
@@ -707,10 +738,12 @@
   }
 
   function stop() {
+    if (S.mn && S.state === 'running') { mnHurry(); return; }   // MODULO 4/7
     if (S.state === 'running') finishSearch('stoppedMsg');
   }
 
   function apply() {
+    if (S.mn && S.state === 'running') return;   // MODULO 4/7: Applica a fine sequenza
     // MODULO 9: prova finita senza licenza -> Applica solo fino a LIMITS.freeApplyMax pezzi (il nest resta libero)
     if (LIC && (S.state === 'running' || S.state === 'review') && !LIC.canApply(S.m9Count || 0)) {
       lastStatus = { key: null };
@@ -771,6 +804,524 @@
     }
   }
 
+  // ---------------------------------------------------------------- MODULO 4 / MODULO 7: multi-job
+  // Nesting per colore/livello (un rotolo per gruppo, impilati sotto la tavola) e multi-foglio (fogli in fila, una
+  // riga per gruppo). Logica pura in js/multinest.js, js/colorgroups.js, js/sheets.js; disegno dei contenitori in
+  // host/multinest.jsx (corvoContainers). Stato in S.mn; la ricerca live mostra il gruppo / foglio corrente.
+  var CG = window.CorvoColorGroups, MN = window.CorvoMultinest, SH = window.CorvoSheets;
+  var MN_IDS = ['groupBy', 'colorTol', 'container', 'sheetPreset', 'sheetW', 'sheetH', 'sheetMargin', 'grain',
+    'mnPreset', 'mnName', 'mnSave', 'mnDel', 'mnExport', 'mnImport'];
+  var MN_STR = {
+    en: {
+      groupBy: 'Nest by', grpNone: 'All together', grpColor: 'Fill colour', grpLayer: 'Layer', colorTol: 'Colour tolerance',
+      container: 'Material', contRoll: 'Roll', contSheets: 'Sheets', sheetSize: 'Sheet', sheetCustom: 'Custom',
+      sheetW: 'Sheet length', sheetH: 'Sheet width', sheetMargin: 'Sheet margin',
+      grain: 'Grain: 0/180° only (also pieces named or on a layer "grain"/"venatura")',
+      presets: 'Presets', mnSave: 'Save', mnDel: 'Delete', mnExport: 'Export', mnImport: 'Import', mnPresetNone: '(current settings)',
+      mnPresetName: 'New preset name', mnPresetSaved: 'Preset "{name}" saved.', mnPresetLoaded: 'Preset "{name}" loaded.',
+      mnImported: '{n} preset(s) imported.', mnImportBad: 'Not a Corvo presets file.', mnExported: 'Presets saved to {path}',
+      mnBadSheet: 'Check the sheet: length and width > 0, margin ≥ 0 and smaller than half the sheet.',
+      mnTooBig: 'Larger than the usable sheet ({w} × {h} mm, margins excluded): {names}',
+      mnMixed: '{n} object(s) with more than one colour: nested with their main colour.',
+      mnNoRegmarks: 'Registration marks are not supported yet with several rolls/sheets: none drawn. For print & cut with marks use "All together" + Roll.',
+      mnNoColor: 'no colour', mnNoLayer: 'no layer',
+      mnNoCells: '"Keep copies close" applies to a single nest only: with several rolls/sheets each copy is nested on its own.',
+      mnRunColor: 'Group {k}/{n}: {label} — {pieces} pieces… Stop = finish quickly.',
+      mnRunSheet: '{group}Sheet {k} ({phase}), {n} pieces… Stop = finish quickly.',
+      mnHurry: 'Finishing quickly: the current nest keeps its best layout, the rest gets a short search.',
+      mnDoneRoll: '{n} rolls: {list}. Total {len} mm, fill {fill}%. Apply to keep, Cancel to restore.',
+      mnDoneSheets: '{n} sheet(s) (lower bound from the usable area: {lb}): fill {fills} %, last sheet {last} mm used. Apply to keep, Cancel to restore.',
+      mnSheetLabel: 'Sheet {k}', mnSheetUsed: 'used {len} mm',
+      phSplit: 'split', phFill: 'fill', phConsolidate: 'fewer sheets', phFinal: 'final check'
+    },
+    it: {
+      groupBy: 'Nest per', grpNone: 'Tutto insieme', grpColor: 'Colore di riempimento', grpLayer: 'Livello', colorTol: 'Tolleranza colore',
+      container: 'Materiale', contRoll: 'Rotolo', contSheets: 'Fogli', sheetSize: 'Foglio', sheetCustom: 'Personalizzato',
+      sheetW: 'Lunghezza foglio', sheetH: 'Larghezza foglio', sheetMargin: 'Margine foglio',
+      grain: 'Venatura: solo 0/180° (anche pezzi con nome o livello "venatura"/"grain")',
+      presets: 'Preset', mnSave: 'Salva', mnDel: 'Elimina', mnExport: 'Esporta', mnImport: 'Importa', mnPresetNone: '(impostazioni correnti)',
+      mnPresetName: 'Nome nuovo preset', mnPresetSaved: 'Preset «{name}» salvato.', mnPresetLoaded: 'Preset «{name}» caricato.',
+      mnImported: '{n} preset importati.', mnImportBad: 'Non è un file di preset Corvo.', mnExported: 'Preset salvati in {path}',
+      mnBadSheet: 'Controlla il foglio: lunghezza e larghezza > 0, margine ≥ 0 e minore di metà foglio.',
+      mnTooBig: 'Più grandi del foglio utile ({w} × {h} mm, margini esclusi): {names}',
+      mnMixed: '{n} oggetti con più di un colore: disposti col colore prevalente.',
+      mnNoRegmarks: 'Crocini di registro non ancora supportati con più rotoli/fogli: nessuno disegnato. Per print & cut con crocini usa "Tutto insieme" + Rotolo.',
+      mnNoColor: 'senza colore', mnNoLayer: 'senza livello',
+      mnNoCells: '"Tieni vicine" vale solo per il nest singolo: con più rotoli/fogli ogni copia è disposta da sola.',
+      mnRunColor: 'Gruppo {k}/{n}: {label} — {pieces} pezzi… Stop = chiudi in fretta.',
+      mnRunSheet: '{group}Foglio {k} ({phase}), {n} pezzi… Stop = chiudi in fretta.',
+      mnHurry: 'Chiusura rapida: il nest corrente tiene la disposizione migliore, il resto ha una ricerca breve.',
+      mnDoneRoll: '{n} rotoli: {list}. Totale {len} mm, riempimento {fill}%. Applica per tenere, Annulla per ripristinare.',
+      mnDoneSheets: '{n} fogli (minimo teorico dall’area utile: {lb}): riempimento {fills} %, ultimo foglio usato per {last} mm. Applica per tenere, Annulla per ripristinare.',
+      mnSheetLabel: 'Foglio {k}', mnSheetUsed: 'usati {len} mm',
+      phSplit: 'taglio', phFill: 'riempimento', phConsolidate: 'meno fogli', phFinal: 'verifica finale'
+    }
+  };
+  ['en', 'it'].forEach(function (l) { for (var k in MN_STR[l]) STR[l][k] = MN_STR[l][k]; });
+  var MN_GRAIN_RE = /grain|venatur|vena\b|fibra/i;
+
+  function mnMode(p) { return !!(MN && ((p.group !== 'none' && CG) || (p.container === 'sheets' && SH))); }
+
+  function mnReadParams(p) {
+    // MODULO 9: nest per colore/livello (modulo 4) e multi-foglio (modulo 7) sono funzioni Pro (FEATURES in license.js)
+    var m9lock = p.group !== 'none' && !m9has('colorNest') ? 'colorNest' : (p.container === 'sheets' && !m9has('multiSheet') ? 'multiSheet' : null);
+    if (m9lock) {
+      if (LIC && LIC.openDialog) LIC.openDialog();
+      throw new Error(LIC && LIC.proFeatureMsg ? LIC.proFeatureMsg(m9lock) : m9lock);
+    }
+    if (p.container === 'sheets' && SH) {
+      var sz = SH.sheetSize(p.sheetId, p.sheetW, p.sheetH), m = p.sheetMargin;
+      if (!sz || !(m >= 0) || sz.w - 2 * m <= 0 || sz.h - 2 * m <= 0) throw new Error(t('mnBadSheet'));
+      p.sheet = { w: sz.w, h: sz.h, margin: m, Lu: sz.w - 2 * m, Hu: sz.h - 2 * m };
+    }
+    if (!(p.colorTol >= 0)) p.colorTol = CG ? CG.DEFAULT_TOL : 8;
+    try { localStorage.setItem('corvo.mn.opts', JSON.stringify(mnCollect())); } catch (e) { /* storage blocked */ }
+  }
+
+  // pieces (renumbered after the degenerate ones) -> groups [{key, label, hex, pieces:[piece]}]
+  function mnGroups(pieces) {
+    var gs = S.plan && S.plan.groups;
+    if (!gs) return [{ key: 'all', label: '', hex: null, pieces: pieces.slice() }];
+    // MODULO 3: le copie (e le specchiate) vanno nel gruppo del loro originale (copyOf = indice del piano)
+    var gOf = {};
+    gs.forEach(function (g, gi) { g.pieces.forEach(function (i) { gOf[i] = gi; }); });
+    var out = gs.map(function (g) {
+      var lab = g.label || (g.key === 'none' ? t(S.mn0.group === 'layer' ? 'mnNoLayer' : 'mnNoColor') : '?');
+      return { key: g.key, label: lab, hex: g.hex, pieces: [] };
+    });
+    pieces.forEach(function (x) {
+      var h = x.copyOf !== undefined ? x.copyOf : (x.hostI !== undefined ? x.hostI : x.id), gi = gOf[h];
+      if (gi !== undefined) out[gi].pieces.push(x);
+    });
+    return out.filter(function (g) { return g.pieces.length; });
+  }
+
+  // engine for a sequence of nests: one worker reused; Stop aborts the current nest keeping its best layout
+  function mnRunner(me) {
+    var eng = null, hang = function () { return new Promise(function () { /* session cancelled */ }); };
+    return function (instance, secs, onReport) {
+      if (S !== me) return hang();
+      if (S.mn.hurry) secs = Math.min(secs, 1);
+      return (eng ? Promise.resolve(eng) : startEngine().then(function (e) { eng = e; return e; })).then(function (engine) {
+        if (S !== me || S.state !== 'running') { if (engine.worker) engine.worker.terminate(); eng = null; return hang(); }
+        S.engine = engine;
+        return new Promise(function (resolve, reject) {
+          var best = null, runId = {};
+          S.runId = runId;
+          function end() { S.runId = null; S.mn.abort = null; }
+          function handler(m) {
+            if (S.runId !== runId) return;
+            if (m.type === 'report') {
+              var r = m.report;
+              S.phase = r.phase || S.phase;
+              if (!best || r.strip_width <= best.strip_width) { best = r; S.best = r; if (onReport) onReport(r); }
+              if (S.mn.hurry && S.mn.abort) S.mn.abort();
+            } else if (m.type === 'done') { end(); resolve(best); }
+            else if (m.type === 'error') { end(); reject(new Error(t('engineError', { msg: m.message }))); }
+          }
+          S.mn.abort = function () {              // only with a layout in hand (otherwise at the first report)
+            if (!best || S.runId !== runId || !engine.worker) return;
+            end();
+            engine.worker.terminate(); eng = null; S.engine = null;
+            resolve(best);
+          };
+          var msg = { type: 'nest', instance: instance, exploreSecs: secs * 0.8, compressSecs: secs * 0.2,
+            seed: window.CorvoSeed > 0 ? Math.floor(window.CorvoSeed) : 1 + Math.floor(Math.random() * 1e9), gap: S.mn.gapPt };
+          if (engine.kind === 'worker') {
+            engine.worker.onmessage = function (e) { handler(e.data); };
+            engine.worker.onerror = function (ev) { if (ev.preventDefault) ev.preventDefault(); handler({ type: 'error', message: ev.message || 'worker error' }); };
+            engine.worker.postMessage(msg);
+          } else inlineNest(msg, handler);
+        });
+      });
+    };
+  }
+
+  function mnUnitMoves(pls, origin) {
+    if (HO) return HO.movesFor(pls, S.nestPieces, origin, S.holes);
+    return pls.map(function (pl) { return G.placementToMove(pl, S.pieceById[pl.item_id], origin); });
+  }
+  function mnMoves(rep) {
+    var out = [], M = S.mn;
+    Object.keys(M.fixed).forEach(function (k) { out = out.concat(M.fixed[k]); });
+    if (M.cur && rep && !rep.mnFinal) out = out.concat(mnUnitMoves(MN.mapPlacements(rep, M.cur.units), M.cur.origin));
+    return out;
+  }
+  function mnContainers(rep) {
+    var M = S.mn, list = M.done.slice();
+    if (M.cur && rep && !rep.mnFinal) {
+      if (M.p.container === 'sheets') list.push(M.cur.box);
+      else list.push({ ox: M.cur.origin[0], oy: M.cur.origin[1], w: rep.strip_width, h: M.W, label: MN.rollLabel(M.cur.label, rep.strip_width / MM) });
+    }
+    return { list: list };
+  }
+  function mnHostPath() { return baseDir.replace(/\/client$/, '') + '/host/multinest.jsx'; }
+  function mnHostCall(fn, arg) {
+    return hostScript('(function(){if(typeof ' + fn + '!=="function"){$.evalFile(new File(' + JSON.stringify(mnHostPath()) + '));}' +
+      'return ' + fn + '(' + JSON.stringify(JSON.stringify(arg)) + ');})()');
+  }
+  function mnRenderStats() {
+    var M = S.mn, b = S.best;
+    if (M.final) {
+      $('sLength').textContent = M.p.container === 'sheets' ? M.sheetsN + ' × ' + fmt(M.p.sheet.w) + '×' + fmt(M.p.sheet.h) : fmt(M.totalMm, 0) + ' mm';
+      $('sFill').textContent = fmt(M.fill * 100, 1) + ' %';
+      $('fillBarFill').style.width = Math.max(0, Math.min(100, M.fill * 100)) + '%';
+    } else if (b && M.cur) {
+      var d = M.cur.area / (b.strip_width * M.cur.H);
+      $('sLength').textContent = fmt(b.strip_width / MM, 0) + ' mm';
+      $('sFill').textContent = fmt(d * 100, 1) + ' %';
+      $('fillBarFill').style.width = Math.max(0, Math.min(100, d * 100)) + '%';
+    }
+    if (S.t0) {
+      var el = ((S.tEnd || Date.now()) - S.t0) / 1000;
+      $('sElapsed').textContent = fmt(el, 1) + ' s';
+      $('timeBarFill').style.width = Math.min(100, el / Math.max(1, M.budget) * 100) + '%';
+    }
+    if (S.phase) $('sPhase').textContent = t(S.phase);
+  }
+  function mnHurry() {
+    if (!S.mn || S.mn.hurry) return;
+    S.mn.hurry = true;
+    if (S.mn.abort) S.mn.abort();
+    setStatus('mnHurry', null, 'warn');
+  }
+
+  // MODULO 3: le sagome delle copie devono esistere nell'host prima del primo corvoApply; ogni copia e' un'unita'
+  // a se' (demand 1) nel job del suo gruppo/foglio, quindi le sagome si spostano job per job come gli originali.
+  // "Tieni vicine" (celle rigide) vale solo per il nest singolo: qui una nota.
+  function mnStart(me, p, pieces, items, doc, gapPt, orient) {
+    if (S.qx && S.keepClose) S.note = (S.note ? S.note + ' ' : '') + t('mnNoCells');
+    return m3Ghosts().then(function () {
+      if (S !== me || S.state !== 'preparing') return;
+      return mnStartJobs(me, p, pieces, items, doc, gapPt, orient);
+    });
+  }
+  function mnStartJobs(me, p, pieces, items, doc, gapPt, orient) {
+    S.mn0 = p;
+    var groups = mnGroups(pieces);
+    // MODULO 2 per gruppo: un pezzo di un colore non finisce nel foro di un altro colore
+    var holes = null;
+    if (HO && p.holes) {
+      holes = { children: [], parents: {}, regions: 0, usedRegions: 0, emptyRegions: 0 };
+      groups.forEach(function (g) {
+        var hp = HO.planHoles(items, g.pieces, { gap: gapPt, orientations: orient });
+        holes.children = holes.children.concat(hp.children);
+        for (var k in hp.parents) holes.parents[k] = hp.parents[k];
+        holes.regions += hp.regions; holes.usedRegions += hp.usedRegions; holes.emptyRegions += hp.emptyRegions;
+      });
+    }
+    S.holes = holes;
+    S.nestPieces = HO ? HO.nestPieces(pieces, holes) : pieces;
+    S.pieceById = {};
+    S.nestPieces.forEach(function (x) { S.pieceById[x.id] = x; });
+    if (holes && holes.children.length) S.note = (S.note ? S.note + ' ' : '') + t('holesNote', { n: holes.children.length });
+    var unitOf = {};                                     // piece id -> nest unit
+    S.nestPieces.forEach(function (u) { unitOf[u.srcId !== undefined ? u.srcId : u.id] = u; });
+    groups.forEach(function (g) {
+      g.units = g.pieces.map(function (x) { return unitOf[x.id]; }).filter(Boolean);
+      g.units.forEach(function (u) {                   // venatura per pezzo: nome o livello "grain"/"venatura"
+        var pp = S.plan && S.plan.pieces[u.copyOf !== undefined ? u.copyOf : (u.hostI !== undefined ? u.hostI : (u.srcId !== undefined ? u.srcId : u.id))];   // MODULO 3: copie -> originale
+        if (MN_GRAIN_RE.test(u.name || '') || (pp && (pp.layers || []).some(function (l) { return MN_GRAIN_RE.test(l || ''); }))) u.grain = true;
+      });
+      g.area = MN.areaOf(g.units);
+    });
+    groups = groups.filter(function (g) { return g.units.length; });
+
+    var left = +doc.abLeft || 0, top = (+doc.abBottom || 0) - ROLL_MARGIN_MM * MM;
+    var W = p.rollMm * MM, sheets = p.container === 'sheets';
+    var labelPt = Math.max(12, Math.min(72, (sheets ? p.sheet.h * MM : W) * 0.04));
+    var spacing = Math.max(20 * MM, labelPt * 2.5);
+    var M = S.mn = { p: p, gapPt: gapPt, orient: orient, groups: groups, fixed: {}, done: [], cur: null, hurry: false,
+      lastPay: '', W: W, results: [], budget: p.time, sheetsN: 0 };
+    S.docName = doc.name || '';
+    S.items = items; S.pieces = pieces;
+    var run = mnRunner(me);
+    var chain;
+    if (!sheets) {
+      var origins = MN.stackRolls(groups.length, W, left, top, spacing);
+      var secs = MN.timeShares(groups.map(function (g) { return g.area; }), p.time, 3);
+      M.budget = secs.reduce(function (s, x) { return s + x; }, 0);
+      var jobs = groups.map(function (g, k) { return { g: g, units: g.units, H: W, orient: orient, secs: secs[k], origin: origins[k] }; });
+      chain = MN.runJobs(jobs, run, {
+        onStart: function (k, job) {
+          if (S !== me) return;
+          S.best = null; S.lastSent = null;              // the previous job's report has other item ids
+          M.cur = { units: job.units, origin: job.origin, label: job.g.label, area: job.g.area, H: W };
+          setStatus('mnRunColor', { k: k + 1, n: jobs.length, label: job.g.label, pieces: job.units.length }, null, S.note);
+        },
+        onDone: function (k, job) {
+          if (S !== me) return;
+          var L = job.report.strip_width;
+          M.fixed['r' + k] = mnUnitMoves(job.placements, job.origin);
+          M.done.push({ ox: job.origin[0], oy: job.origin[1], w: L, h: W, label: MN.rollLabel(job.g.label, L / MM) });
+          M.results.push({ label: job.g.label, hex: job.g.hex, lengthPt: L, placements: job.placements, units: job.units,
+            H: W, materialWidthPt: W, materialLengthPt: L });
+          M.cur = null;
+        }
+      });
+    } else {
+      var sw = p.sheet.w * MM, sh = p.sheet.h * MM, mg = p.sheet.margin * MM;
+      var splitSecs = Math.max(1, Math.min(5, p.time * 0.1));
+      M.budget = p.time * 2;
+      chain = groups.reduce(function (prev, g, gi) {
+        return prev.then(function () {
+          if (S !== me) return null;
+          var rowTop = top - gi * (sh + spacing);
+          var corner = function (k) { return [left + k * (sw + spacing), rowTop - sh]; };
+          var gLab = groups.length > 1 || g.key !== 'all' ? g.label + ' — ' : '';
+          var box = function (k, used) {
+            var c = corner(k);
+            return { ox: c[0], oy: c[1], w: sw, h: sh, label: 'Corvo — ' + gLab + t('mnSheetLabel', { k: k + 1 }) + ' — ' +
+              fmt(p.sheet.w) + ' × ' + fmt(p.sheet.h) + ' mm' + (used ? ' — ' + t('mnSheetUsed', { len: fmt(used / MM) }) : '') };
+          };
+          var doneBase = M.done.length;
+          return SH.planSheets(g.units, { sheetW: sw, sheetH: sh, margin: mg, orient: orient, grain: p.grain,
+            splitSecs: splitSecs, finalSecs: p.time, fillTries: 4, finalPass: 'all', hurry: function () { return M.hurry; } }, run, {
+            onPhase: function (info) {
+              if (S !== me) return;
+              S.phase = info.phase === 'final' ? 'compression' : 'exploration';
+              setStatus('mnRunSheet', { group: gLab, k: info.sheet + 1, n: info.n, phase: t({ split: 'phSplit', fill: 'phFill', consolidate: 'phConsolidate', final: 'phFinal' }[info.phase]) }, null, S.note);
+            },
+            onReport: function (info) {
+              if (S !== me) return;
+              var c = corner(info.sheet);
+              M.cur = { units: info.units, origin: [c[0] + mg, c[1] + mg], label: g.label, area: MN.areaOf(info.units), H: sh - 2 * mg, box: box(info.sheet) };
+            },
+            onSheet: function (k, sheet) {
+              if (S !== me) return;
+              var c = corner(k);
+              M.fixed['s' + gi + '_' + k] = mnUnitMoves(sheet.placements, [c[0] + mg, c[1] + mg]);
+              M.done[doneBase + k] = box(k);
+              M.cur = null;
+            }
+          }).then(function (res) {
+            if (S !== me) return;
+            if (res.error) {
+              if (res.error.code === 'tooBig') throw new Error(t('mnTooBig', { w: fmt(res.error.LuMm), h: fmt(res.error.HuMm), names: res.error.names.slice(0, 5).join(', ') }));
+              throw new Error(t('mnBadSheet'));
+            }
+            // rebuild this group's sheets from the final result (the consolidation may have dropped the last sheet)
+            Object.keys(M.fixed).forEach(function (key) { if (key.indexOf('s' + gi + '_') === 0) delete M.fixed[key]; });
+            M.done.length = doneBase;
+            res.sheets.forEach(function (s, k) {
+              var last = k === res.sheets.length - 1, c0 = corner(k);
+              M.fixed['s' + gi + '_' + k] = mnUnitMoves(s.placements, [c0[0] + mg, c0[1] + mg]);
+              M.done[doneBase + k] = box(k, last ? s.usedLength : 0);
+              M.results.push({ label: g.label + (groups.length > 1 || g.key !== 'all' ? ' — ' : '') + t('mnSheetLabel', { k: k + 1 }),
+                lengthPt: s.usedLength, placements: s.placements, units: s.units, H: sh - 2 * mg, materialWidthPt: sh, materialLengthPt: sw,
+                sheetFill: s.fillSheet, last: last });
+            });
+            M.sheetsN += res.sheets.length;
+            M.lowerBound = (M.lowerBound || 0) + res.lowerBoundUsable;
+            M.lastUsed = res.sheets.length ? res.sheets[res.sheets.length - 1].usedLength : 0;
+          });
+        });
+      }, Promise.resolve());
+    }
+    S.t0 = Date.now();
+    S.phase = 'exploration';
+    setState('running');
+    S.loop = setInterval(liveTick, LIVE_MS);
+    return chain.then(function () { if (S === me) mnFinish(me); });
+  }
+
+  function mnFinish(me) {
+    var M = S.mn;
+    stopEngine();
+    M.cur = null; M.final = true;
+    var areaAll = 0, usedAll = 0;
+    M.results.forEach(function (r) { areaAll += MN.areaOf(r.units); usedAll += r.materialLengthPt * r.materialWidthPt; });
+    M.fill = usedAll > 0 ? areaAll / usedAll : 0;
+    M.totalMm = M.results.reduce(function (s, r) { return s + r.lengthPt / MM; }, 0);
+    S.best = { strip_width: 0, placements: [], mnFinal: true };
+    setState('review');
+    renderStats();
+    mnReport();
+    var key, vars;
+    if (M.p.container === 'sheets') {
+      key = 'mnDoneSheets';
+      vars = { n: M.sheetsN, lb: M.lowerBound, fills: M.results.map(function (r) { return fmt(r.sheetFill * 100); }).join(' / '), last: fmt(M.lastUsed / MM) };
+    } else {
+      key = 'mnDoneRoll';
+      vars = { n: M.results.length, list: M.results.map(function (r) { return r.label + ' ' + fmt(r.lengthPt / MM) + ' mm'; }).join(', '),
+        len: fmt(M.totalMm), fill: fmt(M.fill * 100, 1) };
+    }
+    hostIdle().then(pushBest).then(function () {
+      if (S === me) setStatus(key, vars, 'ok', S.note);
+    }, function () { /* error already shown */ });
+  }
+
+  // MODULO 5 x 4/7: one report per colour / sheet + TOTAL (CorvoReportPanel.multi)
+  function mnReport() {
+    var RP = window.CorvoReportPanel;
+    if (!RP || !RP.multi) return;
+    var M = S.mn, itemById = {};
+    (S.items || []).forEach(function (it) { itemById[it.i] = it; });
+    RP.multi(M.results.map(function (r) {
+      var pls = HO ? HO.expandPlacements(r.placements, S.nestPieces, S.holes, S.pieces) : r.placements;
+      var ids = {};
+      pls.forEach(function (pl) { ids[pl.item_id] = true; });
+      var pcs = S.pieces.filter(function (x) { return ids[x.id]; });
+      return { label: r.label, color: r.hex || '', pieces: pcs, placements: pls, stripLengthPt: r.lengthPt, H: r.H, gapPt: M.gapPt,
+        orient: M.orient, materialWidthPt: r.materialWidthPt, materialLengthPt: r.materialLengthPt,
+        items: pcs.map(function (x) { return itemById[x.hostI !== undefined ? x.hostI : x.id]; }).filter(Boolean) };
+    }), S.docName);
+  }
+
+  // ---------------------------------------------------------------- MODULO 4: preset (localStorage + JSON)
+  function mnCollect() {
+    var p = {
+      rollMm: parseFloat($('rollWidth').value), gapMm: parseFloat($('gap').value), rot: $('rotations').value,
+      time: parseFloat($('time').value)
+    };
+    if ($('groupBy')) { p.group = $('groupBy').value; p.colorTol = parseFloat($('colorTol').value); }
+    if ($('container')) {
+      p.container = $('container').value; p.sheet = $('sheetPreset').value;
+      p.sheetW = parseFloat($('sheetW').value); p.sheetH = parseFloat($('sheetH').value);
+      p.sheetMargin = parseFloat($('sheetMargin').value); p.grain = !!$('grain').checked;
+    }
+    return p;
+  }
+  function mnApplySettings(pr) {
+    if (!pr) return;
+    var set = function (id, v) { if ($(id) && v !== undefined && v !== null) $(id).value = v; };
+    set('rollWidth', pr.rollMm); set('gap', pr.gapMm); set('rotations', pr.rot); set('time', pr.time);
+    set('groupBy', pr.group); set('colorTol', pr.colorTol); set('container', pr.container);
+    if (pr.sheet && SH && (SH.PRESETS[pr.sheet] || pr.sheet === 'custom')) set('sheetPreset', pr.sheet);
+    set('sheetW', pr.sheetW); set('sheetH', pr.sheetH); set('sheetMargin', pr.sheetMargin);
+    if ($('grain') && pr.grain !== undefined) $('grain').checked = !!pr.grain;
+    if ($('preset')) $('preset').value = '';                   // MODULO 8 roll preset no longer matches
+    mnSyncUi();
+  }
+  function mnSyncUi() {
+    if (!$('container')) return;
+    var sheets = $('container').value === 'sheets';
+    var els = document.querySelectorAll('[data-mn7]');
+    for (var i = 0; i < els.length; i++) els[i].hidden = !sheets;
+    var rw = $('rollWidth').closest ? $('rollWidth').closest('label') : null;
+    if (rw) rw.hidden = sheets;
+    if ($('colorTolWrap')) $('colorTolWrap').hidden = $('groupBy').value !== 'color';
+    var custom = $('sheetPreset').value === 'custom';
+    $('sheetW').disabled = $('sheetH').disabled = !custom || S.state !== 'idle';
+    var pr = SH && SH.PRESETS[$('sheetPreset').value];
+    if (pr) { $('sheetW').value = pr.w; $('sheetH').value = pr.h; }
+  }
+  function mnPresetMap() { return MN.Presets.load(localStorage); }
+  function mnFillPresets(sel) {
+    var el = $('mnPreset');
+    if (!el) return;
+    var map = {}, names;
+    try { map = mnPresetMap(); } catch (e) { map = {}; }
+    names = Object.keys(map).sort();
+    el.innerHTML = '';
+    var o = document.createElement('option'); o.value = ''; o.textContent = t('mnPresetNone'); el.appendChild(o);
+    names.forEach(function (n) { var q = document.createElement('option'); q.value = n; q.textContent = n; el.appendChild(q); });
+    el.value = sel && map[sel] ? sel : '';
+  }
+  function mnMaterial(set) {                                  // MODULO 5 material travels with the preset
+    var RP = window.CorvoReportPanel;
+    if (!RP || !RP.material) return undefined;
+    return RP.material(set);
+  }
+  function mnPresetSave() {
+    // nome dal campo accanto (window.prompt non e' affidabile in CEP), altrimenti il preset scelto o la data
+    var name = ($('mnName').value || '').trim() || $('mnPreset').value || 'Corvo ' + new Date().toISOString().slice(0, 16).replace('T', ' ');
+    var map = mnPresetMap(), pr = mnCollect();
+    var mat = mnMaterial();
+    if (mat) pr.material = mat;
+    name = MN.Presets.put(map, name, pr);
+    if (!name) return;
+    MN.Presets.save(localStorage, map);
+    mnFillPresets(name);
+    $('mnName').value = '';
+    setStatus('mnPresetSaved', { name: name }, 'ok');
+  }
+  function mnPresetLoad() {
+    var n = $('mnPreset').value, map = mnPresetMap();
+    if (!n || !map[n]) return;
+    mnApplySettings(map[n]);
+    if (map[n].material) mnMaterial(map[n].material);
+    setStatus('mnPresetLoaded', { name: n }, 'ok');
+  }
+  function mnPresetDelete() {
+    var n = $('mnPreset').value, map = mnPresetMap();
+    if (!n) return;
+    MN.Presets.remove(map, n); MN.Presets.save(localStorage, map); mnFillPresets('');
+  }
+  function mnPresetExport() {
+    var json = MN.Presets.toJSON(mnPresetMap()), fsx = window.cep && window.cep.fs;
+    var nodePath = null, os = null;
+    try { nodePath = require('path'); os = require('os'); } catch (e) { /* browser */ }
+    if (!nodeFs || !nodePath) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      a.download = 'corvo-presets.json'; a.click();
+      return;
+    }
+    var target = nodePath.join(os.homedir(), 'Desktop', 'corvo-presets.json');
+    if (fsx && fsx.showSaveDialogEx) {
+      var res = fsx.showSaveDialogEx(t('mnExport'), nodePath.dirname(target), ['json'], 'corvo-presets.json', 'JSON');
+      if (!res || res.err || !res.data) return;
+      target = String(res.data);
+      if (!/\.json$/i.test(target)) target += '.json';
+    }
+    try { nodeFs.writeFileSync(target, json, 'utf8'); setStatus('mnExported', { path: target }, 'ok'); }
+    catch (e) { setError(e); }
+  }
+  function mnPresetImportText(text) {
+    var map = mnPresetMap(), r = MN.Presets.fromJSON(text, map);
+    if (r.error) { setStatus('mnImportBad', null, 'error'); return; }
+    MN.Presets.save(localStorage, map);
+    mnFillPresets(r.added[0]);
+    setStatus('mnImported', { n: r.added.length }, 'ok');
+  }
+  function mnPresetImport() {
+    var fsx = window.cep && window.cep.fs;
+    if (nodeFs && fsx && fsx.showOpenDialogEx) {
+      var res = fsx.showOpenDialogEx(false, false, t('mnImport'), '', ['json']);
+      if (!res || res.err || !res.data || !res.data.length) return;
+      try { mnPresetImportText(nodeFs.readFileSync(String(res.data[0]), 'utf8')); } catch (e) { setError(e); }
+      return;
+    }
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () { mnPresetImportText(String(rd.result)); };
+      rd.readAsText(f);
+    };
+    inp.click();
+  }
+
+  function mnInit() {
+    if (!MN || !$('groupBy')) return;
+    var sp = $('sheetPreset');
+    if (sp && SH) {
+      sp.innerHTML = '';
+      SH.ORDER.forEach(function (id) {
+        var o = document.createElement('option');
+        o.value = id;
+        if (id === 'custom') { o.textContent = t('sheetCustom'); o.setAttribute('data-i18n', 'sheetCustom'); }
+        else o.textContent = SH.PRESETS[id].label;
+        sp.appendChild(o);
+      });
+    }
+    try { mnApplySettings(JSON.parse(localStorage.getItem('corvo.mn.opts') || 'null')); } catch (e) { /* none or corrupt */ }
+    ['groupBy', 'container', 'sheetPreset'].forEach(function (id) { $(id).addEventListener('change', mnSyncUi); });
+    $('mnPreset').addEventListener('change', mnPresetLoad);
+    $('mnSave').addEventListener('click', mnPresetSave);
+    $('mnDel').addEventListener('click', mnPresetDelete);
+    $('mnExport').addEventListener('click', mnPresetExport);
+    $('mnImport').addEventListener('click', mnPresetImport);
+    $('btnLang').addEventListener('click', function () { mnFillPresets($('mnPreset').value); });
+    mnFillPresets('');
+    mnSyncUi();
+    $('mnName').placeholder = t('mnPresetName');
+    $('btnLang').addEventListener('click', function () { $('mnName').placeholder = t('mnPresetName'); });
+  }
+
   // ---------------------------------------------------------------- wire up
   $('btnNest').addEventListener('click', nest);
   $('btnStop').addEventListener('click', stop);
@@ -805,6 +1356,7 @@
     try { localStorage.setItem('corvo.regmarks', $('regmarks').value); } catch (e) { /* storage blocked */ }
   });
   try { if ($('useHoles')) $('useHoles').checked = localStorage.getItem('corvo.holes') !== '0'; } catch (e) { /* storage blocked */ }   // MODULO 2
+  mnInit();                            // MODULO 4/7
   setState('idle');
   applyLang();
   if (!cs) setStatus('notCep', null, 'warn');

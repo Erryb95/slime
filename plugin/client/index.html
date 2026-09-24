@@ -55,6 +55,50 @@
         <option value="bbox" data-i18n="imgBbox">Bounding box</option>
       </select>
     </label>
+    <!-- MODULO 4: nesting per colore / livello (un rotolo per gruppo) -->
+    <label class="field"><span data-i18n="groupBy">Nest by</span>
+      <select id="groupBy">
+        <option value="none" data-i18n="grpNone" selected>All together</option>
+        <option value="color" data-i18n="grpColor">Fill colour</option>
+        <option value="layer" data-i18n="grpLayer">Layer</option>
+      </select>
+    </label>
+    <label class="field" id="colorTolWrap" hidden><span data-i18n="colorTol">Colour tolerance</span>
+      <span class="unit"><input type="number" id="colorTol" value="8" min="0" max="100" step="1"><i>&Delta;E</i></span>
+    </label>
+    <!-- MODULO 7: multi-foglio (laser / fresa) -->
+    <label class="field"><span data-i18n="container">Material</span>
+      <select id="container">
+        <option value="roll" data-i18n="contRoll" selected>Roll</option>
+        <option value="sheets" data-i18n="contSheets">Sheets</option>
+      </select>
+    </label>
+    <label class="field" data-mn7 hidden><span data-i18n="sheetSize">Sheet</span>
+      <select id="sheetPreset"><option value="600x400">600 × 400 mm</option></select>
+    </label>
+    <label class="field" data-mn7 hidden><span data-i18n="sheetW">Sheet length</span>
+      <span class="unit"><input type="number" id="sheetW" value="600" min="10" max="20000" step="10"><i>mm</i></span>
+    </label>
+    <label class="field" data-mn7 hidden><span data-i18n="sheetH">Sheet width</span>
+      <span class="unit"><input type="number" id="sheetH" value="400" min="10" max="20000" step="10"><i>mm</i></span>
+    </label>
+    <label class="field" data-mn7 hidden><span data-i18n="sheetMargin">Sheet margin</span>
+      <span class="unit"><input type="number" id="sheetMargin" value="10" min="0" max="500" step="1"><i>mm</i></span>
+    </label>
+    <label class="check wide" data-mn7 hidden><input type="checkbox" id="grain"><span data-i18n="grain">Grain: 0/180° only</span></label>
+    <!-- MODULO 4: preset con nome (localStorage corvo.presets, esporta/importa JSON) -->
+    <label class="field wide"><span data-i18n="presets">Presets</span>
+      <span class="m5-row">
+        <select id="mnPreset"></select>
+        <button type="button" id="mnSave" class="btn mini" data-i18n="mnSave">Save</button>
+        <button type="button" id="mnDel" class="btn mini" data-i18n="mnDel">Delete</button>
+      </span>
+      <span class="m5-row">
+        <input type="text" id="mnName" maxlength="60" placeholder="Name">
+        <button type="button" id="mnExport" class="btn mini" data-i18n="mnExport">Export</button>
+        <button type="button" id="mnImport" class="btn mini" data-i18n="mnImport">Import</button>
+      </span>
+    </label>
   </section>
 
   <section class="actions">
@@ -165,6 +209,9 @@
 <script src="js/holes.js"></script><!-- MODULO 2 -->
 <script src="js/quantity.js"></script><!-- MODULO 3 -->
 <script src="js/raster.js"></script><!-- MODULO 8 -->
+<script src="js/multinest.js"></script><!-- MODULO 4/7 -->
+<script src="js/colorgroups.js"></script><!-- MODULO 4 -->
+<script src="js/sheets.js"></script><!-- MODULO 7 -->
 <script src="js/license.js"></script><!-- MODULO 9: prima di main.js -->
 <script src="js/main.js"></script>
 <script src="js/report.js"></script>
