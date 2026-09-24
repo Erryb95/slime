@@ -1093,12 +1093,57 @@ function corvoM3SelSig() {
     });
 }
 
-/* ------------------------------------------------------------------ MODULO 6 */
-// Crocini di registro (host/regmarks.jsx), caricati accanto a questo file. Se $.fileName non e' disponibile
-// il pannello carica regmarks.jsx da se' (main.js, rmEnsureHost).
-try { $.evalFile(new File(new File($.fileName).parent.fsName + '/regmarks.jsx')); } catch (eRM) { /* vedi pannello */ }
+/* ------------------------------------------------------------------ CARICAMENTO MODULI HOST (MODULI 4/6/7) */
+// regmarks.jsx (crocini, modulo 6) e multinest.jsx (colori e contenitori, moduli 4/7) vanno caricati a livello
+// GLOBALE: $.evalFile dentro una funzione lascia le loro funzioni nello scope della funzione e corvo.jsx (typeof
+// corvo_m4_paint / corvo_rmFinishAll ...) non le vede -> "nest per colore" tutto in "senza colore" e crocini persi
+// dopo Applica, in silenzio. Percorso assoluto dalla cartella di questo file; gli errori finiscono in
+// $.global.corvoLoadErrors e li riporta corvoHealth(). Se qui fallisce, il pannello ricarica i file mancanti con
+// uno script di primo livello (js/hosthealth.js) e verifica di nuovo con corvoHealth().
+$.global.corvoLoadErrors = [];
+var CORVO_HOST_DIR = '';
+try {
+    var corvoSelf = new File($.fileName);
+    if (!corvoSelf.exists) throw new Error('$.fileName non valido: "' + $.fileName + '"');
+    CORVO_HOST_DIR = corvoSelf.parent.fsName;
+} catch (eHD) { $.global.corvoLoadErrors.push('corvo.jsx: ' + (eHD.message || eHD)); }
+try {
+    if (!CORVO_HOST_DIR) throw new Error('cartella host sconosciuta');
+    var corvoRmFile = new File(CORVO_HOST_DIR + '/regmarks.jsx');
+    if (!corvoRmFile.exists) throw new Error('file non trovato: ' + corvoRmFile.fsName);
+    $.evalFile(corvoRmFile);
+} catch (eRM) { $.global.corvoLoadErrors.push('regmarks.jsx: ' + (eRM.message || eRM)); }
+try {
+    if (!CORVO_HOST_DIR) throw new Error('cartella host sconosciuta');
+    var corvoMnFile = new File(CORVO_HOST_DIR + '/multinest.jsx');
+    if (!corvoMnFile.exists) throw new Error('file non trovato: ' + corvoMnFile.fsName);
+    $.evalFile(corvoMnFile);
+} catch (eMN) { $.global.corvoLoadErrors.push('multinest.jsx: ' + (eMN.message || eMN)); }
 
-/* ------------------------------------------------------------------ MODULO 4 / MODULO 7 */
-// Colori per il nesting per colore e contenitori multipli (host/multinest.jsx); se $.fileName non e' disponibile
-// il pannello carica multinest.jsx da se' (main.js, mnEnsureHost).
-try { $.evalFile(new File(new File($.fileName).parent.fsName + '/multinest.jsx')); } catch (eMN) { /* vedi pannello */ }
+// funzioni host attese, per file (le chiama il pannello o corvo.jsx)
+var CORVO_HOST_EXPECTED = {
+    'corvo.jsx': ['corvo_json', 'corvoExport', 'corvoGroup', 'corvoApply', 'corvoRoll', 'corvoRevert', 'corvoFinish',
+        'corvoM3Ghosts', 'corvoM3SelSig', 'corvoHealth'],
+    'multinest.jsx': ['corvo_m4_paint', 'corvoContainers', 'corvo_mnRemove', 'corvo_mnPresent', 'corvo_mnDraw',
+        'corvo_mnFinishAll'],
+    'regmarks.jsx': ['corvoRegmarks', 'corvoRegmarksClear', 'corvoRegmarksFinish', 'corvo_rmPresent', 'corvo_rmDraw',
+        'corvo_rmFinishAll']
+};
+// -> {"ok":bool, "missing":[nomi], "modules":{file:[nomi mancanti]}, "fns":{nome:bool}, "loadErrors":[...], "hostDir"}
+// Controlla $.global: una funzione definita solo in uno scope locale conta come mancante.
+function corvoHealth() {
+    var fns = {}, missing = [], modules = {}, errs = [], f, k, n;
+    for (f in CORVO_HOST_EXPECTED) {
+        if (!CORVO_HOST_EXPECTED.hasOwnProperty(f)) continue;
+        modules[f] = [];
+        for (k = 0; k < CORVO_HOST_EXPECTED[f].length; k++) {
+            n = CORVO_HOST_EXPECTED[f][k];
+            fns[n] = typeof $.global[n] === 'function';
+            if (!fns[n]) { missing.push(n); modules[f].push(n); }
+        }
+    }
+    var le = $.global.corvoLoadErrors || [];
+    for (k = 0; k < le.length; k++) errs.push(String(le[k]));
+    return corvo_json({ ok: missing.length === 0, missing: missing, modules: modules, fns: fns, loadErrors: errs,
+        hostDir: CORVO_HOST_DIR });
+}

@@ -12,6 +12,7 @@
   var RM = window.CorvoRegmarks;       // MODULO 6: crocini di registro (js/regmarks.js)
   var HO = window.CorvoHoles;          // MODULO 2 (pieces inside holes), optional
   var R = window.CorvoRaster;          // MODULO 8 (DTF: immagini -> contorno)
+  var HH = window.CorvoHostHealth;    // verifica moduli host (js/hosthealth.js)
   var LIC = window.CorvoLicense;       // MODULO 9: licenza/prova/edizioni (js/license.js), opzionale
   function m9has(f) { return !LIC || LIC.has(f); }   // MODULO 9
   var Q = window.CorvoQuantity;        // MODULO 3 (copie, coppie specchiate, copie vicine)
@@ -74,6 +75,7 @@
       rmFineCut: 'Mimaki: FineCut reads only its own marks. Select Corvo_FineCut_Area and create the marks in FineCut.',
       rmMaterial: 'Marks: black on white matte media only (no clear, glossy or coloured media).',
       rmError: 'Registration marks not drawn: {msg}',
+      hostMissing: 'Illustrator host modules not loaded (colour nesting / registration marks will not work): {msg}',
       useHoles: 'Use holes', holesNote: '{n} piece(s) placed inside holes.',   // MODULO 2
       // MODULO 8
       preset: 'Preset', presetCustom: 'Custom', images: 'Images', imgContour: 'Contour', imgBbox: 'Bounding box',
@@ -139,6 +141,7 @@
       rmFineCut: 'Mimaki: FineCut legge solo i suoi crocini. Seleziona Corvo_FineCut_Area e crea i crocini con FineCut.',
       rmMaterial: 'Crocini: solo nero su materiale bianco opaco (niente trasparenti, lucidi o colorati).',
       rmError: 'Crocini non disegnati: {msg}',
+      hostMissing: 'Moduli host di Illustrator non caricati (nest per colore / crocini non funzionano): {msg}',
       useHoles: 'Usa i fori', holesNote: '{n} pezzi nei fori.',   // MODULO 2
       // MODULO 8
       preset: 'Preset', presetCustom: 'Personalizzato', images: 'Immagini', imgContour: 'Contorno', imgBbox: 'Rettangolo',
@@ -228,6 +231,34 @@
     return p;
   }
   function hostIdle() { return hostChain; }
+
+  // moduli host (multinest.jsx, regmarks.jsx): corvoHealth() all'avvio; se manca qualcosa il pannello li ricarica a
+  // livello globale (js/hosthealth.js) e verifica di nuovo. Mai in silenzio: se mancano ancora, errore nello stato.
+  var hostHealth = null, hostOk = false, lastHealth = null;
+  function hostDirPath() { return baseDir.replace(/\/client$/, '') + '/host'; }
+  function ensureHost(force) {
+    if (!cs || !HH) return Promise.resolve(null);
+    if (hostOk && !force) return Promise.resolve(lastHealth);
+    if (hostHealth && !force) return hostHealth;
+    var p = hostHealth = HH.ensure(hostScript, hostDirPath()).then(function (h) {
+      lastHealth = h;
+      hostOk = !!h.ok;
+      if (h.reloaded.length || !h.ok) console.warn('[corvo] host health', JSON.stringify(h));
+      if (!h.ok) setStatus('hostMissing', { msg: HH.describe(h) }, 'error');
+      if (hostHealth === p) hostHealth = null;
+      return h;
+    });
+    return p;
+  }
+  // fn() subito se i moduli host sono gia' verificati (mantiene l'ordine della coda host), altrimenti dopo la verifica;
+  // se mancano ancora rigetta con un errore chiaro invece di lasciar fallire l'host in silenzio
+  function withHost(fn) {
+    if (hostOk || !cs || !HH) return fn();
+    return ensureHost().then(function (h) {
+      if (h && !h.ok) throw new Error(t('hostMissing', { msg: HH.describe(h) }));
+      return fn();
+    });
+  }
 
   // ---------------------------------------------------------------- files (CEP: fs, browser: fetch)
   var nodeFs = null;
@@ -433,7 +464,10 @@
   function m3Export(o) {
     var c = M3.cache, paint = !!(o && o.paint);   // MODULO 4: i colori (paint) servono solo col nest per colore
     M3.cache = null;
-    function fresh() { return hostCall('corvoExport', { flatness: FLATNESS, raster: true, paint: paint }); }
+    function fresh() {   // col nest per colore serve corvo_m4_paint (multinest.jsx): verificato prima, mai "senza colore" muto
+      var go = function () { return hostCall('corvoExport', { flatness: FLATNESS, raster: true, paint: paint }); };
+      return paint ? withHost(go) : go();
+    }
     if (!c || (paint && !c.paint)) return fresh();
     return hostCall('corvoM3SelSig').then(function (r) { return r && r.sig === c.sig ? c.exp : fresh(); }, fresh);
   }
@@ -454,7 +488,9 @@
     setStatus('exporting');
     M3.cache = null;
     var paint = p.group === 'color';   // MODULO 4: stessa esportazione e stesso piano di Nest (chiavi della tabella)
-    hostCall('corvoExport', { flatness: FLATNESS, raster: true, paint: paint }).then(function (exp) {
+    (paint ? withHost : function (f) { return f(); })(function () {
+      return hostCall('corvoExport', { flatness: FLATNESS, raster: true, paint: paint });
+    }).then(function (exp) {
       var keep = JSON.parse(JSON.stringify(exp));   // Nest la riusa intatta (raster.prepareItems lavora sulla copia)
       var items = (exp && exp.items) || [];
       if (!items.length) throw new Error(t('noSelection'));
@@ -485,7 +521,6 @@
     if (!rmActive()) return { ox: S.origin[0], oy: S.origin[1], w: rep.strip_width, h: S.H };
     return { ox: S.rollOrigin[0], oy: S.rollOrigin[1], w: rollLengthMm(rep) * MM, h: S.rm.rollMm * MM };
   }
-  function rmHostPath() { return baseDir.replace(/\/client$/, '') + '/host/regmarks.jsx'; }
   // disegna i crocini del layout migliore; ritorna (promessa) il testo degli avvisi
   function drawRegmarks() {
     if (!rmActive() || !S.best) return Promise.resolve('');
@@ -496,9 +531,7 @@
       notes.push(t(w.code, v));
     });
     var payload = RM.toDoc(L, S.rollOrigin);
-    var script = '(function(){if(typeof corvoRegmarks!=="function"){$.evalFile(new File(' + JSON.stringify(rmHostPath()) + '));}' +
-      'return corvoRegmarks(' + JSON.stringify(JSON.stringify(payload)) + ');})()';
-    return hostScript(script).then(function () { return notes.join(' '); },
+    return withHost(function () { return hostCall('corvoRegmarks', payload); }).then(function () { return notes.join(' '); },
       function (err) { return t('rmError', { msg: String(err && err.message || err) }); });
   }
   // prima di corvoRevert: la sessione conosce ancora il suo documento
@@ -950,10 +983,8 @@
     }
     return { list: list };
   }
-  function mnHostPath() { return baseDir.replace(/\/client$/, '') + '/host/multinest.jsx'; }
   function mnHostCall(fn, arg) {
-    return hostScript('(function(){if(typeof ' + fn + '!=="function"){$.evalFile(new File(' + JSON.stringify(mnHostPath()) + '));}' +
-      'return ' + fn + '(' + JSON.stringify(JSON.stringify(arg)) + ');})()');
+    return withHost(function () { return hostCall(fn, arg); });
   }
   function mnRenderStats() {
     var M = S.mn, b = S.best;
@@ -1356,8 +1387,10 @@
   applyLang();
   if (!cs) setStatus('notCep', null, 'warn');
   getWasm().catch(function (e) { console.warn('[corvo] wasm preload failed:', e); });
+  ensureHost();                        // moduli host: verifica all'avvio (avviso nello stato se mancano)
 
   // exposed for the verifier / debugging
-  window.CorvoPanel = { state: function () { return S; }, hostCall: hostCall, startEngine: startEngine, t: t,
+  window.CorvoPanel = { state: function () { return S; }, hostCall: hostCall,
+    hostHealth: function () { return ensureHost(true); }, startEngine: startEngine, t: t,
     evalRaw: function (script) { return hostIdle().then(function () { return evalHost(script); }); } };   // MODULO 5: raw read-only host query (document path for the CSV)
 })();

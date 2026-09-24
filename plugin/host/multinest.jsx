@@ -1,5 +1,5 @@
 /*
- * Corvo — Moduli 4 + 7: lato host (ExtendScript, ES3). Caricato da corvo.jsx ($.evalFile relativo a $.fileName) o,
+ * Corvo — Moduli 4 + 7: lato host (ExtendScript, ES3). Caricato da corvo.jsx a livello globale ($.evalFile, percorso assoluto da $.fileName) o,
  * in mancanza, dal pannello. Usa gli helper di corvo.jsx (corvo_json, corvo_err, corvo_parse, corvo_withDocCoords,
  * corvo_state, corvo_alive, corvo_docGone, corvo_layer, corvo_isCutName, corvo_spotName, corvo_redraw).
  *

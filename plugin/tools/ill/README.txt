@@ -22,3 +22,6 @@ Never touches the desktop (no foreground, no keys): CDP to the panel only.
   node m9.js                      trial badge, simulated expiry (licence record saved and restored), Pro options locked,
                                   Apply limit 10 incl. copies, Pro preset refused, tampered/Standard/Pro keys from
                                   tools/release/license-gen.mjs, key kept after reload.
+  node hostload.js [secs=8]       panel reload + corvoHealth(), simulated failed module load -> panel fallback at global
+                                  scope, flag_italy copy by fill colour = 3 rolls, insegna48 copy Graphtec marks after
+                                  Apply and gone after app.undo() (copies in %TEMP%\corvo_hostload, closed unsaved).

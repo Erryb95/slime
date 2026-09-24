@@ -184,3 +184,23 @@ ultime mosse non sono inviate (cosmetico); (e) ZXP firmato senza PlayerDebugMode
 pagina prodotto assente; (f) crocini con piu' rotoli/fogli non supportati; annullo unico con crocini saltato 1/15 (ripiego
 sicuro); FineCut da provare su plotter vero; (g) solo Windows.
 
+
+## 2026-09-24 — Fix caricamento moduli host
+
+**Causa**: `corvo.jsx` caricava `multinest.jsx`/`regmarks.jsx` con `$.evalFile` relativo a `$.fileName` e ingoiava
+l'errore; se il caricamento saltava, il pannello li ricaricava con `$.evalFile` DENTRO `(function(){...})()`, quindi le
+funzioni restavano locali e `corvo.jsx` (`typeof corvo_m4_paint`, `corvo_rmFinishAll`...) non le vedeva: nest per colore
+tutto in "senza colore", crocini persi dopo Applica, senza messaggi. Stesso effetto con un `corvo.jsx` vecchio rimasto nel
+motore ExtendScript (il reload del pannello non riesegue ScriptPath).
+**Fix**: `corvo.jsx` carica i due file a livello globale con percorso assoluto (`File($.fileName).parent`), errori in
+`$.global.corvoLoadErrors`; nuovo `corvoHealth()` (JSON: funzioni attese per file, mancanti, errori, hostDir).
+`client/js/hosthealth.js`: all'avvio `corvoHealth()`; se manca ricarica `corvo.jsx`, se mancano funzioni dei moduli
+ricarica solo quei file con uno script di PRIMO LIVELLO e riverifica; se manca ancora qualcosa errore chiaro nella riga
+di stato, e nest per colore / crocini / contenitori si fermano con quel messaggio invece di andare avanti muti.
+**Verifica**: `tools/check_jsx.js` (acorn ES3, o parentesi senza acorn) ok; `tools/test_hosthealth.js` 26/26 (host
+simulato in vm); test_multinest_panel 48/48, test_license, test_combined, test_quantity, test_regmarks, test_client ok.
+Illustrator (`tools/ill/hostload.js`, porta 8093, copie chiuse senza salvare) 11/11: dopo il reload il motore aveva il
+`corvo.jsx` vecchio -> il pannello lo ha ricaricato da solo, `corvoHealth` ok (22 funzioni); guasto simulato (funzioni
+tolte da `$.global`) -> ricarica dei due moduli, ok; flag_italy per colore = 3 rotoli (#009246, #FFFFFF, #CE2B37), nessun
+"senza colore"; insegna48 (copia, cornice CONTAINER tolta) Graphtec: 8 crocini in revisione, presenti dopo Applica
+(`Corvo_Regmarks_rif`), spariti dopo un `app.undo()`.

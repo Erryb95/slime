@@ -1,6 +1,6 @@
 /*
  * Corvo — Modulo 6: crocini di registro print&cut, lato host (ExtendScript, ES3).
- * Caricato da corvo.jsx ($.evalFile relativo a $.fileName) o, in mancanza, dal pannello.
+ * Caricato da corvo.jsx a livello globale ($.evalFile, percorso assoluto da $.fileName) o, in mancanza, dal pannello.
  * Usa gli helper di corvo.jsx (corvo_json, corvo_err, corvo_parse, corvo_withDocCoords, corvo_state, corvo_alive).
  * La geometria la calcola il pannello (client/js/regmarks.js): qui si disegna e basta.
  *
