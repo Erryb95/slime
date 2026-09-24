@@ -662,7 +662,7 @@
         pl.notes.push(t('noteNoContour', { n: bad.length }));
       }
       // MODULO 3: copie e coppie specchiate VIRTUALI (sagome nell'host agli indici base + k) fino ad Applica
-      var qs = QP() ? QP().spec(items) : null;
+      var qs = (QP() && m9has('quantity')) ? QP().spec(items) : null;   // MODULO 9: funzione Standard
       S.qx = (Q && qs && qs.any) ? Q.expand(items, pieces, qs, { base: items.length }) : null;
       if (S.qx && S.qx.extra) {
         items = S.qx.items; pieces = S.qx.pieces;
@@ -705,7 +705,7 @@
 
       var msg = {
         type: 'nest',
-        instance: S.wrap ? Q.buildInstance(S.wrap, H, orient) : G.buildInstance(S.nestPieces, H, orient),   // MODULO 2: children excluded; MODULO 3: demand/celle
+        instance: G.guardInstance(S.wrap ? Q.buildInstance(S.wrap, H, orient) : G.buildInstance(S.nestPieces, H, orient), gapPt),   // MODULO 2: children excluded; MODULO 3: demand/celle; guard: pochi pezzi piccoli
         exploreSecs: p.time * 0.8,
         compressSecs: p.time * 0.2,
         seed: window.CorvoSeed > 0 ? Math.floor(window.CorvoSeed) : 1 + Math.floor(Math.random() * 1e9),   // fixed seed = tests only
@@ -883,15 +883,10 @@
     var gs = S.plan && S.plan.groups;
     if (!gs) return [{ key: 'all', label: '', hex: null, pieces: pieces.slice() }];
     // MODULO 3: le copie (e le specchiate) vanno nel gruppo del loro originale (copyOf = indice del piano)
-    var gOf = {};
-    gs.forEach(function (g, gi) { g.pieces.forEach(function (i) { gOf[i] = gi; }); });
-    var out = gs.map(function (g) {
+    var per = MN.assignGroups(gs, pieces);
+    var out = gs.map(function (g, gi) {
       var lab = g.label || (g.key === 'none' ? t(S.mn0.group === 'layer' ? 'mnNoLayer' : 'mnNoColor') : '?');
-      return { key: g.key, label: lab, hex: g.hex, pieces: [] };
-    });
-    pieces.forEach(function (x) {
-      var h = x.copyOf !== undefined ? x.copyOf : (x.hostI !== undefined ? x.hostI : x.id), gi = gOf[h];
-      if (gi !== undefined) out[gi].pieces.push(x);
+      return { key: g.key, label: lab, hex: g.hex, pieces: per[gi] };
     });
     return out.filter(function (g) { return g.pieces.length; });
   }
@@ -925,7 +920,7 @@
             engine.worker.terminate(); eng = null; S.engine = null;
             resolve(best);
           };
-          var msg = { type: 'nest', instance: instance, exploreSecs: secs * 0.8, compressSecs: secs * 0.2,
+          var msg = { type: 'nest', instance: G.guardInstance(instance, S.mn.gapPt), exploreSecs: secs * 0.8, compressSecs: secs * 0.2,
             seed: window.CorvoSeed > 0 ? Math.floor(window.CorvoSeed) : 1 + Math.floor(Math.random() * 1e9), gap: S.mn.gapPt };
           if (engine.kind === 'worker') {
             engine.worker.onmessage = function (e) { handler(e.data); };

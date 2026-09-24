@@ -1,5 +1,5 @@
 // node plugin/tools/test_combined.js [seconds=10]      (SEED=n env: engine seed, default 7)
-// Merge of modules 1+2+5+6+8: the panel pipeline of main.js, without Illustrator, on ONE mixed job:
+// Merge of modules 1+2+5+6+8 (+ 3, 4, 9 in a second part: colour rolls with copies, edition gating): the panel pipeline of main.js, without Illustrator, on ONE mixed job:
 //   - lettering (bench/suite/lettering.json, letters with counters, one compound path each) on layer "Lettering"
 //   - small pieces (layer "Small") that should go inside the counters (module 2, holes ON)
 //   - a print&cut sticker = background + CutContour ring as two overlapping objects (module 1 merge)
@@ -21,6 +21,10 @@ const RM = require(path.join(CLIENT, 'js', 'regmarks.js'));
 const RS = require(path.join(CLIENT, 'js', 'raster.js'));
 const REP = require(path.join(CLIENT, 'js', 'report.js'));
 const C = require(path.join(CLIENT, 'lib', 'clipper.js'));
+const Q = require(path.join(CLIENT, 'js', 'quantity.js'));      // MODULO 3
+const CG = require(path.join(CLIENT, 'js', 'colorgroups.js'));  // MODULO 4
+const MN = require(path.join(CLIENT, 'js', 'multinest.js'));    // MODULI 4/7
+const LIC = require(path.join(CLIENT, 'js', 'license.js'));     // MODULO 9
 
 const SECS = +(process.argv[2] || 10), SEED = +(process.env.SEED || 7);
 const MM = 72 / 25.4, ROLL_MM = 600, GAP_MM = 2, GAP = GAP_MM * MM, FLAT = 0.5, ROT = '90', SYS = 'graphtec';
@@ -180,6 +184,113 @@ const artboards = [[DX - 250, DY + 250, DX + 5000, DY - 1500]];
   check(Math.abs(rep.materialCost - L.rollLength / 1000 * 4.5) < 1e-6, 'material cost = roll length x price');
   const csv = REP.toCSV(rep, 'it').replace(/^﻿/, '').trim().split(/\r\n/);
   check(csv.length === 4 + rep.rows.length, 'CSV lines');
+
+  // ================================================================== merge 3 + 4/7 + 9: quantities + colour groups + gating
+  // main.js nest() with "Nest by colour" (module 4) + copies/mirrored pair (module 3) + holes per group (module 2):
+  // plan per colour -> pieces -> Q.expand (virtual copies at host index base + k) -> MN.assignGroups (copies join
+  // the group of their original) -> holes per group -> one Sparrow job per colour (MN.runJobs) on stacked rolls.
+  const RED = { t: 'rgb', v: [220, 30, 30] }, BLUE = { t: 'cmyk', v: [100, 60, 0, 0] }, GREEN = { t: 'spot', name: 'Vinyl Green' };
+  const itemsC = items.map((it) => Object.assign({}, it));
+  itemsC.forEach((it) => {
+    const b = it.box, a = b ? Math.abs((b[2] - b[0]) * (b[1] - b[3])) : 1;
+    if (it.layer === 'Lettering') it.paint = [{ c: RED, a }];
+    else if (it.layer === 'Small') it.paint = [{ c: BLUE, a }];
+    else if (it.layer === 'Print' || it.layer === 'CUT') it.paint = [{ c: GREEN, a }];   // sticker: one vinyl, print + cut
+    // DTF images and the reg mark: no paint -> group "none"
+  });
+  const planC = CG.planGroups(itemsC, { by: 'color', tol: CG.DEFAULT_TOL }, { merge: true, shape: 'all', artboards, lockedCuts: [] }, CLU);
+  check(!planC.error, 'colour plan without error');
+  const gKeys = planC.groups.map((g) => g.key);
+  check(planC.groups.length === 4 && gKeys[gKeys.length - 1] === 'none', 'groups red / blue / green spot / none: ' + planC.groups.map((g) => g.label || g.key).join(', '));
+  const stC = planC.pieces.find((p) => p.members.indexOf(stk.i) >= 0);
+  check(stC && stC.members.indexOf(stkCut.i) >= 0, 'sticker print + cut still one piece inside its colour group');
+  const piecesC = G.buildPieces(planC.pieces, { gap: GAP, flatness: FLAT }).filter((p) => !p.error);
+  piecesC.forEach((p, k) => { p.hostI = p.id; p.id = k; });
+  const letter0 = planC.pieces.find((p) => p.name === 'letter 0'), small0 = planC.pieces.find((p) => p.name === 'small 0');
+  const spec = { qty: { [stC.i]: 3, [small0.i]: 2 }, mirror: { [letter0.i]: true }, any: true };
+  const base = planC.pieces.length;
+  const qx = Q.expand(planC.pieces, piecesC, spec, { base });
+  check(qx.extra === 4 && qx.mirrored === 1, `copies: 2 sticker + 1 small + 1 mirrored letter (${qx.extra}, mirrored ${qx.mirrored})`);
+  check(qx.pieces.filter((p) => p.copyOf !== undefined).every((p, k) => p.hostI === base + k), 'copies at host indices base + k (ghosts)');
+  const mir = qx.pieces.find((p) => p.mirror), src0 = piecesC.find((p) => p.hostI === letter0.i);
+  const polyArea = (P) => Math.abs(P.reduce((s, p, k) => { const q = P[(k + 1) % P.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0) / 2);
+  check(mir && Math.abs(polyArea(mir.polygon) - polyArea(src0.polygon)) < 1e-6 * polyArea(src0.polygon), 'mirrored letter keeps its area');
+  const perG = MN.assignGroups(planC.groups, qx.pieces);
+  check(perG.reduce((s, g) => s + g.length, 0) === qx.pieces.length, 'every piece (copies included) in exactly one colour group');
+  const gOfPiece = {};
+  perG.forEach((g, gi) => g.forEach((p) => { gOfPiece[p.hostI] = gi; }));
+  check(qx.pieces.filter((p) => p.copyOf !== undefined).every((p) => gOfPiece[p.hostI] === gOfPiece[p.copyOf]), 'copies and mirrored copies nested with their original colour');
+  // module 2 per group (a blue dot never goes into a red counter), as mnStart
+  const holesC = { children: [], parents: {}, regions: 0, usedRegions: 0, emptyRegions: 0 };
+  perG.forEach((g) => {
+    const hp = HO.planHoles(qx.items, g, { gap: GAP, orientations: orient });
+    holesC.children = holesC.children.concat(hp.children);
+    Object.assign(holesC.parents, hp.parents);
+  });
+  check(holesC.children.length === 0, 'no cross-colour holes (small dots are blue, letters red): ' + holesC.children.length);
+  const nestC = HO.nestPieces(qx.pieces, holesC);
+  const unitOf = {};
+  nestC.forEach((u) => { unitOf[u.srcId !== undefined ? u.srcId : u.id] = u; });
+  const W = H, spacing = 20 * MM;
+  const origins = MN.stackRolls(perG.length, W, 0, 0, spacing);
+  const secs = MN.timeShares(perG.map((g) => MN.areaOf(g)), Math.max(8, SECS), 2);
+  const jobs = perG.map((g, k) => ({ units: g.map((x) => unitOf[x.id]).filter(Boolean), H: W, orient, secs: secs[k], origin: origins[k] }));
+  const runNest = (inst, s) => new Promise((resolve) => {
+    let b = null;
+    G.guardInstance(inst, GAP);                         // as main.js mnRunner (small-area group on a wide roll)
+    wb.nest(JSON.stringify(inst), s * 0.8, s * 0.2, BigInt(SEED), GAP, (json) => {
+      const r = JSON.parse(json); if (r.placements && r.placements.length === inst.items.length && (!b || r.strip_width <= b.strip_width)) b = r;
+    });
+    resolve(b);
+  });
+  await MN.runJobs(jobs, runNest, {});
+  // engine guard: the blue group (15 dots of 3-5 mm) on the ~507 mm strip has area / height < gap -> jagua-rs panicked
+  const blueJob = jobs.find((j) => j.units.every((u) => /^small/.test(u.name))), blueInst = MN.subsetInstance(blueJob.units, W, orient), blueH = blueInst.strip_height;
+  G.guardInstance(blueInst, GAP);
+  check(blueInst.strip_height < blueH && jobs.every((j) => j.report && j.placements.length === j.units.length),
+    `small-area group: strip height lowered ${(blueH / MM).toFixed(0)} -> ${(blueInst.strip_height / MM).toFixed(1)} mm, every colour job nested`);
+  const movesC = [].concat(...jobs.map((j) => HO.movesFor(j.placements, nestC, j.origin, holesC)));
+  const mvIdx = movesC.map((m) => m.i).sort((a, b) => a - b), wantC = qx.pieces.map((p) => p.hostI).sort((a, b) => a - b);
+  check(JSON.stringify(mvIdx) === JSON.stringify(wantC), `one move per piece and per ghost, job by job (${mvIdx.length} = ${wantC.length})`);
+  let ovC = 0, outC = 0;
+  jobs.forEach((j) => {
+    const unitsOf = (pl) => nestC.find((u) => u.id === pl.item_id);
+    const polys = j.placements.map((pl) => toP(MN.placedPoly(unitsOf(pl), pl)));
+    j.placements.forEach((pl) => { const b = MN.placedBox(unitsOf(pl), pl);
+      if (b[0] < -tol || b[1] < -tol || b[2] > j.report.strip_width + tol || b[3] > W + tol) outC++; });
+    for (let a = 0; a < polys.length; a++) for (let b = a + 1; b < polys.length; b++) {
+      const ov = Math.abs(area(exec(C.ClipType.ctIntersection, [polys[a]], [polys[b]], C.PolyFillType.pftNonZero)));
+      if (ov > 1) ovC++;
+    }
+  });
+  check(!ovC, 'no overlaps inside each colour roll (' + ovC + ')');
+  check(!outC, 'every piece inside its colour roll (' + outC + ')');
+  check(jobs.every((j, k) => k === 0 || j.origin[1] + W <= jobs[k - 1].origin[1] - spacing + 1e-6), 'colour rolls stacked downwards without overlapping');
+  // module 5 multi (mnReport): rows over all groups = pieces incl. copies
+  const repsC = jobs.map((j, k) => {
+    const pls = HO.expandPlacements(j.placements, nestC, holesC, qx.pieces), ids = new Set(pls.map((p) => p.item_id));
+    const pcs = qx.pieces.filter((x) => ids.has(x.id));
+    return REP.computeReport({ pieces: pcs, placements: pls, stripLengthPt: j.report.strip_width, rollWidthPt: W, gapPt: GAP, orientations: orient,
+      material: { name: 'Oracal 651', price: 4.5, priceUnit: 'm' }, items: pcs.map((x) => qx.items.find((it) => it.i === x.hostI)).filter(Boolean),
+      materialWidthPt: W, materialLengthPt: j.report.strip_width, job: 'combined' });
+  });
+  check(repsC.reduce((s, r) => s + r.rows.length, 0) === qx.pieces.length, 'report rows over all colours = pieces incl. copies');
+
+  // ---- module 9 gating (license.js FEATURES) + trial Apply limit counting the REAL host pieces incl. copies
+  const m9Count = qx.pieces.length;                      // main.js: S.m9Count = pieces.length after Q.expand
+  check(m9Count === piecesC.length + qx.extra && m9Count > LIC.LIMITS.freeApplyMax, 'Apply count includes the copies: ' + m9Count);
+  const sExp = LIC.computeState(null, { expired: true, daysLeft: 0 });
+  const sStd = LIC.computeState({ edition: 'standard' }, null), sPro = LIC.computeState({ edition: 'pro' }, null);
+  const sTri = LIC.computeState(null, { expired: false, daysLeft: 5 });
+  check(['holes', 'colorNest', 'multiSheet', 'costCsv'].every((f) => !LIC.hasIn(sExp, f) && !LIC.hasIn(sStd, f) && LIC.hasIn(sPro, f) && LIC.hasIn(sTri, f)),
+    'modules 2 / 4 / 7 / 5-CSV: Pro (and trial), locked in Standard and after the trial');
+  check(LIC.hasIn(sExp, 'quantity') && LIC.hasIn(sStd, 'quantity') && LIC.FEATURES.quantity.edition === 'standard', 'module 3 quantities: Standard');
+  check(!LIC.canApplyIn(sExp, m9Count) && LIC.canApplyIn(sExp, LIC.LIMITS.freeApplyMax) && !LIC.canApplyIn(sExp, LIC.LIMITS.freeApplyMax + 1),
+    'trial ended: Apply refused on this layout (copies counted), allowed up to 10 pieces');
+  // 9 originals + 2 copies = 11 real pieces: refused although only 9 were selected
+  check(!LIC.canApplyIn(sExp, 9 + 2) && LIC.canApplyIn(sExp, 9), 'trial ended: 9 designs + 2 copies = 11 pieces -> refused');
+  check(LIC.canApplyIn(sStd, m9Count) && LIC.canApplyIn(sTri, m9Count), 'Standard / trial: Apply without piece limit');
+  console.log(`colour groups: ${planC.groups.map((g, k) => (g.label || 'none') + ' ' + perG[k].length + ' pcs ' + (jobs[k].report.strip_width / MM).toFixed(0) + ' mm').join(' | ')}; ${qx.extra} copies (${qx.mirrored} mirrored), Apply count ${m9Count}`);
 
   console.log(`\nplan: ${plan.pieces.length} pieces (${nLetters} letters, 14 small, sticker, ${rasterIdx.length} DTF), ` +
     `${holes.children.length} in holes, ${nestPieces.length} sent to the engine`);

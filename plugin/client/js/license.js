@@ -46,7 +46,9 @@
     holes:      { edition: 'pro', module: 2, en: 'Pieces inside holes', it: 'Pezzi dentro i fori' },
     colorNest:  { edition: 'pro', module: 4, en: 'Nesting by colour/layer', it: 'Nesting per colore/livello' },
     costCsv:    { edition: 'pro', module: 5, en: 'Cost report CSV export', it: 'Export CSV del report costi' },
-    multiSheet: { edition: 'pro', module: 7, en: 'Multi-sheet nesting', it: 'Nesting su piu\' fogli' }
+    multiSheet: { edition: 'pro', module: 7, en: 'Multi-sheet nesting', it: 'Nesting su piu\' fogli' },
+    // Standard (anche a prova finita): copie/coppie specchiate; il limite di Applica conta anche le copie
+    quantity:   { edition: 'standard', module: 3, en: 'Copies and mirrored pairs', it: 'Copie e coppie specchiate' }
   };
   var RANK = { free: 1, standard: 1, pro: 2, trial: 2 };
   var LIMITS = { freeApplyMax: 10 };

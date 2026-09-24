@@ -140,8 +140,10 @@ const ALL = ['holes', 'costCsv', 'colorNest', 'multiSheet'];
   check(L.createStore({ localStorage: memLs(), file: kf }).read().key === std.token, 'chiave salvata nel file e riletta');
 
   // ---------------------------------------------------------------- tabella, versione, agganci
-  check(Object.keys(L.FEATURES).sort().join() === 'colorNest,costCsv,holes,multiSheet' &&
-    Object.keys(L.FEATURES).every((f) => L.FEATURES[f].edition === 'pro'), 'tabella gating: 4 funzioni Pro (moduli 2,4,5,7)');
+  const PRO = Object.keys(L.FEATURES).filter((f) => L.FEATURES[f].edition === 'pro').sort().join();
+  check(PRO === 'colorNest,costCsv,holes,multiSheet', 'tabella gating: 4 funzioni Pro (moduli 2,4,5,7)');
+  check(Object.keys(L.FEATURES).every((f) => ['pro', 'standard'].indexOf(L.FEATURES[f].edition) >= 0) &&
+    L.FEATURES.quantity && L.FEATURES.quantity.edition === 'standard', 'modulo 3 (quantity) in tabella come Standard (merge 3/4-7/9)');
   const bytes = crypto.randomBytes(97);
   check(Buffer.from(L.b64uDecode(L.b64uEncode(bytes))).equals(bytes) && L.b64uEncode(bytes) === b64u(bytes), 'base64url andata e ritorno');
   const PLUG = path.join(__dirname, '..');

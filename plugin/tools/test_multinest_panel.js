@@ -30,6 +30,7 @@ function stub(id) {
     appendChild(c) { this.children.push(c); return c; }, removeChild() {}, select() {}, click() { (this.listeners.click || []).forEach((f) => f({})); },
     addEventListener(t, f) { (this.listeners[t] = this.listeners[t] || []).push(f); },
     setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return this.attrs[k]; },
+    querySelectorAll() { return []; },                         // MODULO 3: quantity-panel setEnabled
     closest() { return stub('label-of-' + id); } };
   return e;
 }
@@ -49,6 +50,7 @@ Object.assign(globalThis, {
   location: { protocol: 'file:', pathname: '/' + CLIENT.replace(/\\/g, '/') + '/index.html' },
   document: {
     getElementById: el, documentElement: {}, currentScript: null, body: { appendChild() {}, removeChild() {} },
+    querySelector: () => null,                                   // MODULO 9: no <footer> -> licence UI not built (no disk store)
     querySelectorAll: (q) => (q === '[data-mn7]' ? mn7 : []), createElement: (t) => stub('new-' + t), execCommand: () => true
   },
   localStorage: { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } },
@@ -230,6 +232,68 @@ const inside = (b, c, tol) => b[0] >= c.ox - tol && b[1] >= c.oy - tol && b[2] <
   const map = {}; const r = window.CorvoMultinest.Presets.fromJSON(json, map);
   check(r.added[0] === 'Test preset', 'exported JSON re-imports');
   console.log('  ' + st.textContent);
+
+  // ---------------------------------------------------------------- 3b. MODULO 3 x 4: copies inside the colour rolls
+  console.log('\n== panel: copies + mirrored copy nested by colour (merge 3/4-7/9)');
+  host.items = colorItems(path.join(REAL, 'color', 'flag_south_africa.svg'), 450);
+  host.moves = {}; host.containers = null; host.calls = {};
+  el('groupBy').value = 'color'; el('container').value = 'roll'; el('time').value = '4'; el('grain').checked = false;
+  const QP3 = window.CorvoQtyPanel, spec3 = QP3.spec;
+  QP3.spec = () => ({ qty: { 0: 3 }, mirror: { 1: true }, keepClose: false, any: true });
+  el('btnNest').click();
+  await waitState(['review', 'idle'], 120);
+  QP3.spec = spec3;
+  const S5 = P(), base5 = host.groups ? host.groups.length : 0;
+  check(S5.state === 'review' && S5.qx && S5.qx.extra === 3 && host.calls.corvoM3Ghosts === 1, 'colour run with 2 copies + 1 mirrored copy, ghosts created once: ' + el('status').textContent);
+  if (S5.qx && S5.mn) {
+    const grpOf = {};
+    S5.mn.results.forEach((r, gi) => r.units.forEach((u) => { grpOf[u.hostI !== undefined ? u.hostI : u.id] = gi; }));
+    const ghosts = S5.qx.pieces.filter((x) => x.copyOf !== undefined);
+    check(ghosts.every((g) => host.moves[g.hostI] && g.hostI >= base5), `every ghost (host index >= ${base5}) moved by its job`);
+    check(ghosts.every((g) => grpOf[g.hostI] !== undefined && grpOf[g.hostI] === grpOf[g.copyOf]), 'copies and the mirrored copy in the roll of their original colour');
+    const cont5 = host.containers ? host.containers.list : [];
+    const gBad = ghosts.filter((g) => {
+      const mv = host.moves[g.hostI], c = cont5[grpOf[g.hostI]];
+      const poly = g.polygon.map(([x, y]) => [x + g.ref[0], y + g.ref[1]]);
+      return !c || !inside(G.bbox(G.applyMove(poly, mv)), c, 0.6);
+    });
+    check(!gBad.length, `ghost outlines inside their colour roll (${gBad.length} outside)`);
+    check(S5.m9Count === S5.qx.pieces.length, 'Apply count = pieces incl. copies: ' + S5.m9Count);
+  }
+  el('btnCancel').click();
+  await waitState(['idle'], 30);
+
+  // ---------------------------------------------------------------- 4. MODULO 9: edition gating + Apply limit counting copies
+  console.log('\n== panel: licence gating after the trial (merge 3/4-7/9)');
+  const LIC = window.CorvoLicense;
+  store['corvo.m9'] = JSON.stringify({ trialStart: Date.now() - 40 * 864e5, lastSeen: Date.now() });
+  await LIC.init({ localStorage: globalThis.localStorage, file: null });   // file:null = nothing written to %APPDATA%
+  check(LIC.state().mode === 'expired' && !LIC.has('colorNest') && !LIC.has('multiSheet') && LIC.has('quantity'), 'trial ended: colour / sheets locked, quantities free');
+  host.items = colorItems(path.join(REAL, 'color', 'flag_south_africa.svg'), 450);
+  host.moves = {}; host.containers = null; host.calls = {};
+  el('groupBy').value = 'color'; el('container').value = 'roll'; el('time').value = '2';
+  el('btnNest').click();
+  await new Promise((r) => setTimeout(r, 300));
+  check(P().state === 'idle' && !host.calls.corvoExport && /Pro/.test(el('status').textContent), 'Nest by colour refused before any export: ' + el('status').textContent);
+  el('groupBy').value = 'none'; el('container').value = 'sheets';
+  el('btnNest').click();
+  await new Promise((r) => setTimeout(r, 300));
+  check(P().state === 'idle' && !host.calls.corvoExport && /Pro/.test(el('status').textContent), 'Sheets refused before any export: ' + el('status').textContent);
+  el('container').value = 'roll';
+  // copies (module 3, Standard) are allowed, and the Apply limit counts them: 1 design x 12 = 11 extra pieces
+  const QP = window.CorvoQtyPanel, origSpec = QP.spec;
+  QP.spec = () => ({ qty: { 0: 12 }, mirror: {}, keepClose: false, any: true });
+  el('btnNest').click();
+  await waitState(['review', 'idle'], 60);
+  const n0 = host.groups ? host.groups.length : 0, S4 = P();
+  check(S4.state === 'review' && S4.m9Count === n0 + 11 && host.calls.corvoM3Ghosts === 1, `copies nested in the trial-ended edition: ${n0} pieces + 11 copies = ${S4.m9Count}`);
+  el('btnApply').click();
+  await new Promise((r) => setTimeout(r, 300));
+  check(n0 <= 10 && S4.m9Count > 10 && !host.calls.corvoFinish && P().state === 'review' && /10/.test(el('status').textContent),
+    `Apply refused only because of the copies (${n0} <= 10 < ${S4.m9Count}): ` + el('status').textContent);
+  el('btnCancel').click();
+  await waitState(['idle'], 30);
+  QP.spec = origSpec;
 
   console.warn = origWarn;
   console.log(`\n${checks - fails}/${checks} checks passed`);

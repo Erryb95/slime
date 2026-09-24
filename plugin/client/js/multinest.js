@@ -64,6 +64,17 @@
     placements.forEach(function (pl) { var u = byId[pl.item_id]; if (u) m = Math.max(m, placedBox(u, pl)[2]); });
     return m;
   }
+  /* MODULO 3: plan groups [{pieces:[plan index]}] + nest pieces (originals + copies, copyOf = plan index of the
+   * original) -> one array of pieces per group; a copy / mirrored copy always joins its original's group. */
+  function assignGroups(groups, pieces) {
+    var gOf = {}, out = groups.map(function () { return []; });
+    groups.forEach(function (g, gi) { g.pieces.forEach(function (i) { gOf[i] = gi; }); });
+    pieces.forEach(function (x) {
+      var h = x.copyOf !== undefined ? x.copyOf : (x.hostI !== undefined ? x.hostI : x.id), gi = gOf[h];
+      if (gi !== undefined) out[gi].push(x);
+    });
+    return out;
+  }
   function byId(units) { var o = {}; units.forEach(function (u) { o[u.id] = u; }); return o; }
   function areaOf(units) { return units.reduce(function (s, u) { return s + (u.area || 0); }, 0); }
 
@@ -191,7 +202,7 @@
   };
 
   return { MM: MM, subsetInstance: subsetInstance, mapPlacements: mapPlacements, placedPoly: placedPoly, placedBox: placedBox,
-    maxX: maxX, byId: byId, areaOf: areaOf, grainOrients: grainOrients, rotDims: rotDims, fitsRect: fitsRect,
+    maxX: maxX, byId: byId, assignGroups: assignGroups, areaOf: areaOf, grainOrients: grainOrients, rotDims: rotDims, fitsRect: fitsRect,
     runJobs: runJobs, timeShares: timeShares, stackRolls: stackRolls, rowSheets: rowSheets, rollLabel: rollLabel,
     Presets: Presets };
 });

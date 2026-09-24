@@ -155,7 +155,7 @@ Correzioni emerse:
 - Pannello: un errore dell'host durante la ricerca ferma la sessione (`failSession`) invece di ripetere l'errore ogni
   250 ms; un `corvoApply` parziale (`ok:false` + `errors`, es. pezzo bloccato) ora viene mostrato come avviso.
 
-## Integrazione dei moduli (merge 2026-09-24: moduli 2, 5, 6, 8 sopra il modulo 1)
+## Integrazione dei moduli (merge 2026-09-24: moduli 2, 5, 6, 8 sopra il modulo 1; poi 9, 3, 4+7)
 
 I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva nel frattempo cambiato il formato di
 `corvoExport` (oggetti con `layer`, `rings`, `rg`, `cut`, `box`) e spostato il raggruppamento nel pannello
@@ -210,6 +210,58 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
 - API host retrocompatibile: `corvoExport` senza `raster:true` si comporta come nel modulo 1; `corvoRegmarksFinish`,
   `corvoGroup`, `corvoApply`, `corvoRevert`, `corvoFinish(opts)` invariati nelle firme.
 
+### Moduli 3, 4, 7, 9 (secondo merge 2026-09-24, branch `integrazione-3-47-9`)
+
+Ordine: `modulo9-commerciale` → `modulo3-quantita` → `modulo4-7-multinest`, sopra i moduli 1, 2, 5, 6, 8.
+Conflitti solo testuali (`main.js`, `index.html`, `corvo.jsx`, questo documento); tutte le funzioni tenute.
+Ordine degli script in `index.html`: ... `quantity.js` (3), `raster.js` (8), `multinest.js` / `colorgroups.js` /
+`sheets.js` (4/7), `license.js` (9, prima di `main.js`), `main.js`, `report*.js`, `quantity-panel.js`.
+
+**Gating delle edizioni (9)** — una sola tabella, `FEATURES` in `license.js`; `CorvoLicense.has(f)` nel pannello:
+| Funzione | Chiave | Edizione | Dove si controlla |
+|---|---|---|---|
+| Pezzi nei fori (2) | `holes` | Pro | `readParams` (`m9has`) + casella bloccata da `license.js` |
+| Nest per colore/livello (4) | `colorNest` | Pro | `mnReadParams`: errore chiaro + finestra licenza; opzioni "Colore"/"Livello" disabilitate |
+| Multi-foglio (7) | `multiSheet` | Pro | come sopra, opzione "Fogli" disabilitata |
+| CSV del report (5) | `costCsv` | Pro | `report-panel.js` (anche il CSV multi-gruppo) |
+| Copie / coppie specchiate (3) | `quantity` | Standard (anche a prova finita) | `nest()` prima di `quantity.expand` |
+Il controllo in `readParams` vale anche quando un **preset** (modulo 4) imposta un raggruppamento bloccato: il preset si
+carica, Nest si ferma con il messaggio "funzione Pro". In prova (14 giorni) tutto e' Pro.
+
+**Limite di Applica a prova finita (9)** — `S.m9Count = pieces.length` DOPO `quantity.expand` e dopo aver tolto i pezzi
+degeneri: conta i pezzi reali che Applica sposta o crea nell'host, **copie e specchiate comprese** (9 design × 1 + 2 copie
+= 11 → rifiutato), figli nei fori compresi. Vale uguale per il nest singolo e per il multi-job.
+
+**Copie (3) × multi-job (4/7)**
+- `quantity.expand` avviene PRIMA della divisione in gruppi; `MN.assignGroups(plan.groups, pieces)` mette ogni copia e
+  ogni specchiata nel gruppo del suo originale (`copyOf` = indice del piano), quindi nei rotoli per colore e nei fogli
+  le copie si dispongono con i pezzi del loro colore / gruppo. La venatura per nome/livello si legge dall'originale.
+- Ogni copia e' un'unita' a se' (demand 1) nel suo job: `quantity.buildNest` (demand + celle "tieni vicine") vale solo
+  per il nest singolo; con piu' rotoli/fogli e "Tieni vicine" attivo compare la nota `mnNoCells`.
+- Le sagome (`corvoM3Ghosts`) si creano prima del primo job (`mnStart` → `m3Ghosts()` → `mnStartJobs`); le mosse di ogni
+  job (`mnUnitMoves` → `holes.movesFor`) usano gli indici host `base + k`, quindi **le sagome si spostano job per job**
+  come gli originali. Applica (`corvoFinish`) crea i duplicati veri come nel nest singolo; `corvo_singleUndo` aspetta sia
+  le sagome sia `Corvo_Containers` prima di ridisegnare i contenitori confermati.
+- Fori (2) per gruppo: i figli si cercano solo tra pezzi dello stesso gruppo (copie comprese).
+- "Leggi selezione" usa lo stesso export (`paint` se "per colore") e lo stesso piano (`planGroups`) di Nest, cosi' le
+  chiavi della tabella (nome + ingombro + ordinale) coincidono; l'export in cache si riusa solo se ha i colori quando servono.
+
+**Crocini (6) × multi-job (4/7)** — NON supportati: con piu' rotoli/fogli i crocini non vengono disegnati e la riga di
+stato lo dice (`mnNoRegmarks`: "per print & cut con crocini usa Tutto insieme + Rotolo"). Motivo: il modulo 6 riserva
+fasce dentro UN rotolo e disegna un solo set (`corvo_rmDraw`); un set per rotolo/foglio richiede un payload per
+contenitore e il ricalcolo dell'origine di ogni job (lavoro futuro).
+
+**Limite noto (4)** — per colore, un oggetto di taglio senza riempimento (solo traccia CutContour, colore di taglio
+escluso) finisce nel gruppo "senza colore" e non si unisce piu' alla sua stampa: il nest per colore e' pensato per il
+vinile da intaglio; per print & cut usare "Tutto insieme" (o per livello con stampa e taglio sullo stesso livello).
+
+**Motore: gruppo con poca area su un rotolo largo** — trovato dal test combinato: jagua-rs parte da una striscia larga
+`area pezzi / altezza` e la restringe di `gap/2` per lato; 15 pallini da 3-5 mm su 507 mm di striscia danno una larghezza
+iniziale sotto il gap → **panic nel wasm** ("Offset resulted in an empty polygon", worker morto). Succede anche nel nest
+singolo (pochi adesivi piccoli su un rotolo da 1,6 m). Correzione lato pannello: `geometry.guardInstance(inst, gap)`
+abbassa `strip_height` (mai sotto l'ingombro minimo di ogni pezzo nelle rotazioni ammesse) finche' area/altezza >= 4 gap;
+la disposizione resta dentro il rotolo vero. Applicata in `nest()` e in `mnRunner`.
+
 ### Test Node (senza Illustrator)
 
 | Test | Cosa | Esito al merge |
@@ -220,10 +272,11 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
 | `test_report.js [s]` | modulo 5, + colonna livello da pezzi raggruppati, + costo con margini crocini | PASS |
 | `test_regmarks.js [s]` | modulo 6 | 333 controlli, 0 falliti |
 | `test_raster.js [s]` | modulo 8 | PASS |
-| `test_quantity.js [s]` | modulo 3 (branch modulo3-quantita), anche host corvo.jsx con DOM finto | 208 controlli, PASS |
-| `test_combined.js [s]` | lettering + pezzi piccoli con fori ON, adesivo stampa+taglio, crocino su "Reg", 3 PNG DTF, crocini Graphtec, report | 28/28 |
+| `test_quantity.js [s]` | modulo 3, anche host corvo.jsx con DOM finto | 221 controlli, PASS |
+| `test_combined.js [s]` | lettering + pezzi piccoli con fori ON, adesivo stampa+taglio, crocino su "Reg", 3 PNG DTF, crocini Graphtec, report; **parte 2**: stessi oggetti per colore (4 rotoli) con 2 copie + 1 copia + 1 specchiata, fori per gruppo, report per gruppo, gating edizioni e limite di Applica | 49/49 |
 | `test_multinest.js [s] [split] [finale]` | moduli 4+7: colori/livelli su bench/real/color, fogli su bench/real/laser, preset | 221/221 |
-| `test_multinest_panel.js [s]` | moduli 4+7 nel pannello vero (DOM e host finti, motore inline) | 38/38 |
+| `test_multinest_panel.js [s]` | moduli 4+7 nel pannello vero (DOM e host finti, motore inline); + 3b copie/specchiata nei rotoli per colore (sagome mosse job per job), + 4 gating a prova finita (colore/fogli rifiutati prima dell'export, Applica rifiutato per 1 pezzo + 11 copie) | 48/48 |
+| `test_license.js` | modulo 9: firma ECDSA, prova, edizioni, tabella FEATURES (4 Pro + `quantity` Standard) | 64/64 |
 
 `SEED=n` fissa il seme del motore in `test_holes`, `test_combined` (default 7).
 
