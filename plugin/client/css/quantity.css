@@ -1,0 +1,20 @@
+/* Modulo 3: quantities / mirrored pairs section (uses the tokens of panel.css, .btn.mini from report.css) */
+.m3 { border-top: 1px solid var(--line); padding-top: 6px; }
+.m3 > summary { cursor: pointer; color: var(--text-hi); font: 600 11px var(--font); letter-spacing: .04em; list-style-position: inside; }
+.m3[open] > summary { margin-bottom: 8px; }
+.m3 > * + * { margin-top: 8px; }
+.m3-row { display: grid; grid-template-columns: 1fr auto 56px auto; gap: 4px; align-items: center; }
+.m3-row .lbl { color: var(--text-lo); font-size: 11px; text-align: right; }
+.m3 input[type=number] { padding-right: 4px; }
+.m3-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 3px; }
+.m3-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.m3-table th { position: sticky; top: 0; background: var(--bg-2); color: var(--text-lo); font-weight: 400; text-align: left; padding: 3px 4px; }
+.m3-table td { padding: 2px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
+.m3-table td.name { color: var(--text-hi); max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m3-table td.name small { color: var(--text-lo); font: 10px var(--mono); margin-left: 4px; }
+.m3-table td.qty input { width: 48px; height: 20px; }
+.m3-table td.mir { text-align: center; }
+.m3-table td.mir input { margin: 0; accent-color: var(--accent); }
+.m3-empty { color: var(--text-lo); font-size: 11px; padding: 6px; }
+.m3-sum { margin: 0; color: var(--text-lo); font-size: 11px; }
+.m3-sum:empty { display: none; }

@@ -652,6 +652,7 @@ function corvoGroup(groupsJson) {
         var st = corvo_state();
         if (!st.raw || st.raw.length === 0) return corvo_err('Nessuna sessione attiva: esegui prima corvoExport');
         if (corvo_docGone(st)) { corvo_resetState(); return corvo_err(CORVO_DOC_CLOSED); }
+        corvo_m3_clear(st);                                      // MODULO 3: sagome di un piano precedente
         for (var c = 0; c < st.applied.length; c++) {
             var ap = st.applied[c];
             if (ap.a !== 0 || ap.tx !== 0 || ap.ty !== 0) return corvo_err('corvoGroup va chiamato prima di corvoApply');
@@ -841,6 +842,7 @@ function corvoRevert() {
         var st = corvo_state();
         if (corvo_docGone(st)) { corvo_resetState(); return corvo_json({ ok: true, ms: 0, docClosed: true }); }
         if (!st.doc) { corvo_resetState(); return corvo_json({ ok: true, ms: 0, noSession: true }); }
+        corvo_m3_clear(st);                                      // MODULO 3: via le sagome delle copie
         var errors = [];
         if (st.items) {
             for (var i = 0; i < st.items.length; i++) {
@@ -891,16 +893,21 @@ function corvo_singleUndo(st, keepRoll) {
         var rollGone = !ly || !corvo_findIn(ly, 'pathItems', 'Corvo_Roll');
         // MODULO 6: anche i crocini di anteprima devono essere spariti (i loro passi sono contati in st.steps)
         var rmGone = !(typeof corvo_rmPresent === 'function' && corvo_rmPresent(doc));
-        if (rollGone && rmGone && corvo_atOrigin(st, 8) && corvo_atOrigin(st, 0)) { ok = true; break; }
+        var ghostsGone = !(st.m3 && ly && corvo_findIn(ly, 'pathItems', 'Corvo_Ghost'));   // MODULO 3
+        if (rollGone && rmGone && ghostsGone && corvo_atOrigin(st, 8) && corvo_atOrigin(st, 0)) { ok = true; break; }
     }
     if (!ok) {
         for (k = 0; k < undone; k++) { try { app.redo(); } catch (e3) { break; } }
         return 'restored';
     }
     // tutto all'origine: stato "nessuna trasformazione", poi la disposizione finale in un colpo solo
+    // MODULO 3: le sagome non esistono piu' (annullate): si spostano solo i pezzi, poi si creano le copie vere
+    var nPieces = st.m3 ? st.m3.base : fin.length, m3fin = st.m3 ? fin.slice(nPieces) : null;
+    if (st.m3) { st.items.length = nPieces; st.applied.length = nPieces; }
     for (i = 0; i < st.applied.length; i++) st.applied[i] = { a: 0, tx: 0, ty: 0 };
     st.roll = null; st.label = null;
-    for (i = 0; i < fin.length; i++) corvo_move(st, i, fin[i].a, fin[i].tx, fin[i].ty);
+    for (i = 0; i < nPieces; i++) corvo_move(st, i, fin[i].a, fin[i].tx, fin[i].ty);
+    if (m3fin) st.m3made = corvo_m3_materialize(st, m3fin);
     if (keepRoll && rollB) {
         var cl = corvo_layer(doc, true), r = cl.pathItems.add();
         r.name = 'Corvo_Roll_rif'; r.filled = false; r.stroked = true; r.strokeWidth = 0.75;
@@ -922,14 +929,143 @@ function corvoFinish(optsJson) {
         var undo = 'off';
         if (!(opts && opts.singleUndo === false)) {
             try { undo = corvo_singleUndo(st, keepRoll); } catch (eu) { undo = 'error: ' + eu.message; }
-            if (undo === 'single') { corvo_resetState(); corvo_redraw(); return corvo_json({ ok: true, undo: undo }); }
+            if (undo === 'single') {
+                var made1 = st.m3made;                               // MODULO 3
+                corvo_resetState(); corvo_redraw();
+                return corvo_json(made1 ? { ok: true, undo: undo, copies: made1.made, copyErrors: made1.errors } : { ok: true, undo: undo });
+            }
+        }
+        // MODULO 3: senza annullo unico le copie si creano qui (dalle posizioni delle sagome), poi via le sagome
+        var made2 = null;
+        if (st.m3) {
+            var m3fin2 = st.applied.slice(st.m3.base), m3keep = st.m3;
+            corvo_m3_clear(st);
+            st.m3 = m3keep;
+            made2 = corvo_m3_materialize(st, m3fin2);
+            st.m3 = null;
         }
         corvo_removeRollAndLabel(st, !keepRoll);
         if (keepRoll && corvo_alive(st.roll)) { try { st.roll.name = 'Corvo_Roll_rif'; } catch (e) {} }
         if (typeof corvo_rmFinishAll === 'function') { try { corvo_rmFinishAll(st.doc); } catch (eRm) {} }   // MODULO 6
         corvo_resetState();
         corvo_redraw();
-        return corvo_json({ ok: true, undo: undo });
+        return corvo_json(made2 ? { ok: true, undo: undo, copies: made2.made, copyErrors: made2.errors } : { ok: true, undo: undo });
+    });
+}
+
+/* ------------------------------------------------------------------ MODULO 3 */
+/*
+ * Copie per design e coppie specchiate (client/js/quantity.js). Durante la ricerca le copie sono SAGOME leggere
+ * (tracciati "Corvo_Ghost" sul livello Corvo = il poligono di Sparrow, <= 200 punti) agli indici st.m3.base + k:
+ * corvoApply le muove con lo stesso contratto assoluto dei pezzi, quindi l'anteprima dal vivo resta veloce anche con
+ * centinaia di copie (niente duplicati pesanti di gruppi/maschere ad ogni aggiornamento).
+ * Applica (corvoFinish): per ogni copia si duplicano TUTTI i membri del pezzo sorgente con
+ * duplicate(membro, PLACEBEFORE) = stesso livello/gruppo, subito sopra l'originale (tinte piatte, livelli e ordine di
+ * impilamento dentro la copia conservati), i duplicati tornano alla posizione ORIGINALE del sorgente, si specchiano
+ * rispetto alla verticale x = axis se la copia e' specchiata, poi ricevono la mossa finale della loro sagoma.
+ * Con l'annullo unico le sagome vengono annullate insieme al resto e i duplicati nascono nello stesso script: un solo
+ * Ctrl+Z toglie disposizione, rotolo, crocini e copie. Annulla (corvoRevert) toglie solo le sagome: non esiste
+ * nessun duplicato prima di Applica.
+ */
+function corvoM3Ghosts(json) {
+    return corvo_withDocCoords(function () {
+        var st = corvo_state();
+        if (!st.items || st.items.length === 0) return corvo_err('Nessuna sessione attiva: esegui prima corvoExport');
+        if (corvo_docGone(st)) { corvo_resetState(); return corvo_err(CORVO_DOC_CLOSED); }
+        corvo_m3_clear(st);
+        var o = corvo_parse(json) || {}, list = o.copies || [], base = st.items.length;
+        if (o.base !== undefined && Number(o.base) !== base) return corvo_err('corvoM3Ghosts: base ' + o.base + ' ma i pezzi sono ' + base);
+        for (var c = 0; c < st.applied.length; c++) {
+            var ap = st.applied[c];
+            if (ap.a !== 0 || ap.tx !== 0 || ap.ty !== 0) return corvo_err('corvoM3Ghosts va chiamato prima di corvoApply');
+        }
+        if (list.length === 0) return corvo_json({ ok: true, base: base, n: 0 });
+        var ly = corvo_layer(st.doc, true);
+        var col = new RGBColor(); col.red = 0; col.green = 150; col.blue = 255;
+        var copies = [];
+        st.m3 = { base: base, copies: copies };
+        for (var k = 0; k < list.length; k++) {
+            var cp = list[k], src = Number(cp.src), ring = cp.ring;
+            if (!(src >= 0 && src < base) || src !== Math.floor(src)) { corvo_m3_clear(st); return corvo_err('copia ' + k + ': sorgente ' + cp.src + ' fuori intervallo'); }
+            if (!(ring instanceof Array) || ring.length < 3) { corvo_m3_clear(st); return corvo_err('copia ' + k + ': sagoma non valida'); }
+            var p = ly.pathItems.add();
+            p.setEntirePath(ring);
+            p.closed = true; p.filled = false; p.stroked = true; p.strokeWidth = 0.5; p.strokeColor = col;
+            try { p.strokeDashes = [4, 2]; } catch (eD) {}
+            p.name = 'Corvo_Ghost';
+            st.items.push([p]);
+            st.applied.push({ a: 0, tx: 0, ty: 0 });
+            copies.push({ src: src, mirror: !!cp.mirror, axis: Number(cp.axis) || 0 });
+        }
+        st.steps = (st.steps || 0) + 1;
+        corvo_redraw();
+        return corvo_json({ ok: true, base: base, n: copies.length });
+    });
+}
+
+/* rimuove le sagome e riporta items/applied ai soli pezzi */
+function corvo_m3_clear(st) {
+    if (!st || !st.m3) return;
+    var base = st.m3.base;
+    for (var i = base; i < st.items.length; i++) {
+        var g = st.items[i] && st.items[i][0];
+        if (corvo_alive(g)) { try { g.remove(); } catch (e) {} }
+    }
+    if (st.items.length > base) st.items.length = base;
+    if (st.applied.length > base) st.applied.length = base;
+    st.m3 = null;
+}
+
+/* specchia gli oggetti rispetto alla verticale x = axis (coordinate documento): x' = 2 axis - x */
+function corvo_m3_reflect(st, list, axis) {
+    var pr = st.probe || { origin: [0, 0], sign: 1, post: true };
+    // Illustrator: x' = o + M(x - o) + T con M = diag(-1, 1)  ->  T = (2 axis - 2 o.x, 0)
+    var tx = 2 * axis - 2 * pr.origin[0];
+    var m = app.getScaleMatrix(-100, 100);
+    if (pr.post) m = app.concatenateTranslationMatrix(m, tx, 0);
+    else m = app.concatenateTranslationMatrix(m, -tx, 0);          // pre: M·(x + M^-1 T), M^-1 T = (-tx, 0)
+    // stesso changeLineWidths di corvo_move (verificato con le rotazioni): |det| = 1, lo spessore non cambia
+    for (var k = 0; k < list.length; k++) list[k].transform(m, true, true, true, true, 1, Transformation.DOCUMENTORIGIN);
+}
+
+/* crea le copie vere. finals[k] = mossa assoluta {a,tx,ty} della copia k (quella della sua sagoma) */
+function corvo_m3_materialize(st, finals) {
+    var res = { made: 0, errors: [] };
+    if (!st.m3) return res;
+    var cps = st.m3.copies;
+    for (var k = 0; k < cps.length; k++) {
+        var c = cps[k], fin = finals[k], dups = [];
+        if (!fin) continue;
+        try {
+            var mem = st.items[c.src];
+            if (!(mem instanceof Array)) mem = [mem];
+            for (var j = 0; j < mem.length; j++) dups.push(mem[j].duplicate(mem[j], ElementPlacement.PLACEBEFORE));
+            var cur = st.applied[c.src] || { a: 0, tx: 0, ty: 0 };
+            var tmp = { items: [dups], applied: [{ a: cur.a, tx: cur.tx, ty: cur.ty }], probe: st.probe };
+            corvo_move(tmp, 0, 0, 0, 0);                   // duplicato riportato alla posizione ORIGINALE del sorgente
+            if (c.mirror) corvo_m3_reflect(st, dups, c.axis);
+            tmp.applied[0] = { a: 0, tx: 0, ty: 0 };
+            corvo_move(tmp, 0, Number(fin.a) || 0, Number(fin.tx) || 0, Number(fin.ty) || 0);
+            res.made++;
+        } catch (e) {
+            for (var d = 0; d < dups.length; d++) { try { dups[d].remove(); } catch (e2) {} }
+            res.errors.push('copia ' + k + ': ' + e.message);
+        }
+    }
+    return res;
+}
+
+/* firma veloce della selezione (nessuna lettura di punti): il pannello riusa l'esportazione di "Leggi selezione" */
+function corvoM3SelSig() {
+    return corvo_withDocCoords(function () {
+        if (app.documents.length === 0) return corvo_json({ sig: '' });
+        var doc = app.activeDocument, sel = doc.selection, parts = [doc.name, sel ? sel.length : 0];
+        if (sel) for (var i = 0; i < sel.length; i++) {
+            var b = null;
+            try { b = sel[i].geometricBounds; } catch (e) { b = null; }
+            parts.push(sel[i].typename + (b ? ':' + Math.round(b[0] * 100) + ',' + Math.round(b[1] * 100) + ',' + Math.round(b[2] * 100) + ',' + Math.round(b[3] * 100) : ''));
+        }
+        return corvo_json({ sig: parts.join('|') });
     });
 }
 

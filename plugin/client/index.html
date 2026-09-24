@@ -5,6 +5,7 @@
 <title>Corvo</title>
 <link rel="stylesheet" href="css/panel.css">
 <link rel="stylesheet" href="css/report.css">
+<link rel="stylesheet" href="css/quantity.css"><!-- MODULO 3 -->
 </head>
 <body>
 <main class="panel">
@@ -72,6 +73,25 @@
   <div class="bar thin" id="timeBar"><i id="timeBarFill"></i></div>
 
   <p class="status" id="status" data-i18n="ready">Select the pieces and press Nest.</p>
+
+  <!-- MODULO 3: quantita' per pezzo, coppie specchiate, copie vicine (js/quantity.js + js/quantity-panel.js) -->
+  <details class="m3" id="m3">
+    <summary data-i18n="qtyTitle">Copies &amp; mirrored pairs</summary>
+    <div class="m3-row">
+      <button type="button" id="m3Load" class="btn mini" data-i18n="qtyLoad">Read selection</button>
+      <span class="lbl" data-i18n="qtySetAll">All</span>
+      <input type="number" id="m3All" value="1" min="1" max="999" step="1">
+      <button type="button" id="m3SetAll" class="btn mini">OK</button>
+    </div>
+    <div class="m3-list">
+      <table class="m3-table">
+        <thead><tr><th data-i18n="qtyPiece">Piece</th><th data-i18n="qtyQty">Qty</th><th data-i18n="qtyMirror">L+R</th></tr></thead>
+        <tbody id="m3Body"></tbody>
+      </table>
+    </div>
+    <label class="check"><input type="checkbox" id="m3Close"><span data-i18n="qtyClose">Keep copies of the same design together</span></label>
+    <p class="m3-sum" id="m3Sum"></p>
+  </details>
 
   <!-- MODULO 5: report materiale e costo (js/report.js + js/report-panel.js, css/report.css) -->
   <details class="m5" id="m5">
@@ -142,9 +162,11 @@
 <script src="js/cluster.js"></script>
 <script src="js/regmarks.js"></script><!-- MODULO 6 -->
 <script src="js/holes.js"></script><!-- MODULO 2 -->
+<script src="js/quantity.js"></script><!-- MODULO 3 -->
 <script src="js/raster.js"></script><!-- MODULO 8 -->
 <script src="js/main.js"></script>
 <script src="js/report.js"></script>
 <script src="js/report-panel.js"></script>
+<script src="js/quantity-panel.js"></script><!-- MODULO 3 -->
 </body>
 </html>

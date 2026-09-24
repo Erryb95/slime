@@ -1,4 +1,4 @@
-# Corvo — architettura del plugin Illustrator (v0.1 + moduli 1, 2, 5, 6, 8 — merge 2026-09-24)
+# Corvo — architettura del plugin Illustrator (v0.1 + moduli 1, 2, 5, 6, 8 — merge 2026-09-24; modulo 3 nel branch modulo3-quantita)
 
 Obiettivo v0.1: selezioni gli oggetti in Illustrator, premi **Nest**, e vedi i pezzi muoversi LIVE nella tavola
 mentre Sparrow cerca; **Stop** tiene il migliore, **Applica** conferma, **Annulla** riporta tutto com'era.
@@ -17,6 +17,8 @@ plugin/
   client/js/geometry.js    # anelli -> forme Sparrow (unione, chiusura, semplificazione)        [AGENTE PANEL]
   client/js/cluster.js     # modulo 1: oggetti esportati -> pezzi (unione, crocini, linea di taglio)
   client/js/holes.js       # modulo 2: pezzi piccoli dentro i fori dei grandi (pre-pass prima del nest)
+  client/js/quantity.js    # modulo 3: copie per design, coppie specchiate S/D, copie vicine (logica pura)
+  client/js/quantity-panel.js, css/quantity.css   # modulo 3: sezione "Copie e coppie specchiate" (solo DOM)
   client/js/report.js      # modulo 5: report materiale/costo, CSV (logica pura)
   client/js/report-panel.js, css/report.css   # modulo 5: sezione "Materiale e costo" del pannello (solo DOM)
   client/js/regmarks.js    # modulo 6: specifiche e geometria dei crocini print&cut (logica pura)
@@ -160,7 +162,11 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
    Così un'immagine sotto una CutContour si unisce alla sua linea di taglio, e in "Solo linea di taglio" e' un passeggero.
 4. **Modulo 1** `cluster.planPieces` → pezzi `{i, members, name, layers, source, rings, rg, box}`; `corvoGroup`.
 5. `geometry.buildPieces`; i pezzi degeneri restano al loro posto e gli altri sono rinumerati (`hostI` = indice del piano).
-6. **Modulo 2** `holes.planHoles(planPieces, pieces)` → figli nei fori; `nestPieces` toglie i figli.
+5b. **Modulo 3** `quantity.expand(planPieces, pieces, spec)` → copie e copie specchiate VIRTUALI (pezzi + oggetti
+   virtuali agli indici host `base + k`); `corvoM3Ghosts` crea le sagome nell'host prima della ricerca.
+6. **Modulo 2** `holes.planHoles(planPieces, pieces)` → figli nei fori (anche nei fori delle copie); `nestPieces` toglie i figli.
+6b. **Modulo 3** `quantity.buildNest(nestPieces)` → item Sparrow con `demand` (+ celle "tieni vicine");
+   ogni report viene riportato a una posizione per pezzo con `quantity.expandPlacements` appena arriva dal motore.
 7. **Modulo 5** `CorvoReportPanel.begin` con `expand` (posizioni di tutti i pezzi, figli compresi) e con le misure del
    materiale (rotolo intero e lunghezza con i margini dei crocini).
 8. Nest; live `movesFor` = `holes.movesFor` (indici `hostI`, figli composti col genitore); a fine ricerca crocini in
@@ -205,6 +211,7 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
 | `test_report.js [s]` | modulo 5, + colonna livello da pezzi raggruppati, + costo con margini crocini | PASS |
 | `test_regmarks.js [s]` | modulo 6 | 333 controlli, 0 falliti |
 | `test_raster.js [s]` | modulo 8 | PASS |
+| `test_quantity.js [s]` | modulo 3 (branch modulo3-quantita), anche host corvo.jsx con DOM finto | 208 controlli, PASS |
 | `test_combined.js [s]` | lettering + pezzi piccoli con fori ON, adesivo stampa+taglio, crocino su "Reg", 3 PNG DTF, crocini Graphtec, report | 28/28 |
 
 `SEED=n` fissa il seme del motore in `test_holes`, `test_combined` (default 7).
@@ -354,6 +361,84 @@ Limiti noti: un solo livello di annidamento; il figlio e' trattato come convesso
 (niente incastri a L dentro un foro); il greedy non garantisce "mai peggio": quando il rotolo ha comunque spazio
 libero per i pezzi piccoli il guadagno e' ~0 e il rumore stocastico di Sparrow (±2%) domina; non ancora verificato
 in Illustrator (`test_e2e.js`).
+
+## Modulo 3 — Copie per design, coppie specchiate S/D, copie vicine (`client/js/quantity.js`, 2026-09-24)
+
+Problemi utente: Deepnest #6 (specchiatura chiesta dal 2018), #16/#181 (copie), #124 (pezzi dello stesso lavoro vicini),
+Signs101 (decal S/D ridisegnate a mano). File nuovi: `quantity.js` (puro, `window.CorvoQuantity`/`module.exports`),
+`quantity-panel.js` + `css/quantity.css` (DOM). Agganci `// MODULO 3` in `main.js`, `index.html`, `host/corvo.jsx`.
+
+### Scelta di progetto: copie VIRTUALI fino ad Applica
+- Durante la ricerca nessun oggetto viene duplicato. Ogni copia e' un pezzo del pannello con `hostI = base + k`
+  (`base` = numero di pezzi di `corvoGroup`); nell'host all'indice `base + k` c'e' una **sagoma** leggera
+  (`Corvo_Ghost`: il poligono Sparrow, <= 200 punti, tratteggio azzurro sul livello Corvo). `corvoApply` muove sagome e
+  pezzi con lo stesso contratto assoluto, quindi l'anteprima dal vivo costa come un tracciato semplice per copia anche se
+  il design e' un gruppo pesante con maschere e tinte piatte.
+- **Applica** (`corvoFinish`): per ogni copia l'host duplica TUTTI i membri del pezzo sorgente con
+  `duplicate(membro, ElementPlacement.PLACEBEFORE)` (stesso livello/gruppo, subito sopra l'originale: tinte piatte,
+  CutContour, livelli e impilamento dentro la copia conservati), riporta i duplicati alla posizione ORIGINALE del
+  sorgente (inverso della sua `applied`), li specchia se serve, poi applica la mossa finale della sagoma e toglie le
+  sagome. Con l'annullo unico le sagome (un passo in `st.steps`) si annullano con tutto il resto e i duplicati nascono
+  nello stesso script → **un Ctrl+Z toglie disposizione, rotolo, crocini e copie**. Risposta: `{ok, undo, copies, copyErrors?}`.
+- **Annulla** (`corvoRevert`): toglie solo le sagome (`corvo_m3_clear`): non esiste nessun duplicato da cancellare.
+- **Specchiata**: riflessione rispetto alla verticale `x = axis` (asse = centro dell'ingombro del poligono del pezzo,
+  `piece.ref.x`), poi mossa rigida. Pannello: `mirrorPolygon` = `x -> -x` sul poligono relativo a `ref` con ordine
+  invertito (esatto in f32); host: `app.getScaleMatrix(-100, 100)` + traslazione `2·axis − 2·o.x` (sonda `st.probe`),
+  `transform(..., DOCUMENTORIGIN)`. Sparrow non puo' specchiare (Sparrow #157): la specchiata e' un item separato e non
+  viene mai "simulata" con una rotazione.
+- Semantica: `copie = n` → n esemplari del design; `S+D` → anche n copie specchiate (2n pezzi in tutto).
+
+### Contratto host (aggiunte, firme esistenti invariate)
+- `corvoM3Ghosts({base, copies:[{src, mirror, axis, ring:[[x,y]..]}]})` — dopo `corvoGroup`, prima del primo
+  `corvoApply`; `base` deve essere il numero di pezzi. Ritorna `{ok, base, n}`. Conta un passo di annullamento.
+- `corvoM3SelSig()` — `{sig}`: firma veloce della selezione (tipo + `geometricBounds` di ogni oggetto, nessuna lettura
+  di punti). "Leggi selezione" esporta una volta; Nest riusa quell'esportazione UNA volta se la firma non e' cambiata
+  (sui file densi `corvoExport` costa minuti).
+- `corvoGroup`/`corvoRevert` chiamano `corvo_m3_clear`; `corvo_singleUndo` aspetta anche che le sagome siano sparite,
+  rimette solo i `base` pezzi e poi `corvo_m3_materialize`.
+
+### Pannello
+- Sezione "Copie e coppie specchiate": **Leggi selezione** (esporta + raggruppa col modulo 1, nessuna sessione),
+  tabella pezzo / ingombro mm / copie (1..999) / S+D, campo "Tutti" + OK, casella "Tieni vicine le copie dello stesso
+  design" (`localStorage corvo.m3close`). Valori ricordati per nome + ingombro del pezzo; la tabella si riempie anche a
+  ogni Nest. Riga di stato: "N copie aggiunte (M specchiate): sagome fino ad Applica", dopo Applica "N copie create".
+- `quantity.expand` crea anche gli **oggetti virtuali** (anelli specchiati se serve, `rg`, `box`, livelli) → il modulo 2
+  riempie i fori delle copie e il modulo 5 conta le copie nel report/CSV.
+- `quantity.buildNest`: pezzi con poligono identico → **un item Sparrow con `demand`** (misurato: 205 pezzi = 5 item,
+  prima disposizione in 0,28–0,45 s contro 1,9–2,5 s con un item per copia, stessa lunghezza finale).
+  `expandPlacements` assegna i posizionamenti ripetuti alle copie in ordine (sono intercambiabili).
+
+### "Tieni vicine" — misurato e scelto
+- Il post-processo "scambia le copie" proposto nei FINDINGS non serve: copie identiche scambiate danno lo stesso disegno.
+- Scelto: **celle rigide** pre-calcolate: coppia (S+D per le coppie specchiate, altrimenti copia+copia con rotazione
+  relativa 0/180 se ammessa), poi coppia di coppie (4). Posizione relativa: vertici, punti medi e punti di allineamento
+  degli ingombri sul no-fit polygon (Minkowski di clipper, forma semplificata per eccesso, distanza >= gap),
+  scelta quella col minimo inviluppo convesso e verificata esattamente. Contorno = chiusura della coppia, semplificato
+  per eccesso (contiene i pezzi). Una cella si accetta solo se occupa <= 3 % di area in piu' dei pezzi (cresciuti di
+  gap/2) E il suo inviluppo <= 3 % in piu' degli inviluppi dei membri; mai con un solo design (ogni vicino e' gia' una
+  copia) e mai se non entra nel rotolo.
+- Numeri (test_quantity, 6 s, seme 7, gap 2 mm): prima versione senza il criterio dell'inviluppo +4…+14 % di lunghezza
+  (cerchi e fari rigidi in coppia) → scartata. Con i criteri: 4 design/27 pezzi +0,4 % (vicino piu' prossimo dello
+  stesso design 22 → 37 %), 5 design/40 pezzi +0,2 % (30 → 28 %), 3 adesivi x10 +0,8 % (53 → 70 %),
+  205 pezzi +0,0 %. Costo sempre <= 3 %, beneficio modesto: e' un'opzione, spenta di default.
+
+### Numeri (Node, `node plugin/tools/test_quantity.js 6`)
+- Specchio: faro destro reale specchiato vs file sinistro reale: differenza simmetrica 0,012 % dell'area (lo scarto e'
+  il taglio 4e-5 del file). Host con DOM finto: copia = originale mosso, specchiata = riflessione + mossa (errore 0).
+- Lunghezza vs step-and-repeat dei rettangoli (stesso margine di bordo di Sparrow): Avery 2" x20 214 vs 215 mm;
+  adesivi Wikipedia20 x20 59 vs 65 (−9,7 %); etichette tonde x12 303 vs 338 (−10,4 %); fari S+D x6 57 vs 74 (−23,9 %);
+  fiamme hot-rod S+D x2 112 vs 143 (−22 %). O x3 + 12 pallini con fori: tutti i pallini nei fori, anche delle copie.
+
+### Da verificare in Illustrator (non ancora fatto)
+`transform()` con `getScaleMatrix(-100,100)` (specchiata esatta, spessore traccia invariato: usa lo stesso
+`changeLineWidths` = 1 delle rotazioni), `duplicate(x, PLACEBEFORE)` su gruppi con maschera / testo / immagini collegate,
+un solo Ctrl+Z dopo Applica con copie, tempo di Applica con 200 copie di un gruppo pesante, sagome tratteggiate visibili.
+
+### Limiti noti
+- Il testo vivo in una copia specchiata esce specchiato (come in Illustrator "Rifletti"): per decal S/D con scritte
+  serve una versione del testo per lato.
+- Le celle sono rigide e il beneficio di vicinanza e' modesto; nessuna penalita' di distanza dentro Sparrow.
+- I pezzi identici selezionati come oggetti distinti (un foglio gia' ripetuto) non sono riconosciuti come stesso design.
 
 ## Modulo 5 — Report materiale e costo (2026-09-24)
 

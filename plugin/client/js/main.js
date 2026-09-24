@@ -12,6 +12,9 @@
   var RM = window.CorvoRegmarks;       // MODULO 6: crocini di registro (js/regmarks.js)
   var HO = window.CorvoHoles;          // MODULO 2 (pieces inside holes), optional
   var R = window.CorvoRaster;          // MODULO 8 (DTF: immagini -> contorno)
+  var Q = window.CorvoQuantity;        // MODULO 3 (copie, coppie specchiate, copie vicine)
+  function QP() { return window.CorvoQtyPanel || null; }   // MODULO 3: tabella (quantity-panel.js, caricato dopo)
+  var M3 = { cache: null };            // MODULO 3: esportazione di "Leggi selezione", riusata una volta da Nest
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -73,7 +76,16 @@
       // MODULO 8
       preset: 'Preset', presetCustom: 'Custom', images: 'Images', imgContour: 'Contour', imgBbox: 'Bounding box',
       rasterNoAlpha: 'No real transparency, nested as a rectangle: {names}.',
-      rasterNoEngine: 'Images selected but raster.js is not loaded.'
+      rasterNoEngine: 'Images selected but raster.js is not loaded.',
+      // MODULO 3
+      qtyTitle: 'Copies & mirrored pairs', qtyLoad: 'Read selection', qtySetAll: 'All', qtyPiece: 'Piece', qtyQty: 'Qty',
+      qtyMirror: 'L+R', qtyMirrorTip: 'Mirrored pair: also cut a mirrored copy of every copy (left/right)',
+      qtyClose: 'Keep copies of the same design together', qtyEmpty: 'Press "Read selection" (or Nest) to list the pieces.',
+      qtyPieceN: 'Piece {n}', qtySum: '{n} piece(s) -> {total} to cut ({m} mirrored).',
+      qtyLoaded: '{n} piece(s) read: set the copies and press Nest.',
+      qtyNote: '{n} copies added ({m} mirrored): outlines until Apply.',
+      qtyCells: '{n} group(s) of copies kept together.',
+      qtyApplied: '{n} copies created.', qtyCopyErrors: '{n} copies could not be created: {msg}'
     },
     it: {
       rollWidth: 'Larghezza rotolo', gap: 'Distanza', rotations: 'Rotazioni', rotNone: 'Nessuna', rotFree: 'Libera', time: 'Tempo',
@@ -129,7 +141,16 @@
       // MODULO 8
       preset: 'Preset', presetCustom: 'Personalizzato', images: 'Immagini', imgContour: 'Contorno', imgBbox: 'Rettangolo',
       rasterNoAlpha: 'Nessuna trasparenza reale, disposte come rettangolo: {names}.',
-      rasterNoEngine: 'Immagini selezionate ma raster.js non è caricato.'
+      rasterNoEngine: 'Immagini selezionate ma raster.js non è caricato.',
+      // MODULO 3
+      qtyTitle: 'Copie e coppie specchiate', qtyLoad: 'Leggi selezione', qtySetAll: 'Tutti', qtyPiece: 'Pezzo', qtyQty: 'Copie',
+      qtyMirror: 'S+D', qtyMirrorTip: 'Coppia specchiata: taglia anche una copia specchiata di ogni copia (sinistra/destra)',
+      qtyClose: 'Tieni vicine le copie dello stesso design', qtyEmpty: 'Premi "Leggi selezione" (o Nest) per elencare i pezzi.',
+      qtyPieceN: 'Pezzo {n}', qtySum: '{n} pezzi -> {total} da tagliare ({m} specchiati).',
+      qtyLoaded: '{n} pezzi letti: imposta le copie e premi Nest.',
+      qtyNote: '{n} copie aggiunte ({m} specchiate): sagome fino ad Applica.',
+      qtyCells: '{n} gruppi di copie tenuti vicini.',
+      qtyApplied: '{n} copie create.', qtyCopyErrors: '{n} copie non create: {msg}'
     }
   };
   var lang = 'en';
@@ -301,6 +322,7 @@
     // MODULO 8: + preset, rasterMode
     ['rollWidth', 'gap', 'rotations', 'time', 'shapeSrc', 'merge', 'regmarks', 'preset', 'rasterMode'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
     if ($('useHoles')) $('useHoles').disabled = st !== 'idle';   // MODULO 2
+    if (QP()) QP().setEnabled(st === 'idle');                     // MODULO 3
   }
 
   function readParams() {
@@ -383,6 +405,53 @@
     });
   }
 
+  // ---------------------------------------------------------------- MODULO 3: copie e coppie specchiate
+  // corvoExport, oppure l'esportazione di "Leggi selezione" se la selezione non e' cambiata (firma veloce: tipo +
+  // ingombro di ogni oggetto): sui file densi l'esportazione costa minuti, non va fatta due volte. Usata una volta sola.
+  function m3Export() {
+    var c = M3.cache;
+    M3.cache = null;
+    function fresh() { return hostCall('corvoExport', { flatness: FLATNESS, raster: true }); }
+    if (!c) return fresh();
+    return hostCall('corvoM3SelSig').then(function (r) { return r && r.sig === c.sig ? c.exp : fresh(); }, fresh);
+  }
+  // sagome delle copie nell'host (indici base + k), prima del primo corvoApply
+  function m3Ghosts() {
+    if (!S.qx || !S.qx.copies.length) return Promise.resolve();
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    return hostCall('corvoM3Ghosts', { base: S.qx.base, copies: S.qx.copies.map(function (c) {
+      return { src: c.src, mirror: c.mirror, axis: c.axis, ring: c.ring.map(function (q) { return [r2(q[0]), r2(q[1])]; }) };
+    }) });
+  }
+  // "Leggi selezione": esporta e raggruppa (modulo 1) solo per riempire la tabella; nessuna sessione, nulla si muove
+  function m3Load() {
+    if (S.state !== 'idle' || !QP()) return;
+    var p;
+    try { p = readParams(); } catch (e) { setError(e); return; }
+    setState('busy');
+    setStatus('exporting');
+    M3.cache = null;
+    hostCall('corvoExport', { flatness: FLATNESS, raster: true }).then(function (exp) {
+      var keep = JSON.parse(JSON.stringify(exp));   // Nest la riusa intatta (raster.prepareItems lavora sulla copia)
+      var items = (exp && exp.items) || [];
+      if (!items.length) throw new Error(t('noSelection'));
+      if (items.some(function (x) { return x.raster; })) {
+        if (!R) throw new Error(t('rasterNoEngine'));
+        items = R.prepareItems(items, { mode: p.rasterMode, offset: R.SAFETY_MM * MM }).items;
+      }
+      var doc = exp.doc || {};
+      var plan = CL.planPieces(items, { merge: p.merge, shape: p.shape, artboards: doc.artboards || [], lockedCuts: exp.lockedCuts || [] });
+      if (!plan.pieces.length) throw new Error(t('errNothing'));   // altri errori del piano: li mostra Nest
+      QP().fill(plan.pieces);
+      if ($('m3')) $('m3').open = true;
+      return hostCall('corvoM3SelSig').then(function (r) {
+        M3.cache = { sig: r && r.sig, exp: keep };
+        setState('idle');
+        setStatus('qtyLoaded', { n: plan.pieces.length }, 'ok');
+      });
+    }).catch(function (err) { setState('idle'); setError(err); });
+  }
+
   // ---------------------------------------------------------------- MODULO 6: crocini di registro
   function rmActive() { return !!(RM && S.rm && S.rm.id !== 'none'); }
   function rmLayout(rep) { return RM.layout(S.rm.id, S.rm.rollMm, rep.strip_width / MM); }
@@ -439,6 +508,7 @@
     if (!m || S.runId !== m._run) return;
     if (m.type === 'report') {
       var r = m.report;
+      if (S.wrap) r.placements = Q.expandPlacements(r.placements, S.wrap);   // MODULO 3: demand / cells -> pieces
       S.phase = r.phase || S.phase;
       if (!S.best || r.strip_width <= S.best.strip_width) S.best = r;
       if (S.state === 'running' && lastStatus.key === 'loading') setStatus('running', null, null, S.note);
@@ -506,7 +576,7 @@
       return;
     }
     var H = rmRes.nestHeight * MM, gapPt = p.gapMm * MM, orient = G.rotationsFor(p.rot);
-    hostCall('corvoExport', { flatness: FLATNESS, raster: true }).then(function (exp) {   // MODULO 8: raster
+    m3Export().then(function (exp) {   // MODULO 8: raster (MODULO 3: corvoExport, o quella di "Leggi selezione")
       if (S !== me || S.state !== 'preparing') return;
       S.session = true;
       var items = (exp && exp.items) || [];
@@ -542,6 +612,7 @@
       if (w.noContour) notes.push(t('noteNoContour', { n: w.noContour }));
       if (rasterNote) notes.push(rasterNote);   // MODULO 8
       S.plan = plan;
+      if (QP()) QP().fill(plan.pieces);   // MODULO 3: tabella delle copie
       setStatus('preparing', { n: plan.pieces.length });
       return hostCall('corvoGroup', plan.pieces.map(function (x) { return x.members; })).then(function () {
         return { items: plan.pieces, notes: notes, doc: doc };
@@ -559,6 +630,14 @@
         pieces.forEach(function (x, k) { x.hostI = x.id; x.id = k; });
         pl.notes.push(t('noteNoContour', { n: bad.length }));
       }
+      // MODULO 3: copie e coppie specchiate VIRTUALI (sagome nell'host agli indici base + k) fino ad Applica
+      var qs = QP() ? QP().spec(items) : null;
+      S.qx = (Q && qs && qs.any) ? Q.expand(items, pieces, qs, { base: items.length }) : null;
+      if (S.qx && S.qx.extra) {
+        items = S.qx.items; pieces = S.qx.pieces;
+        pl.notes.push(t('qtyNote', { n: S.qx.extra, m: S.qx.mirrored }));
+      } else S.qx = null;
+      S.keepClose = !!(qs && qs.keepClose);
       var big = pieces.filter(function (x) { return G.minExtent(x.polygon, orient) > H - 1e-6; });
       if (big.length) throw new Error(t('tooBig', { w: fmt(rmRes.nestHeight), names: big.map(function (x) { return x.name; }).join(', ') }));
       var hulls = pieces.filter(function (x) { return /hull/.test(x.method) && x.parts > 1; }).length;
@@ -582,6 +661,9 @@
       S.pieceById = {};
       S.nestPieces.forEach(function (x) { S.pieceById[x.id] = x; });
       if (S.holes && S.holes.children.length) S.note = (S.note ? S.note + ' ' : '') + t('holesNote', { n: S.holes.children.length });
+      // MODULO 3: pezzi identici -> un item Sparrow con demand; "tieni vicine" -> celle rigide di 2/4 copie
+      S.wrap = Q ? Q.buildNest(S.nestPieces, { keepClose: S.keepClose, gap: gapPt, orientations: orient, stripHeight: H }) : null;
+      if (S.wrap && S.wrap.cells) S.note = (S.note ? S.note + ' ' : '') + t('qtyCells', { n: S.wrap.cells });
       // MODULO 5: new report session (rectangle baseline + original length computed once)
       if (window.CorvoReportPanel) window.CorvoReportPanel.begin({ pieces: pieces, items: items, H: H, gapPt: gapPt, orient: orient, docName: doc.name || '',
         expand: S.holes ? function (pls) { return HO.expandPlacements(pls, S.nestPieces, S.holes, pieces); } : null,   // MODULO 2: children in holes
@@ -589,14 +671,14 @@
 
       var msg = {
         type: 'nest',
-        instance: G.buildInstance(S.nestPieces, H, orient),   // MODULO 2: children excluded
+        instance: S.wrap ? Q.buildInstance(S.wrap, H, orient) : G.buildInstance(S.nestPieces, H, orient),   // MODULO 2: children excluded; MODULO 3: demand/celle
         exploreSecs: p.time * 0.8,
         compressSecs: p.time * 0.2,
         seed: window.CorvoSeed > 0 ? Math.floor(window.CorvoSeed) : 1 + Math.floor(Math.random() * 1e9),   // fixed seed = tests only
         gap: gapPt
       };
       setStatus('loading');
-      return startEngine().then(function (engine) {
+      return m3Ghosts().then(startEngine).then(function (engine) {   // MODULO 3: sagome delle copie prima della ricerca
         if (S !== me || S.state !== 'preparing') { if (engine.worker) engine.worker.terminate(); return; }
         var runId = {};
         S.runId = runId;
@@ -634,10 +716,13 @@
       rmNote = note;
       // corvoFinish conferma anche i crocini ("_rif") nello stesso passo di annullamento (merge moduli 1+6)
       return hostCall('corvoFinish');
-    }).then(function () {
+    }).then(function (fr) {
       S.session = false;
       setState('idle');
-      setStatus('applied', null, rmNote ? 'warn' : 'ok', rmNote);
+      var warn = !!rmNote;                                        // MODULO 3: copie create / non create
+      if (fr && fr.copyErrors && fr.copyErrors.length) { warn = true; rmNote = (rmNote ? rmNote + ' ' : '') + t('qtyCopyErrors', { n: fr.copyErrors.length, msg: fr.copyErrors[0] }); }
+      if (fr && fr.copies) rmNote = t('qtyApplied', { n: fr.copies }) + (rmNote ? ' ' + rmNote : '');
+      setStatus('applied', null, warn ? 'warn' : 'ok', rmNote);
     }, function (err) {
       setState('review');
       setError(err);
@@ -680,11 +765,13 @@
   $('btnStop').addEventListener('click', stop);
   $('btnApply').addEventListener('click', apply);
   $('btnCancel').addEventListener('click', cancel);
+  if ($('m3Load')) $('m3Load').addEventListener('click', m3Load);   // MODULO 3
   $('btnLang').addEventListener('click', function () {
     lang = lang === 'en' ? 'it' : 'en';
     try { localStorage.setItem('corvo.lang', lang); } catch (e) { /* storage blocked */ }
     applyLang();
     fillRegmarksSelect();              // MODULO 6
+    if (QP()) QP().rerender();         // MODULO 3
   });
   // MODULO 8: preset rotolo DTF -> larghezza e distanza; modificarle a mano torna a "Personalizzato"
   $('preset').addEventListener('change', function () {
