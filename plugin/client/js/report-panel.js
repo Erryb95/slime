@@ -148,6 +148,8 @@
   }
   function exportCsv() {
     if (!rep) return;
+    var LIC = window.CorvoLicense;       // MODULO 9: export CSV = funzione Pro (tabella FEATURES in license.js)
+    if (LIC && !LIC.has('costCsv')) { msg(LIC.proFeatureMsg('costCsv'), 'warn'); if (LIC.openDialog) LIC.openDialog(); return; }
     var nodeFs = null, nodePath = null, os = null;
     try { nodeFs = require('fs'); nodePath = require('path'); os = require('os'); } catch (e) { /* no Node */ }
     var csv = R.toCSV(rep, lang());
