@@ -1,4 +1,4 @@
-# Corvo — architettura del plugin Illustrator (v0.1 + moduli 1, 2, 5, 6, 8 — merge 2026-09-24)
+# Corvo — architettura del plugin Illustrator (v0.9.0-beta: moduli 1, 2, 5, 6, 8 + modulo 9)
 
 Obiettivo v0.1: selezioni gli oggetti in Illustrator, premi **Nest**, e vedi i pezzi muoversi LIVE nella tavola
 mentre Sparrow cerca; **Stop** tiene il migliore, **Applica** conferma, **Annulla** riporta tutto com'era.
@@ -21,6 +21,8 @@ plugin/
   client/js/report-panel.js, css/report.css   # modulo 5: sezione "Materiale e costo" del pannello (solo DOM)
   client/js/regmarks.js    # modulo 6: specifiche e geometria dei crocini print&cut (logica pura)
   client/js/raster.js      # modulo 8: PNG trasparente -> contorno (decoder, marching squares, offset)
+  client/js/license.js     # modulo 9: licenza offline ECDSA, prova 14 giorni, tabella gating Standard/Pro + UI licenza
+  client/css/license.css   # modulo 9: badge nel piede + finestra licenza
   client/js/worker.js      # Web Worker: carica wasm dai byte ricevuti, chiama nest()           [AGENTE PANEL]
   client/js/CSInterface.js # ponte CEP minimo scritto da noi (evalScript, requestOpenExtension, ...) su window.__adobe_cep__
                            # NB: il CSInterface.js ufficiale (Adobe-CEP/CEP-Resources) NON e' MIT: porta la licenza Adobe SDK
@@ -31,6 +33,8 @@ plugin/
   tools/test_modulo1.js    # modulo 1 nel pannello vero (Illustrator)
   tools/test_client.js, test_cluster.js, test_holes.js, test_report.js, test_regmarks.js, test_raster.js,
   tools/test_combined.js   # test Node senza Illustrator (vedi "Integrazione dei moduli")
+  tools/test_license.js    # modulo 9 (Node)
+  tools/release/           # modulo 9: license-keygen/gen .mjs, build-zxp.ps1, install/uninstall .ps1+.cmd, test-install.ps1
   tools/install-dev.ps1    # junction in %APPDATA%\Adobe\CEP\extensions\com.corvo.nesting + PlayerDebugMode
 ```
 
@@ -545,3 +549,85 @@ sparisce); i fori del contorno ricevono pezzi piccoli (modulo 2); il testo in pi
 di geometry. Il pannello chiede sempre `raster:true`: anche le immagini di un foglio print&cut (es. i 3 raster di
 test_modulo1) vengono tracciate (render temporaneo se non sono PNG collegati) — da misurare il tempo in Illustrator.
 PNG temporanei rimasti in `%TEMP%\corvo_m8_*.png` se l'export fallisce a metà.
+
+## Modulo 9 — Qualità commerciale (licenza, prova, firma ZXP, installer) — 2026-09-24
+
+Procedure operative (emettere una licenza, build, firma, installazione): **`docs/release.md`**.
+
+### Licenza offline (`client/js/license.js`)
+- Stesso schema di CamForge (studiato, nessun codice o chiave copiati) ma con una **coppia di chiavi nuova**: ECDSA P-256 /
+  SHA-256, firma IEEE P1363 (64 byte). Token `CV1-<payload base64url>.<firma base64url>`, payload
+  `{v:1, p:'corvo', id, ed:'standard'|'pro', iat:'YYYY-MM-DD', n?:nome, eh?:hash email, exp?:'YYYY-MM-DD', m?:id macchina}`.
+  L'email non entra nel token: `eh` = primi 16 hex di SHA-256(email minuscola).
+- Nel pannello c'è solo la chiave **pubblica** (`PUBLIC_JWK` + `PUBLIC_PEM`). Verifica con WebCrypto (`crypto.subtle`, provato in
+  Edge headless con la chiave vera) e ripiego sul `crypto` di Node (`crypto.verify` con `dsaEncoding:'ieee-p1363'`).
+- La privata è **fuori dal repo**: `%USERPROFILE%\.config\corvo\license-private.jwk` (o `$CORVO_LICENSE_KEY`).
+- Legame alla macchina **spento per default** (`--machine` in license-gen): ID = 16 hex da SHA-256(hostname + modello CPU),
+  mostrato nella finestra Licenza con "Copia".
+- Errori: `format`, `signature`, `product`, `edition`, `expired`, `machine` (messaggi IT/EN nella finestra).
+
+### Prova e dopo la prova
+- **14 giorni** dal primo avvio con tutte le funzioni Pro. Stato in `localStorage['corvo.m9']` **e** in
+  `%APPDATA%\Corvo\license.json` (Node fs; fuori dalla cartella dell'estensione, così non rompe la firma): vale l'inizio
+  più vecchio dei due (reinstallare non azzera), `lastSeen` = orologio più avanti visto (riportare indietro la data non allunga
+  la prova), inizio nel futuro = manomesso = finita. Anche la chiave attivata sta in entrambi.
+- **Prova finita senza licenza ("free")**: il nest funziona tutto (anteprima live, Stop, Annulla), **Applica solo fino a 10 pezzi**
+  (`LIMITS.freeApplyMax`); oltre, Applica mostra il messaggio e apre la finestra Licenza. Scelto al posto della filigrana:
+  non mette oggetti estranei nel file (finirebbero al plotter) e lascia il prodotto utile per lavori piccoli.
+  Funzioni come Standard (niente Pro).
+
+### Gating delle edizioni — UNA tabella (`FEATURES` in license.js)
+| Chiave | Modulo | Edizione minima |
+|---|---|---|
+| `holes` | 2 — pezzi dentro i fori | Pro |
+| `colorNest` | 4 — nesting per colore/livello | Pro |
+| `costCsv` | 5 — export CSV del report costi | Pro |
+| `multiSheet` | 7 — multi-foglio | Pro |
+
+Ranghi: free 1, standard 1, pro 2, trial 2. Una funzione non in tabella è libera. API per i moduli:
+`CorvoLicense.has(chiave)`, `CorvoLicense.canApply(nPezzi)`, `proFeatureMsg(chiave)`, `openDialog()`.
+Se `license.js` non è caricato gli agganci lasciano tutto libero (i test Node dei moduli restano invariati).
+
+### Agganci (`// MODULO 9`)
+- `main.js`: `LIC`/`m9has`; checkbox "Usa i fori" disabilitata e ignorata senza Pro (`setState`, `readParams`);
+  `S.m9Count = pieces.length` al nest; in `apply()` controllo `LIC.canApply(S.m9Count)` prima di qualsiasi azione.
+- `report-panel.js`: `exportCsv()` → `has('costCsv')` (il riepilogo "Copia" resta libero).
+- **Moduli 4 e 7** (non ancora in questo ramo): chiamare `CorvoLicense.has('colorNest')` / `has('multiSheet')` all'avvio del
+  nest e mostrare `proFeatureMsg`. Le chiavi sono già in tabella.
+- `index.html`: `css/license.css`, `js/license.js` prima di `main.js`, versione nel piede (`#corvoVersion`). license.js aggiunge
+  da sé il badge (Prova · N gg / Prova finita / Standard / Pro) e la finestra.
+
+### Versione
+`0.9.0-beta`. Nel manifest è `0.9.0.beta` (bundle ed estensione): lo schema CEP accetta solo `major.minor.micro.qualificatore`
+(pattern `\d{1,9}(\.\d{1,9}(\.\d{1,9}(\.(\w|_|-)+)?)?)?` nell'XSD di CEP-Resources), il trattino dopo il micro non passa.
+`build-zxp.ps1` legge il manifest, lo converte in `0.9.0-beta` e si ferma se non coincide con `VERSION` di license.js;
+test_license controlla anche il piede.
+
+### Firma ZXP e installer (`tools/release/`)
+- `build-zxp.ps1`: staging di `CSXS`, `client`, `host` (niente `.debug`, `tools/`, test, mappe, `.DS_Store`/`__MACOSX`, niente
+  junction: `robocopy /XJ` + controllo dei reparse point), firma con **ZXPSignCmd 4.1.3 x64** + marca temporale
+  `http://timestamp.digicert.com`, `-verify -certInfo` → `dist/Corvo-0.9.0-beta.zxp` (+ `.sha256`, `dist/Corvo-0.9.0-beta-win/`
+  con zxp + install/uninstall, e il suo `.zip`). `dist/` è gitignored.
+- `install.ps1` / `install.cmd` (doppio clic, niente amministratore): controlla che lo zxp sia Corvo e firmato
+  (`META-INF/signatures.xml`), estrae con .NET in una cartella accanto e poi scambia (niente installazione a metà);
+  **se al posto dell'estensione c'è la junction di sviluppo si ferma (codice 2) con le istruzioni** (`cmd /c rmdir`), una
+  cartella non-Corvo non la tocca. `-Target` per installare altrove (test). `uninstall.ps1`/`.cmd`: stesse protezioni;
+  licenza e prova restano in `%APPDATA%\Corvo`.
+- Niente file aggiunti dentro la cartella installata (romperebbero la verifica della firma di CEP).
+
+### Test
+| Test | Cosa | Esito |
+|---|---|---|
+| `node plugin/tools/test_license.js` | chiavi di test al volo: Pro/Standard valide (WebCrypto e Node), manomissioni (standard→pro, firma, payload, altra chiave), formato, edizione/prodotto sbagliati, scadenza, macchina, prova 13/14 giorni, limite 10/11 pezzi, reinstallazione, file cancellato, orologio indietro, versione manifest/piede, agganci; giro completo con la chiave vera se presente | 63/63 |
+| `plugin/tools/release/test-install.ps1` | install/aggiorna/disinstalla in `%TEMP%`, firma verificata sulla cartella installata, junction rifiutata e intatta, cartella estranea, zxp non firmato; la junction vera di CEP non cambia | 21/21 |
+| Edge headless (`--dump-dom`) | pannello vero: badge "Trial · 14 d left" e finestra; prova scaduta → fori disabilitati, 10 sì/11 no; attivazione di una Standard firmata con la chiave vera via WebCrypto | ok |
+
+### Limiti noti
+- **Non provato in Illustrator** (niente Illustrator in questo giro): caricamento dello ZXP firmato **senza** PlayerDebugMode,
+  `crypto.subtle` nel CEF di CEP 11 (c'è comunque il ripiego Node), finestra nel pannello stretto. Sulla macchina di sviluppo
+  PlayerDebugMode=1 resta attivo: per provare davvero la firma serve un utente/PC senza.
+- Certificato **autofirmato**: CEP lo accetta, ma non identifica un editore; per la vendita valutare un certificato di firma
+  vero. Il problema noto di Adobe (ZXPSignCMD/KnownIssue2024: pannelli vuoti) riguarda i link simbolici installati via UPIA:
+  il pacchetto non ne ha e l'installer non usa UPIA.
+- La protezione della prova è "non banale", non inviolabile (cancellare entrambi i posti la azzera; il JS è leggibile).
+- Il limite di 10 pezzi conta i pezzi del piano (figli nei fori compresi), non gli oggetti originali di Illustrator.

@@ -12,6 +12,8 @@
   var RM = window.CorvoRegmarks;       // MODULO 6: crocini di registro (js/regmarks.js)
   var HO = window.CorvoHoles;          // MODULO 2 (pieces inside holes), optional
   var R = window.CorvoRaster;          // MODULO 8 (DTF: immagini -> contorno)
+  var LIC = window.CorvoLicense;       // MODULO 9: licenza/prova/edizioni (js/license.js), opzionale
+  function m9has(f) { return !LIC || LIC.has(f); }   // MODULO 9
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -300,7 +302,7 @@
     $('btnCancel').disabled = !(running || review || st === 'preparing');
     // MODULO 8: + preset, rasterMode
     ['rollWidth', 'gap', 'rotations', 'time', 'shapeSrc', 'merge', 'regmarks', 'preset', 'rasterMode'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
-    if ($('useHoles')) $('useHoles').disabled = st !== 'idle';   // MODULO 2
+    if ($('useHoles')) $('useHoles').disabled = st !== 'idle' || !m9has('holes');   // MODULO 2 + MODULO 9 (Pro)
   }
 
   function readParams() {
@@ -312,7 +314,7 @@
       shape: $('shapeSrc').value === 'cut' ? 'cut' : 'all',
       merge: !!$('merge').checked,
       rm: ($('regmarks') && $('regmarks').value) || 'none',     // MODULO 6
-      holes: !!($('useHoles') && $('useHoles').checked),  // MODULO 2
+      holes: !!($('useHoles') && $('useHoles').checked) && m9has('holes'),  // MODULO 2 + MODULO 9 (Pro)
       rasterMode: $('rasterMode').value           // MODULO 8
     };
     try { localStorage.setItem('corvo.opts', JSON.stringify({ shape: p.shape, merge: p.merge })); } catch (e) { /* storage blocked */ }
@@ -569,6 +571,7 @@
       S.rollOrigin = [+doc.abLeft || 0, (+doc.abBottom || 0) - ROLL_MARGIN_MM * MM - p.rollMm * MM];
       S.origin = [S.rollOrigin[0] + rmRes.offset[0] * MM, S.rollOrigin[1] + rmRes.offset[1] * MM];
       S.pieces = pieces;
+      S.m9Count = pieces.length;   // MODULO 9: pezzi che Applica spostera' (limite dopo la prova)
       S.pieceById = {};
       pieces.forEach(function (x) { S.pieceById[x.id] = x; });
       S.areaSum = pieces.reduce(function (s, x) { return s + x.area; }, 0);
@@ -626,6 +629,14 @@
   }
 
   function apply() {
+    // MODULO 9: prova finita senza licenza -> Applica solo fino a LIMITS.freeApplyMax pezzi (il nest resta libero)
+    if (LIC && (S.state === 'running' || S.state === 'review') && !LIC.canApply(S.m9Count || 0)) {
+      lastStatus = { key: null };
+      $('status').textContent = LIC.applyLimitMsg(S.m9Count);
+      $('status').className = 'status warn';
+      if (LIC.openDialog) LIC.openDialog();
+      return;
+    }
     if (S.state === 'running') { S.phase = S.phase || 'done'; stopEngine(); }
     if (S.state !== 'running' && S.state !== 'review') return;
     setState('busy');
