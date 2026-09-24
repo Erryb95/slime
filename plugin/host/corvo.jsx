@@ -368,7 +368,10 @@ function corvo_scan(it, tol, acc, cutOnly) {
     try { gb = it.geometricBounds; } catch (e1) { gb = null; }
     if (t === 'TextFrame' || t === 'LegacyTextItem') {
         acc.text++;
-        if (gb) { corvo_boxAdd(acc, gb[0], gb[1]); corvo_boxAdd(acc, gb[2], gb[3]); }
+        if (gb) {
+            corvo_boxAdd(acc, gb[0], gb[1]); corvo_boxAdd(acc, gb[2], gb[3]);
+            if (acc.textBoxes) acc.textBoxes.push([gb[0], gb[1], gb[2], gb[3]]);   // il pannello verifica se sta dentro il pezzo
+        }
         return;
     }
     // raster, collegati, simboli, mesh, grafici, plugin: si muovono col pezzo, ingombro = rettangolo
@@ -589,7 +592,7 @@ function corvoExport(optsJson) {
                 out.push({ i: raw.length - 1, name: nm, type: it.typename, layer: lname, rings: [], raster: ri, bounds: b8, box: b8 });
                 continue;
             }
-            var acc = { rings: [], rg: [], g: 0, cut: [], cutSpots: {}, other: [], text: 0, nonVector: 0, nonVectorTypes: {},
+            var acc = { rings: [], rg: [], g: 0, cut: [], cutSpots: {}, other: [], text: 0, textBoxes: [], nonVector: 0, nonVectorTypes: {},
                         box: [1e30, -1e30, -1e30, 1e30] };
             try { corvo_scan(it, tol, acc, false); }
             catch (e) { return corvo_err('Oggetto ' + (i + 1) + ' (' + (nm || it.typename) + '): ' + e.message); }
@@ -618,7 +621,7 @@ function corvoExport(optsJson) {
             if (acc.rings.length) o.rg = acc.rg;                  // anello -> tracciato di provenienza (area riempita)
             if (acc.cut.length) { o.cut = acc.cut; o.cutSpots = spots; }
             if (acc.other.length) o.other = acc.other;
-            if (acc.text) o.text = acc.text;
+            if (acc.text) { o.text = acc.text; if (acc.textBoxes.length === acc.text) o.textBoxes = acc.textBoxes; }
             if (acc.nonVector) { o.nonVector = acc.nonVector; o.nonVectorTypes = nv; }
             // MODULO 4: colori di riempimento per il nesting per colore (host/multinest.jsx)
             if (opts && opts.paint && typeof corvo_m4_paint === 'function') { try { o.paint = corvo_m4_paint(it); } catch (eP) { o.paint = []; } }

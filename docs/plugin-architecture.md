@@ -302,7 +302,8 @@ Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, i
      oppure esatti `cut|cuts|cutter|contour|taglio` + numero facoltativo → "CutContour", "Thru-cut", "Kiss Cut",
      "Through Cut Rectangle", "CONTOUR", "Cut 2"; NON "Cutting Mat", "Uncut", "Shortcut").
    - `other`: rettangolo d'ingombro di raster, immagini collegate, simboli, mesh, grafici, plugin (si muovono col pezzo).
-   - `text`: numero di cornici di testo vivo (NON più errore dell'host: decide il pannello).
+   - `text`: numero di cornici di testo vivo (NON più errore dell'host: decide il pannello); `textBoxes`: i loro
+     `geometricBounds` [l,t,r,b] (verifica finale 0.9 beta).
    - `box`: ingombro di tutto (anche linee aperte e testo); `bounds` = ingombro dei soli anelli (compatibile v0.1).
    - Esclusi e riportati in `"excluded":[{name,layer,reason:"hidden"|"locked"}]`: oggetti nascosti o bloccati (anche via
      livello/gruppo antenato). Oggetti sul livello `Corvo` ignorati in silenzio. Tutti esclusi → `{"error","code":"allExcluded","n"}`.
@@ -352,6 +353,10 @@ Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, i
 - **Errori**: testo vivo che definisce la forma (shape "all" o fallback) → `errText` con il numero di cornici e
   "Testo > Crea contorni"; in shape "cut" il testo dentro un adesivo con linea di taglio è solo un passeggero.
   Pezzo fatto solo di immagini/oggetti non vettoriali → `errRasterOnly`. Pezzo con sole linee aperte → saltato (`noteNoContour`).
+- **Testo dentro il pezzo** (verifica finale 0.9 beta, file laser di boxes.py: ogni parte ha un'etichetta di testo vivo):
+  se TUTTE le cornici di testo del pezzo stanno dentro l'area pari-dispari dei suoi anelli (4 angoli rientrati di 0,5 pt +
+  centro, `boxInRings` in `cluster.js`) il testo non definisce la sagoma: viaggia col pezzo, nessun errore
+  (`warnings.textInside`). Testo che esce dalla sagoma, sopra un foro, o senza `textBoxes` → `errText` come prima.
 - Avvisi nella riga di stato: oggetti uniti, crocini esclusi, nascosti/bloccati ignorati, fallback, senza contorno, inviluppi.
 
 ### Annullo unico (E2, verifica 24/09)

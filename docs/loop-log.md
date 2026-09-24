@@ -143,3 +143,44 @@ Da verificare in Illustrator: nest per colore con copie (sagome tratteggiate che
 crea i duplicati nel rotolo giusto, un solo Ctrl+Z toglie copie + `Corvo_Containers`); opzioni Colore/Livello/Fogli
 disabilitate a prova finita (badge licenza) e messaggio "funzione Pro" caricando un preset; Applica rifiutato con
 <= 10 design + copie > 10; nota crocini con piu' rotoli; pochi adesivi piccoli su rotolo 1600 mm (guard, niente crash).
+
+## 2026-09-24 — Verifica finale 0.9 beta
+
+Merge `integrazione-3-47-9` (moduli 3, 4, 7, 9) nella copia principale (`--no-ff`, 45d947b). Conflitti: `corvo_singleUndo`
+(tenute l'attesa di sagome M3 e contenitori M4/7 E la diagnostica `corvoLastUndo`, ora anche con `ghosts`) e questo log;
+tenuti `CORVO_M8_PLACED_DSIGN = -1`, test_modulo1 e `plugin/tools/ill/`. Illustrator riavviato (10,75 GB -> chiuso con
+`app.quit()` dal pannello in 6 s, riaperto, pannello da `requestOpenExtension`): ~2,7 GB durante tutta la verifica.
+Harness nuovi in `plugin/tools/ill/`: `m3.js`, `m47.js`, `m9.js` (stesse regole: solo CDP, documenti chiusi senza salvare).
+
+| Modulo / file reale | Scenario | Esito | Numeri |
+|---|---|---|---|
+| Node (SEED=7) | 11 suite | ok | client, cluster 78/78 (+4), holes, report, regmarks 333/333, raster, quantity 221/221, multinest 224/224, multinest_panel 48/48, license 64/64, combined 49/49 |
+| 3 · avery22806_square_labels.ai | 2 etichette disegnate sul modello (CMYK + PANTONE 485 C su "Stampa", CutContour su "Taglio"), A ×8, B ×4 | 11/11 | 10 sagome durante la ricerca; dopo Applica 36 oggetti (12 esemplari × 3) su livelli e tinte originali; copie rigide (scarto max 0,0054 %), stampa sempre dentro il suo taglio; 145,7 mm su 300; min 2,18 mm; UN `app.undo()` -> 6 oggetti originali (0 pt), redo ok; Annulla toglie le 10 sagome |
+| 3 · freesvg_car-right-headlight.svg | ×2 + S+D | 12/12 | 3 sagome; 2 dritti + 2 specchiati esatti (differenza simmetrica 0,0012 %); 164,7 mm; min 2,35 mm; annullo unico, redo, Annulla |
+| 4 · flag_italy.svg | per colore, rotolo 1000 | 13/13 | 3 rotoli (verde 357 · bianco 357 · rosso 181 mm), etichette "Corvo — #hex — L mm", un colore per rotolo, report 3 righe + TOTALE, `Corvo_Containers_rif`, un undo toglie tutto, Annulla durante la sequenza |
+| 4 · flag_south_africa.svg | per colore | 10/10 | 3 rotoli: il gruppo con maschera (Y verde/bianca/gialla) resta UN pezzo col colore dominante (limite noto) |
+| 4 · alfabeto colorato (34 oggetti -> 30 pezzi) | per colore, rotolo 600 | 10/10 | 6 rotoli (156 · 618 · 101 · 114 · 111 · 107 mm), nessun colore mischiato, min 2,22 mm; il rosso da 618 mm e' UN tracciato composto con piu' lettere |
+| 7 · ClosedBox | 600×400 / 1220×2440 | 17/17 · 10/10 | 1 foglio (limite 1), 24 % / 2 %; margine 10 mm, min 2,29 mm; undo unico + Annulla (600×400) |
+| 7 · DividerTray | 600×400 / 1220×2440 / venatura | 10/10 ×3 | 1 foglio, 58 % / 5 %; venatura: tutti i pezzi a 0/180° (0,0039 %) |
+| 7 · AgricolaInsert (101 pezzi) | 600×400 / 1220×2440 | 10/10 (1220), 600: vedi nota | testo di annotazione FUORI dalle parti p-7/p-8 -> errore chiaro che le nomina; tolto il testo: 600×400 = 2 fogli (limite 2) 68/28 %, 266 mm usati; 1220×2440 = 1 foglio 8 %, 260 mm, min 2,25 mm. La "sovrapposizione" 64/95 del primo giro era il figlio nel foro (harness che riempiva i fori): corretto e ripassato sul 1220 |
+| 9 · licenza | prova, scadenza simulata, chiavi | 13/13 | badge "Trial · 14 d left"; con inizio a -15 gg "Trial ended", fori/colore/livello/fogli bloccati, CSV Pro; 10 pezzi Applica ok, 9 design + 2 copie = 11 -> rifiutato + finestra licenza; preset Pro "per colore" -> Nest rifiutato; chiave manomessa rifiutata; Standard (license-gen) -> 11 pezzi ok, Pro ancora bloccate; Pro -> tutto; resta dopo il ricaricamento; record originale ripristinato |
+| Regressione | test_modulo1 · insegna48 SEED=1 30 s | 33/33 · ok | insegna48 **1653,6 mm** in 2 run (era 1666,9): istanza Sparrow identica byte per byte a quella senza modulo 3 -> la differenza viene dal budget a tempo, non dal codice (e' piu' corta) |
+
+**Bug corretti** (plugin/):
+1. **Testo vivo nei file laser** (boxes.py: ogni parte ha un'etichetta di testo al suo interno): Nest si fermava con
+   "N live text frame(s) define the shape" su TUTTI i file laser reali (ClosedBox 7/7 pezzi, DividerTray 17/17, Agricola).
+   L'host esporta `textBoxes`; `cluster.planPieces` ignora il testo che sta tutto dentro l'area pari-dispari del pezzo
+   (`boxInRings`: 4 angoli + centro): viaggia col pezzo. Testo fuori dalla sagoma o sopra un foro -> errore come prima.
+   test_cluster +4 controlli. Documentato in plugin-architecture.md (Modulo 1, pannello).
+2. Harness (non plugin): `Array.indexOf` assente in ExtendScript, regioni pari-dispari per i figli nei fori, impostazioni
+   del pannello (`corvo.mn.opts`, salvate a ogni Nest e ripristinate al caricamento) riportate a Tutto insieme + Rotolo.
+
+**Aperti prima di una beta pubblica**:
+(a) testo di annotazione fuori dalle parti (Agricola p-7/p-8): errore corretto ma il laserista deve cancellarlo a mano ->
+valutare "ignora testo fuori dai pezzi" o una nota piu' mirata; (b) tracciati composti con piu' lettere (alfabeto) e gruppi
+con maschera multicolore restano un pezzo solo -> proporre "scomponi"; (c) export lento sui file densi (Agricola 20-27 s a
+chiamata, harness di verifica minuti); (d) riga di stato per un attimo "Foglio 1 (verifica finale)…" in revisione finche' le
+ultime mosse non sono inviate (cosmetico); (e) ZXP firmato senza PlayerDebugMode e installer mai provati su un PC pulito;
+pagina prodotto assente; (f) crocini con piu' rotoli/fogli non supportati; annullo unico con crocini saltato 1/15 (ripiego
+sicuro); FineCut da provare su plotter vero; (g) solo Windows.
+

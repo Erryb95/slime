@@ -1,4 +1,4 @@
-Illustrator verification of modules 2, 5, 6, 8 (Corvo panel open, CEP debug port 8093; run ONE at a time:
+Illustrator verification of modules 2, 3, 4, 5, 6, 7, 8, 9 (Corvo panel open, CEP debug port 8093; run ONE at a time:
 they all drive the same panel). Documents are opened/created via ExtendScript and closed without saving.
 Never touches the desktop (no foreground, no keys): CDP to the panel only.
 
@@ -11,3 +11,14 @@ Never touches the desktop (no foreground, no keys): CDP to the panel only.
                                   DTF 58 preset, rigid move with the contour, 6 mm spacing, one undo.
   node undo6.js [n] [system] [secs]   repeat Apply + one undo with marks (EDIT=1: user nudge during review ->
                                   single undo must be skipped and the nudge kept).
+  node m3.js [secs=12]            Avery 22806 labels A x8 / B x4 (print + spot + CutContour on 2 layers) and the real right
+                                  headlight x2 + S+D: ghosts during the search, duplicates on Apply (layers, spots, rigid
+                                  copies, exact mirror), one undo removes copies, redo, Cancel removes ghosts.
+  node m47.js [secs=12] [color|laser|<label regex>]
+                                  4: flags + colourful alphabet by fill colour (one roll per colour, labels, report per
+                                  colour, Containers_rif, one undo, Cancel). 7: ClosedBox / DividerTray / AgricolaInsert on
+                                  600x400 and 1220x2440 (sheets, margin 10 mm, gap, grain 0/180); Agricola: annotation text
+                                  outside p-7/p-8 -> clear error, then deleted.
+  node m9.js                      trial badge, simulated expiry (licence record saved and restored), Pro options locked,
+                                  Apply limit 10 incl. copies, Pro preset refused, tampered/Standard/Pro keys from
+                                  tools/release/license-gen.mjs, key kept after reload.

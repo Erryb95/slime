@@ -263,6 +263,25 @@
   }
 
   // ---------------------------------------------------------------- plan
+  // punto dentro l'area pari-dispari degli anelli (ray casting)
+  function pointInRings(x, y, rings) {
+    var inside = false;
+    for (var r = 0; r < rings.length; r++) {
+      var R = rings[r], n = R.length;
+      for (var a = 0, b = n - 1; a < n; b = a++) {
+        var ya = R[a][1], yb = R[b][1];
+        if ((ya > y) !== (yb > y) && x < (R[b][0] - R[a][0]) * (y - ya) / (yb - ya) + R[a][0]) inside = !inside;
+      }
+    }
+    return inside;
+  }
+  // box [l, t, r, b] (y in alto) dentro l'area degli anelli: 4 angoli (rientrati di 0,5 pt) + centro
+  function boxInRings(tb, rings) {
+    var l = Math.min(tb[0], tb[2]) + 0.5, r = Math.max(tb[0], tb[2]) - 0.5, bo = Math.min(tb[1], tb[3]) + 0.5, t = Math.max(tb[1], tb[3]) - 0.5;
+    if (!(r >= l) || !(t >= bo)) { l = r = (tb[0] + tb[2]) / 2; bo = t = (tb[1] + tb[3]) / 2; }
+    return [[l, bo], [r, bo], [r, t], [l, t], [(l + r) / 2, (bo + t) / 2]].every(function (p) { return pointInRings(p[0], p[1], rings); });
+  }
+
   /**
    * items: corvoExport().items  ({i, name, layer, rings, cut?, other?, text?, nonVector?, box})
    * opts : {merge, shape, tol, touch, artboards, ...DEFAULTS}
@@ -312,11 +331,11 @@
     else groups = keep.map(function (_, x) { return [x]; });
 
     // 3. shape per cluster
-    var pieces = [], textN = 0, textNames = [], rasterNames = [], noContour = [], fallback = 0, mergedObjects = 0, nonVector = 0;
+    var pieces = [], textN = 0, textInside = 0, textNames = [], rasterNames = [], noContour = [], fallback = 0, mergedObjects = 0, nonVector = 0;
     groups.forEach(function (g) {
       var mem = g.map(function (x) { return keep[x]; });
       if (mem.length > 1) mergedObjects += mem.length;
-      var cutRings = [], allRings = [], otherRings = [], cutRg = [], allRg = [], otherRg = [], text = 0, layers = [];
+      var cutRings = [], allRings = [], otherRings = [], cutRg = [], allRg = [], otherRg = [], text = 0, layers = [], textBoxes = [];
       mem.forEach(function (it, m) {
         var rs = it.rings || [], cut = it.cut || [], rg = it.rg && it.rg.length === rs.length ? it.rg : null;
         // ring -> source path key (member * 1e6 + path id): the filled area is computed per path (even-odd inside a
@@ -326,6 +345,7 @@
         for (var q = 0; q < rs.length; q++) { allRings.push(rs[q]); allRg.push(key(q)); }
         (it.other || []).forEach(function (r) { otherRings.push(r); otherRg.push(-1 - otherRg.length); });
         text += it.text || 0;
+        if (it.text) textBoxes = it.textBoxes && it.textBoxes.length === it.text && textBoxes ? textBoxes.concat(it.textBoxes) : null;
         nonVector += it.nonVector || 0;
         if (layers.indexOf(it.layer) < 0) layers.push(it.layer);
       });
@@ -335,7 +355,10 @@
       if (o.shape === 'cut' && cutRings.length) { source = 'cut'; rings = cutRings; rgs = cutRg; }
       else {
         if (o.shape === 'cut') { source = 'fallback'; fallback++; }
-        if (text) { textN += text; textNames.push(name); return; }
+        // testo vivo DENTRO l'area del pezzo (etichette dei file laser, numeri di parte): non cambia la sagoma, si muove
+        // col pezzo; solo il testo che esce dalla sagoma (o senza ingombro noto) la definirebbe -> errore
+        if (text && !(textBoxes && allRings.length && textBoxes.every(function (tb) { return boxInRings(tb, allRings); }))) { textN += text; textNames.push(name); return; }
+        if (text) textInside += text;
         if (!allRings.length) {
           if (otherRings.length) rasterNames.push(name);
           else noContour.push(name);
@@ -378,7 +401,7 @@
       warnings: { regMarks: regN, sheetFrames: frames.length, sheetFrameNames: frames,
                   lockedFrames: lockedFrame.length ? lcInfo(lockedFrame) : null, cutFallback: fallback, noContour: noContour.length, noContourNames: noContour,
                   merged: { objects: mergedObjects, pieces: groups.filter(function (g) { return g.length > 1; }).length },
-                  nonVector: nonVector }
+                  nonVector: nonVector, textInside: textInside }
     };
     if (lockedHit.length) {
       var li = lcInfo(lockedHit);

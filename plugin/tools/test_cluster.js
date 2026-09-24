@@ -109,7 +109,19 @@ nextI = 0;
   const p3 = C.planPieces([b, txtIn], { shape: 'cut', artboards: [] });
   check(!p3.error && p3.pieces.length === 1 && p3.pieces[0].members.length === 2, 'text inside a sticker with a cut line is a passenger in "cut" mode');
   const p4 = C.planPieces([b, txtIn], { shape: 'all', artboards: [] });
-  check(p4.error && p4.error.code === 'text', 'same sticker in "all" mode -> text error');
+  check(p4.error && p4.error.code === 'text', 'same sticker in "all" mode, text box unknown -> text error (conservative)');
+  // text boxes exported by the host: text INSIDE the piece area does not define the shape (laser part labels)
+  const txtBox = vec('L1', [], { type: 'TextFrame', text: 1, textBoxes: [[310, 60, 390, 40]] }); txtBox.box = [310, 60, 390, 40];
+  const p6 = C.planPieces([b, txtBox], { shape: 'all', artboards: [] });
+  check(!p6.error && p6.pieces.length === 1 && p6.pieces[0].members.length === 2 && p6.warnings.textInside === 1, 'text box inside the piece area in "all" mode -> passenger, no error');
+  const txtOut = vec('L1', [], { type: 'TextFrame', text: 1, textBoxes: [[350, 60, 450, 40]] }); txtOut.box = [350, 60, 450, 40];
+  const p7 = C.planPieces([b, txtOut], { shape: 'all', artboards: [] });
+  check(p7.error && p7.error.code === 'text', 'text sticking out of the piece -> text error');
+  const frame = vec('L1', [rect(0, 0, 200, 200), rect(50, 50, 100, 100)]);          // outline + hole (laser frame)
+  const txtHole = vec('L1', [], { type: 'TextFrame', text: 1, textBoxes: [[80, 120, 120, 80]] }); txtHole.box = [80, 120, 120, 80];
+  const txtBody = vec('L1', [], { type: 'TextFrame', text: 1, textBoxes: [[10, 30, 40, 10]] }); txtBody.box = [10, 30, 40, 10];
+  check(C.planPieces([frame, txtHole], { shape: 'all', artboards: [] }).error, 'text over the hole of a frame -> text error');
+  check(!C.planPieces([frame, txtBody], { shape: 'all', artboards: [] }).error, 'text on the body of a frame -> no error');
   const line = vec('L1', []); line.box = [700, 10, 800, 10];
   const p5 = C.planPieces([a, line], { shape: 'all', artboards: [] });
   check(p5.pieces.length === 1 && p5.warnings.noContour === 1, 'a lone line is skipped with a warning');
