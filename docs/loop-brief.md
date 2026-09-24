@@ -21,7 +21,9 @@ Obiettivo: portare il plugin Corvo (plugin/) alla beta, modulo per modulo, usand
 
 ## Regole
 - Illustrator: gira da G:\afree\illustrator\Adobe Illustrator 2026. MAI SetForegroundWindow, MAI tasti o click
-  sul desktop: Enrico usa il PC (gioca). Screenshot solo con PrintWindow. Chiudere i documenti di test senza salvare.
+  sul desktop: Enrico usa il PC (gioca). Screenshot solo con PrintWindow. Chiudere i documenti di test senza salvare. MAI chiudere documenti per NOME (test_host.js ha chiuso
+  un file di Enrico): i test aprono COPIE con nome univoco (es. _corvo_test_<timestamp>.svg) e chiudono solo
+  i riferimenti che hanno aperto.
   Se Illustrator crasha: riavvialo e riapri il pannello con requestOpenExtension dal pannello Arrange Master (8092).
 - Modelli (dal 2026-09-24): sessione principale = Fable, usata CON PARSIMONIA solo per coordinare, decidere, unire e leggere
   i risultati; codice e verifica in Illustrator = opus; ricerca web = sonnet; download, conversioni, conteggi, test
