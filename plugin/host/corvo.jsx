@@ -481,24 +481,31 @@ function corvo_lockedCuts(doc, raw) {
 // trasparenza. Il contorno lo calcola il pannello (client/js/raster.js); l'host esporta solo DOVE sono i pixel:
 //   raster: { path, temp, kind: 'linked'|'render', corners: { tl:[x,y], tr:[x,y], bl:[x,y] } }
 // corners = coordinate documento (pt, y in alto) dei vertici (0,0), (W,0), (0,H) dell'immagine (y pixel in basso).
-// Percorso veloce: PlacedItem collegato a un .png, senza rotazione/inclinazione/specchiatura -> file originale,
-// corners dai geometricBounds. In tutti gli altri casi (incorporato, TIF/PSD/JPG, ruotato, specchiato, link
+// Percorso veloce: PlacedItem collegato a un .png, senza rotazione/inclinazione (anche specchiato) -> file originale,
+// corners dai geometricBounds (scambiati secondo gli specchi). In tutti gli altri casi (incorporato, TIF/PSD/JPG, ruotato o inclinato, link
 // mancante) render PNG24 trasparente in un documento temporaneo: i pixel sono allineati agli assi e coprono
 // esattamente i visibleBounds dell'oggetto. Limiti: vedi docs/plugin-architecture.md, "Modulo 8".
-var CORVO_M8_PLACED_DSIGN = 1;   // segno di matrix.mValueD per un PNG collegato dritto: DA VERIFICARE in Illustrator
+// Segno di matrix.mValueD per un PNG collegato dritto. VERIFICATO in Illustrator 30.5.1 (2026-09-24): dritto -> D < 0
+// (es. 1 / -1 al 100 %), specchiato in verticale -> D > 0; specchiato in orizzontale -> A < 0.
+var CORVO_M8_PLACED_DSIGN = -1;
 
 function corvo_m8_isRaster(it) { return it.typename === 'PlacedItem' || it.typename === 'RasterItem'; }
 
+/* PNG collegato allineato agli assi (anche specchiato): il pannello legge il file originale, niente render.
+   corners = punti documento dei pixel (0,0), (W,0), (0,H) del file: dipendono dagli specchi (segni di A e D). */
 function corvo_m8_linked(it) {
     if (it.typename !== 'PlacedItem') return null;
     var f = null, m = null;
     try { f = it.file; m = it.matrix; } catch (e) { return null; }
     if (!f || !f.exists || !/\.png$/i.test(f.name) || !m) return null;
     if (Math.abs(m.mValueB) > 1e-6 || Math.abs(m.mValueC) > 1e-6) return null;
-    if (!(m.mValueA > 0) || !(m.mValueD * CORVO_M8_PLACED_DSIGN > 0)) return null;
+    if (!(Math.abs(m.mValueA) > 1e-9) || !(Math.abs(m.mValueD) > 1e-9)) return null;
     var gb = it.geometricBounds;
-    return { path: f.fsName, temp: false, kind: 'linked',
-             corners: { tl: [gb[0], gb[1]], tr: [gb[2], gb[1]], bl: [gb[0], gb[3]] } };
+    var mirrorH = m.mValueA < 0, mirrorV = m.mValueD * CORVO_M8_PLACED_DSIGN < 0;
+    var xL = mirrorH ? gb[2] : gb[0], xR = mirrorH ? gb[0] : gb[2];
+    var yT = mirrorV ? gb[3] : gb[1], yB = mirrorV ? gb[1] : gb[3];
+    return { path: f.fsName, temp: false, kind: 'linked', mirror: (mirrorH ? 'H' : '') + (mirrorV ? 'V' : ''),
+             corners: { tl: [xL, yT], tr: [xR, yT], bl: [xL, yB] } };
 }
 
 function corvo_m8_render(it, doc, idx, opts) {
@@ -882,9 +889,12 @@ function corvo_singleUndo(st, keepRoll) {
     var doc = st.doc, fin = [], rollB = null, k, i;
     for (i = 0; i < st.applied.length; i++) fin.push(st.applied[i]);
     if (corvo_alive(st.roll)) { try { rollB = st.roll.geometricBounds; rollB = [rollB[0], rollB[1], rollB[2], rollB[3]]; } catch (e0) { rollB = null; } }
-    var undone = 0, ok = false;
-    for (k = 0; k < steps; k++) {
-        try { app.undo(); } catch (e1) { break; }
+    // NIENTE margine oltre st.steps: un passo in piu' puo' essere una modifica dell'utente durante la revisione (es. un
+    // pezzo spostato a mano) e verrebbe annullata e persa (verificato 24/09). Se non si torna all'origine si rifa' tutto.
+    var maxUndo = steps;
+    var undone = 0, ok = false, why = '';
+    for (k = 0; k < maxUndo; k++) {
+        try { app.undo(); } catch (e1) { why = 'undo: ' + e1.message; break; }
         undone++;
         var ly = null;
         try { ly = doc.layers.getByName('Corvo'); } catch (e2) { ly = null; }
@@ -892,7 +902,9 @@ function corvo_singleUndo(st, keepRoll) {
         // MODULO 6: anche i crocini di anteprima devono essere spariti (i loro passi sono contati in st.steps)
         var rmGone = !(typeof corvo_rmPresent === 'function' && corvo_rmPresent(doc));
         if (rollGone && rmGone && corvo_atOrigin(st, 8) && corvo_atOrigin(st, 0)) { ok = true; break; }
+        why = 'roll ' + (rollGone ? 'gone' : 'present') + ', marks ' + (rmGone ? 'gone' : 'present') + ', origin ' + corvo_atOrigin(st, 0);
     }
+    $.global.corvoLastUndo = { steps: steps, undone: undone, ok: ok, why: why };   // diagnostica: perche' l'annullo unico e' saltato
     if (!ok) {
         for (k = 0; k < undone; k++) { try { app.redo(); } catch (e3) { break; } }
         return 'restored';

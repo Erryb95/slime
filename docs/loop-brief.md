@@ -32,14 +32,14 @@ Obiettivo: portare il plugin Corvo (plugin/) alla beta, modulo per modulo, usand
   download: usare un User-Agent generico tipo "CorvoResearchBot/0.1".
 
 ## Backlog (in ordine)
-1. [~] Fedelta' al file (24/09: checklist A1-E3 ok sui file reali; E4 ±0,5% non confermato, export lento sui file densi — vedi loop-log) — kit veicoli + print&cut: livelli preservati, spot color CutContour/Thru-cut intatti,
+1. [~] Fedelta' al file (24/09: checklist A1-E3 ok sui file reali; E4 chiuso: SEED=1 v0.1 = HEAD al decimo di mm; resta l'export lento sui file densi — vedi loop-log) — kit veicoli + print&cut: livelli preservati, spot color CutContour/Thru-cut intatti,
        gruppi con maschera, bleed/offset, testo non convertito con errore chiaro. File reali: template kit moto/auto,
        fogli adesivi con CutContour.
-2. [ ] Pezzi dentro i fori (lettere O/A/R, cornici, loghi ad anello) — insegne + kit.
+2. [x] (24/09, verificato in Illustrator: 19 figli nei fori, distanza ≥ gap, annullo unico) Pezzi dentro i fori (lettere O/A/R, cornici, loghi ad anello) — insegne + kit.
 3. [ ] Quantita' per design (copie) e coppie specchiate sinistra/destra (kit veicoli) + design uguali vicini.
 4. [ ] Nesting per colore/livello (insegne multicolore: un nest per ogni colore di vinile) + preset salvati.
-5. [ ] Report materiale e costo (m, m², sfrido, €), export CSV, calcolatore "quanto risparmi".
-6. [ ] Crocini di registro print&cut (Graphtec ARMS, Summa OPOS, Roland, Mimaki) generati sul rotolo.
+5. [x] (24/09, CSV dal pannello = misure in Illustrator, colonna livello) Report materiale e costo (m, m², sfrido, €), export CSV, calcolatore "quanto risparmi".
+6. [~] (24/09: geometria dei 4 sistemi misurata = specifica, rispetti, annullo unico 80/80; aperti: 1 annullo unico saltato su ~15 con ripiego sicuro, FineCut da provare su plotter vero) Crocini di registro print&cut (Graphtec ARMS, Summa OPOS, Roland, Mimaki) generati sul rotolo.
 7. [ ] Multi-foglio (laser/fresa): fogli standard, minimo numero di fogli, venatura, margini.
-8. [ ] DTF: raster con contorno (trasparenza -> contorno), gang sheet 22"/58 cm, lunghezza minima.
+8. [x] (24/09, PNG collegati/incorporati/specchiati in Illustrator, corretto il segno mValueD) DTF: raster con contorno (trasparenza -> contorno), gang sheet 22"/58 cm, lunghezza minima.
 9. [ ] Qualita' commerciale: licenza offline ECDSA, prova, firma ZXP, installer Windows, pagina prodotto.

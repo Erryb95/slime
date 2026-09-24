@@ -332,15 +332,18 @@ const maxDiff = (a, b) => Math.max(...a.map((v, k) => Math.abs(v - b[k])));
     console.log('  text status:', r4.status);
     check(/error/.test(r4.cls) && /2/.test(r4.status) && /(Create Outlines|Crea contorni)/.test(r4.status), 'live text -> error with count and "Create Outlines" hint');
 
-    // ---------------- run 5: an image alone -> error
+    // ---------------- run 5: an image alone -> (module 8) traced from its transparency; an opaque one is nested as a rectangle
     await es(`(function(){ var d=app.activeDocument, ly=d.layers.getByName('PRINT'); var r=ly.pathItems.rectangle(-2300,2000,80,60); r.filled=true;
       var ro=new RasterizeOptions(); ro.resolution=72; var ras=d.rasterize(r, r.geometricBounds, ro); try{ r.remove(); }catch(e){} ras.name='lonely';
       d.selection=null; d.selection=[ras]; return 1; })()`);
     await setupPanel(4, 'cut', true);
     await click('btnNest');
-    const r5 = await waitState(s => s.state === 'idle' && /error/.test(s.cls), 15000, 200);
+    const r5 = await waitState(s => s.state === 'review' || (s.state === 'idle' && /error/.test(s.cls)), 30000, 200);
     console.log('  image status:', r5.status);
-    check(/error/.test(r5.cls) && /(image|immagin)/i.test(r5.status), 'image without vector contour -> error');
+    check(r5.state === 'review' && /(transparency|trasparenza)/i.test(r5.status), 'opaque image alone -> nested as a rectangle with a note (module 8)');
+    await click('btnCancel');
+    const r5c = await waitState(s => s.state === 'idle', 15000, 200);
+    check(r5c.state === 'idle', `image run cancelled ("${r5c.status}")`);
 
     console.log(`RESULT modulo1: pieces ${running.pieces}, reg excluded ${running.excluded}, print err ${worstPrint.toExponential(2)} pt, raster err ${worstRas.toExponential(2)} pt, roll ${lenMm.toFixed(1)} mm, revert err ${err.toExponential(2)} pt`);
   } finally {

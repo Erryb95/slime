@@ -82,3 +82,36 @@ Da verificare in Illustrator (non usato in questo giro): annullo unico con croci
 anche i crocini, che poi devono restare `_rif` dopo Ctrl+Maiusc+Z); corvoExport con `raster:true` sui fogli print&cut
 di test_modulo1 (render temporaneo dei raster, tempi); PNG collegati (segno `CORVO_M8_PLACED_DSIGN`); test_e2e insegna48/
 lettering con fori ON e crocini; CSV con la colonna livello.
+
+## 2026-09-24 — Verifica Illustrator moduli 2,5,6,8
+
+Illustrator 2026 (30.5.1) dal pannello Corvo (CDP 8093, pannello e host ricaricati sul codice del merge), seme fisso.
+Harness riusabile in `plugin/tools/ill/` (m2.js, m56.js, m8.js, undo6.js, lib.js): documenti aperti/creati via
+ExtendScript e chiusi senza salvare; misure con clipper sugli oggetti reali dopo Applica; annullo con `app.undo()`.
+
+| Modulo / file reale | Scenario | Esito | Numeri |
+|---|---|---|---|
+| 2 · BebasNeue_channel_letters_OARBDQ890 (9 lettere, tinta piatta "Rosso Vinile") + 18 piccoli CutContour (cerchi, quadrati, 3 rondelle) + Roundel_argent_ring (200 mm) + mdi_record-circle | rotolo 600, distanza 3 mm, 20 s, fori OFF/ON | 10/10 | 19 figli nei fori (Roundel 8, O 6, B 5), tutti interamente dentro il foro, distanza min dal genitore 3,31 mm (≥ 3), min tra pezzi 3,13-3,17 mm; lunghezza OFF 575,5 → ON 567-571 mm; tinte e livelli invariati sui 29 oggetti; mdi (anello+disco) resta 1 pezzo; 1 `app.undo()` 0,001 pt, redo 0 pt, Annulla 0,001 pt |
+| 5 · kiss-cut-sticker-template.ai ×12 e ×30 (Cut line + Artwork) | report + CSV dal pulsante del pannello (dialogo di salvataggio sostituito da un percorso) | 11/11 | CSV = misura: lunghezza 330,3 mm = rettangolo del rotolo 330,30; area pezzi 145 176 mm² = unione delle regioni disegnate (0,00 %); area usata = L×W; riempimento 73,25 % = misurato; costo 2,48 € = m²×12,5; colonna livello "Cut line + Artwork" su tutte le 12 righe; x/y/l/a di ogni riga entro 0,36 mm dal pezzo misurato. ×30: 657,5 mm, 92,0 %, 30 righe |
+| 6 · stesso foglio ×12, rotolo 600 | Graphtec / Summa / Roland / Mimaki, 10 s | 69/69 (+45/45 con ×30) | geometria misurata in Illustrator = specifica: L 10 mm + linea 0,5 (Graphtec, Mimaki), quadrati 3,000 mm (Summa), cerchi Ø 10,000 (Roland); bordo 30/20/10/10 mm, testa 15/10/20/20, coda 35/40/50/45 esatti al µm; K100 pieno; livello Regmarks stampabile, Mimaki su "Regmarks FineCut (guida)" NON stampabile + Corvo_FineCut_Area; nessun pezzo nei rispetti (più vicino 6,3-13,7 mm dal crocino); rotolo = intero (600 × 383-416 mm) e report con i margini; ×30 Summa (929 mm) → 1 coppia intermedia, 6 crocini; **1 `app.undo()` toglie disposizione, rotolo e crocini** (redo li riporta `_rif`); Annulla toglie solo i crocini di anteprima |
+| 8 · bench/real/dtf: 5 PNG collegati + star specchiato V + butterfly specchiato H + cat ruotato 30° + donut incorporato | preset DTF 58 (580 mm, 6 mm), 15 s | 15/15 (dopo la correzione) | contorno dal file collegato = contorno dal render entro 0,05-0,09 mm (< 1 px a 150 ppi); render temporaneo 2,7-3,0 s per immagine (solo incorporate/ruotate), collegate 0-1 ms; corvoExport 9 immagini 5,8 s (prima della correzione ~17 s); dopo Applica ogni immagine ritracciata coincide col suo contorno spostato (≤ 2,3 % dell'area = ricampionamento); nessuna sovrapposizione, distanza min 6,35 mm; 1 `app.undo()` rimette tutto |
+| Regressione | test_modulo1 33/33; test_host OK; Node: test_raster, test_combined 28/28, test_regmarks 333/333 | ok | test_modulo1: l'immagine opaca da sola ora viene nestata come rettangolo con nota (modulo 8) invece dell'errore: test aggiornato |
+| E4 modulo 1 | test_e2e SEED=1, 30 s, v0.1 (e3e86aa, solo seme reso fissabile) vs HEAD | **chiuso** | insegna48 1666,9 / 1666,9 mm (v0.1, 2 run) = 1666,9 mm (HEAD, fori ON); lettering 844,7 / 844,7 = 844,7 mm: differenza 0,0 % |
+
+**Bug corretti** (plugin/):
+1. **Modulo 8, segno di `mValueD`** (`CORVO_M8_PLACED_DSIGN`): in Illustrator un PNG collegato dritto ha `mValueD < 0`.
+   Con +1 i PNG dritti passavano tutti dal render (≈2,7 s l'uno) e quello specchiato in verticale prendeva la via veloce con
+   gli angoli non scambiati → contorno capovolto (65 % dell'area sbagliata, pezzi sovrapponibili). Ora −1 e angoli dai
+   segni di A e D: anche gli specchiati H/V usano il file originale.
+2. test_modulo1: il caso "immagine da sola → errore" non vale più col modulo 8 (diventa un pezzo, opaca = rettangolo con nota).
+3. Diagnostica dell'annullo unico: `$.global.corvoLastUndo = {steps, undone, ok, why}`.
+
+**Aperti**:
+(a) annullo unico con crocini saltato 1 volta su ~15 (Graphtec, primo run dopo un'altra sessione nello stesso documento):
+il riavvolgimento non tornava all'origine entro `st.steps` passi → ripiego corretto (disposizione tenuta, più Ctrl+Z).
+Un margine oltre `st.steps` è stato provato e TOLTO: annullava anche una modifica fatta dall'utente durante la revisione
+(spostamento di 5 pt perso, verificato con undo6 EDIT=1). Con la diagnostica il prossimo caso dirà quale passo manca.
+(b) Illustrator rallenta molto dopo ore di test (working set 10,5 GB): chiamate ExtendScript bloccate 75-215 s, anche
+`1+1` (non è un callback perso: provato un watchdog lato pannello, inutile e rimosso). Riavviare Illustrator tra le sessioni lunghe.
+(c) I crocini Mimaki restano una guida: FineCut va verificato su un plotter reale. (d) Nessun pezzo è finito nel foro del
+donut DTF (nessun PNG abbastanza piccolo nel set): part-in-part dentro un raster verificato solo in Node (test_combined).

@@ -209,6 +209,10 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
 
 `SEED=n` fissa il seme del motore in `test_holes`, `test_combined` (default 7).
 
+Verifica in Illustrator (24/09): `plugin/tools/ill/` (m2.js fori, m56.js report+CSV+crocini dei 4 sistemi, m8.js PNG
+collegati/incorporati/specchiati, undo6.js annullo unico con crocini; vedi README.txt). Uno alla volta: pilotano lo stesso
+pannello. `$.global.corvoLastUndo` = diagnostica dell'ultimo annullo unico (`{steps, undone, ok, why}`).
+
 ## Modulo 1 — Fedeltà al file (print&cut, kit veicoli) — 2026-09-23
 
 Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, il pannello decide i pezzi con
@@ -492,8 +496,10 @@ di primo livello diventa un pezzo con `rings: []` e
 vertici pixel (0,0), (W,0), (0,H) (y pixel in basso), piu' `name`, `layer`, `bounds` e `box` (= `visibleBounds`) come gli
 altri oggetti del modulo 1 (anche il controllo nascosti/bloccati vale). Senza `raster:true` l'immagine resta un rettangolo
 `other` (modulo 1).
-- `linked`: PNG collegato, esistente, matrice senza rotazione/inclinazione, `mValueA > 0` e
-  `mValueD·CORVO_M8_PLACED_DSIGN > 0` → file originale a piena risoluzione, corners dai `geometricBounds`.
+- `linked`: PNG collegato, esistente, matrice senza rotazione/inclinazione (anche specchiato) → file originale a piena
+  risoluzione, corners dai `geometricBounds` scambiati secondo gli specchi (`mValueA < 0` = orizzontale,
+  `mValueD·CORVO_M8_PLACED_DSIGN < 0` = verticale). `CORVO_M8_PLACED_DSIGN = -1`, verificato in Illustrator 30.5.1:
+  un PNG dritto ha `mValueD < 0`.
 - `render`: tutto il resto (incorporato, TIF/PSD/JPG, ruotato, specchiato, `rasterRender:true`) → documento RGB temporaneo,
   `duplicate`, tavola = `visibleBounds`, `exportFile(PNG24, transparency, artBoardClipping)` in `Folder.temp`
   a `rasterPpi` (default 150) con lato massimo `rasterMaxPx` (default 4000 px, scala PNG24 1..776 %), chiusura senza salvare,
@@ -537,8 +543,8 @@ Nest 30 copie, 20 s: silhouette **358 mm** (riempimento 42.9 %, distanza minima 
 rifilato 460 mm (33.5 %), rettangolo intero 657 mm (23.4 %) → **−22 % di rotolo** rispetto al bbox rifilato, −45 % rispetto
 all'immagine intera (a 5 s: −25 % / −47 %).
 
-**Limiti / da verificare in Illustrator.** Segno di `mValueD` per un PNG collegato dritto (`CORVO_M8_PLACED_DSIGN`, se
-sbagliato i PNG collegati passano comunque dal render, tranne quelli specchiati in verticale → contorno capovolto); render
+**Limiti.** (Segno di `mValueD` verificato il 24/09: prima era +1, i PNG dritti passavano dal render, ~2,7 s l'uno, e
+quelli specchiati in verticale avevano il contorno capovolto.) Render
 = documento temporaneo che compare un istante; solo immagini di primo livello (dentro un gruppo → rettangolo d'ingombro
 del modulo 1, dentro una maschera conta il tracciato di maschera); l'opacità dell'oggetto riduce l'alfa (sotto il 10 %
 sparisce); i fori del contorno ricevono pezzi piccoli (modulo 2); il testo in più parti passa per la chiusura morfologica
