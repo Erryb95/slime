@@ -23,7 +23,9 @@ Obiettivo: portare il plugin Corvo (plugin/) alla beta, modulo per modulo, usand
 - Illustrator: gira da G:\afree\illustrator\Adobe Illustrator 2026. MAI SetForegroundWindow, MAI tasti o click
   sul desktop: Enrico usa il PC (gioca). Screenshot solo con PrintWindow. Chiudere i documenti di test senza salvare.
   Se Illustrator crasha: riavvialo e riapri il pannello con requestOpenExtension dal pannello Arrange Master (8092).
-- Modelli: ricerca web e raccolta file = sonnet (haiku per compiti meccanici: download, conteggi); codice e verifica = opus. Parallelizzare sempre: ricerca dei moduli futuri mentre si implementa quello corrente. Budget indicativo: max 6 agenti attivi insieme; DeepSeek (`tools/deepseek.py`, credito ~1 $) solo per testi brevi.
+- Modelli (dal 2026-09-24): sessione principale = Fable, usata CON PARSIMONIA solo per coordinare, decidere, unire e leggere
+  i risultati; codice e verifica in Illustrator = opus; ricerca web = sonnet; download, conversioni, conteggi, test
+  ripetitivi = haiku; testi brevi = DeepSeek. Mai fork (ereditano Fable). Parallelizzare sempre. Budget: max 6 agenti insieme; DeepSeek (`tools/deepseek.py`, credito ~1 $) solo per testi brevi.
 - Non copiare codice da MXNestSpirit (GPL) o NestorCut (PolyForm). Sparrow/jagua-rs MIT ok.
 - Nessuna chiave o segreto nel repo.
 - Mai `find /` o ricerche su tutto il disco: i sorgenti Rust stanno in ~/.cargo/registry/src/*/ (es. jagua-rs-0.8.3).
