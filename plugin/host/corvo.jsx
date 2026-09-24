@@ -613,6 +613,8 @@ function corvoExport(optsJson) {
             if (acc.other.length) o.other = acc.other;
             if (acc.text) o.text = acc.text;
             if (acc.nonVector) { o.nonVector = acc.nonVector; o.nonVectorTypes = nv; }
+            // MODULO 4: colori di riempimento per il nesting per colore (host/multinest.jsx)
+            if (opts && opts.paint && typeof corvo_m4_paint === 'function') { try { o.paint = corvo_m4_paint(it); } catch (eP) { o.paint = []; } }
             out.push(o);
         }
         if (raw.length === 0) {
@@ -829,6 +831,7 @@ function corvo_removeRollAndLabel(st, removeRoll) {
         var rect = corvo_alive(st.roll) ? st.roll : (ly ? corvo_findIn(ly, 'pathItems', 'Corvo_Roll') : null);
         if (rect) { try { rect.remove(); } catch (e2) {} }
         st.roll = null;
+        if (typeof corvo_mnRemove === 'function') { try { corvo_mnRemove(doc); } catch (eMn) {} }   // MODULO 4/7
     }
     if (ly) { try { if (ly.pageItems.length === 0 && ly.layers.length === 0) ly.remove(); } catch (e3) {} }
 }
@@ -891,6 +894,8 @@ function corvo_singleUndo(st, keepRoll) {
         var rollGone = !ly || !corvo_findIn(ly, 'pathItems', 'Corvo_Roll');
         // MODULO 6: anche i crocini di anteprima devono essere spariti (i loro passi sono contati in st.steps)
         var rmGone = !(typeof corvo_rmPresent === 'function' && corvo_rmPresent(doc));
+        // MODULO 4/7: anche i contenitori multipli (rotoli per colore, fogli) devono essere spariti
+        if (typeof corvo_mnPresent === 'function' && corvo_mnPresent(doc)) rollGone = false;
         if (rollGone && rmGone && corvo_atOrigin(st, 8) && corvo_atOrigin(st, 0)) { ok = true; break; }
     }
     if (!ok) {
@@ -910,6 +915,8 @@ function corvo_singleUndo(st, keepRoll) {
     }
     // MODULO 6: crocini confermati ridisegnati nello stesso script (gia' "_rif")
     if (st.rmPayload && typeof corvo_rmDraw === 'function') { try { corvo_rmDraw(doc, st.rmPayload, '_rif'); } catch (eRm) {} }
+    // MODULO 4/7: contenitori confermati (con le etichette "Corvo — colore — L mm" / fogli) nello stesso script
+    if (keepRoll && st.mnPayload && typeof corvo_mnDraw === 'function') { try { corvo_mnDraw(doc, st.mnPayload, '_rif'); } catch (eMn) {} }
     return 'single';
 }
 
@@ -927,6 +934,7 @@ function corvoFinish(optsJson) {
         corvo_removeRollAndLabel(st, !keepRoll);
         if (keepRoll && corvo_alive(st.roll)) { try { st.roll.name = 'Corvo_Roll_rif'; } catch (e) {} }
         if (typeof corvo_rmFinishAll === 'function') { try { corvo_rmFinishAll(st.doc); } catch (eRm) {} }   // MODULO 6
+        if (typeof corvo_mnFinishAll === 'function') { try { corvo_mnFinishAll(st.doc, keepRoll); } catch (eMn) {} }   // MODULO 4/7
         corvo_resetState();
         corvo_redraw();
         return corvo_json({ ok: true, undo: undo });
@@ -937,3 +945,8 @@ function corvoFinish(optsJson) {
 // Crocini di registro (host/regmarks.jsx), caricati accanto a questo file. Se $.fileName non e' disponibile
 // il pannello carica regmarks.jsx da se' (main.js, rmEnsureHost).
 try { $.evalFile(new File(new File($.fileName).parent.fsName + '/regmarks.jsx')); } catch (eRM) { /* vedi pannello */ }
+
+/* ------------------------------------------------------------------ MODULO 4 / MODULO 7 */
+// Colori per il nesting per colore e contenitori multipli (host/multinest.jsx); se $.fileName non e' disponibile
+// il pannello carica multinest.jsx da se' (main.js, mnEnsureHost).
+try { $.evalFile(new File(new File($.fileName).parent.fsName + '/multinest.jsx')); } catch (eMN) { /* vedi pannello */ }

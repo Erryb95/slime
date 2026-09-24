@@ -85,8 +85,10 @@
 
   // ---------------------------------------------------------------- report state
   var C = null, best = null, rep = null, dirty = true;
+  var MJ = null;                     // MODULO 4/7: [{label, color, pieces, placements, stripLengthPt, H, ...}] one per colour / sheet
 
   function compute() {
+    if (MJ) { computeMulti(); return; }   // MODULO 4/7
     if (!C || !best) { rep = null; return; }
     rep = R.computeReport({ pieces: C.pieces, placements: C.expand ? C.expand(best.placements) : best.placements, stripLengthPt: best.strip_width,   // expand: MODULO 2
       rollWidthPt: C.H, gapPt: C.gapPt,
@@ -94,6 +96,26 @@
       orientations: C.orient, material: readMaterial(), items: C.items,
       baseline: C.baseline, initialLengthPt: C.initial, job: $('m5Job').value.trim() || String(C.docName || '').replace(/\.[^.]+$/, '') });
     dirty = false;
+  }
+
+  // MODULO 4/7: one report per colour / sheet, TOTAL shown in the panel (R.combineReports), lines per group below
+  function computeMulti() {
+    var mat = readMaterial(), job = $('m5Job').value.trim() || String(MJ.docName || '').replace(/\.[^.]+$/, '');
+    var reps = MJ.list.map(function (x) {
+      var r = R.computeReport({ pieces: x.pieces, placements: x.placements, stripLengthPt: x.stripLengthPt, rollWidthPt: x.H,
+        gapPt: x.gapPt, orientations: x.orient, materialWidthPt: x.materialWidthPt, materialLengthPt: x.materialLengthPt,
+        material: mat, items: x.items, job: job });
+      r.color = x.label;
+      return r;
+    });
+    rep = reps.length ? R.combineReports(reps) : null;
+    dirty = false;
+  }
+  function multiLines(L) {
+    var f = function (v, d) { return R.fmtNum(v, d, L); };
+    return rep.multi.map(function (r) {
+      return r.color + ': ' + f(r.lengthM, 3) + ' m · ' + f(r.fillPct, 1) + ' % · ' + R.money(r.totalCost, r, L) + ' · ' + r.pieces + ' ' + t('pieces').toLowerCase();
+    });
   }
 
   function render() {
@@ -119,7 +141,7 @@
       dt.textContent = t(r[0]); dd.textContent = r[1]; if (r[2]) dd.className = r[2];
       out.appendChild(dt); out.appendChild(dd);
     });
-    var lines = [];
+    var lines = rep.multi ? multiLines(L) : [];   // MODULO 4/7
     if (rep.baseline && !(rep.baseline.savedM > 0)) lines.push(t('noSaving'));
     else if (rep.baseline) {
       var s = t('vsRect', { m: f(rep.baseline.savedM, 2), money: m(rep.baseline.savedMoney), pct: f(rep.baseline.savedPct, 1) });
@@ -142,7 +164,7 @@
       .then(function (r) { return r && r !== 'EvalScript error.' ? String(r) : ''; }, function () { return ''; });
   }
   function csvName() {
-    var base = (C && C.docName) || 'corvo';
+    var base = (C && C.docName) || (MJ && MJ.docName) || 'corvo';
     base = String(base).replace(/\.[^.]+$/, '').replace(/[\\\/:*?"<>|]+/g, '_');
     return base + '_corvo_report.csv';
   }
@@ -150,7 +172,7 @@
     if (!rep) return;
     var nodeFs = null, nodePath = null, os = null;
     try { nodeFs = require('fs'); nodePath = require('path'); os = require('os'); } catch (e) { /* no Node */ }
-    var csv = R.toCSV(rep, lang());
+    var csv = rep.multi ? R.toCSVMulti(rep.multi, lang()) : R.toCSV(rep, lang());   // MODULO 4/7
     if (!nodeFs) {                                   // browser preview: download
       var a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
@@ -173,7 +195,7 @@
   }
   function copySummary() {
     if (!rep) return;
-    var text = R.toText(rep, lang()), ok = false;
+    var text = rep.multi ? R.toTextMulti(rep.multi, lang()) : R.toText(rep, lang()), ok = false;   // MODULO 4/7
     var ta = document.createElement('textarea');
     ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta); ta.select();
@@ -232,7 +254,7 @@
 
   window.CorvoReportPanel = {
     begin: function (ctx) {
-      C = ctx; best = null; rep = null; msg('');
+      C = ctx; best = null; rep = null; MJ = null; msg('');
       var pieces = ctx.pieces.filter(function (p) { return !p.error; });
       C.baseline = R.shelfBaseline(pieces, ctx.H, ctx.gapPt, ctx.orient);
       C.initial = R.initialLength(ctx.items, ctx.H);
@@ -244,7 +266,19 @@
       if (b === best && !dirty) return;
       best = b; compute(); render();
     },
-    clear: function () { C = null; best = null; rep = null; render(); },
+    clear: function () { C = null; best = null; rep = null; MJ = null; render(); },
+    // MODULO 4/7: multi-job result (per colour / per sheet) -> TOTAL + one line per group, CSV with one row per group
+    multi: function (list, docName) {
+      C = null; best = null; MJ = { list: list, docName: docName || '' }; msg('');
+      if (!$('m5Job').value.trim() && docName) $('m5Job').placeholder = String(docName).replace(/\.[^.]+$/, '');
+      compute(); render();
+    },
+    // MODULO 4: material of the named presets (get: no argument; set: material object)
+    material: function (m) {
+      if (m === undefined) return readMaterial();
+      writeMaterial(m); store('corvo.m5.current', readMaterial()); refresh();
+      return readMaterial();
+    },
     report: function () { return rep; }
   };
 })();
