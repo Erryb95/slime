@@ -28,7 +28,9 @@ Cargo.lock
 bench/output/
 wasm/demo/corvo*
 wasm/demo/*.json
-bench/real/
+bench/real/*
 
 # MODULO 9: pacchetti ZXP firmati e installer (plugin/tools/release/build-zxp.ps1)
 /dist/
+!bench/real/SOURCES.md
+!bench/real/FINDINGS-*.md
