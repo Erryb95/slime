@@ -1,0 +1,9 @@
+{
+ "cmp1": "Dieci adesivi kiss-cut sul rotolo da 600 mm: Corvo 221 mm (91,1 %), Arrange Master Demo 224 mm. Arrange Master tiene insieme stampa e taglio raggruppando gli oggetti sovrapposti, ma non riconosce la linea di taglio né i livelli.",
+ "cmp2": "Lettere OARBDQ890 e 20 dischi: Corvo 501 mm (65,0 %) contro 620 mm di Arrange Master Demo (+24 %). Arrange Master mette qualche disco nei fori ma spreca più rotolo.",
+ "cmp3": "Faro auto: Corvo ricava 2 copie + coppia specchiata in 136 mm; Arrange Master Demo, senza quantità né specchio, nesta 4 fari sinistri duplicati a mano in 147 mm.",
+ "cmp4": "Bandiera italiana: Corvo crea un rotolo per vinile (verde 359, bianco 359, rosso 183 mm); Arrange Master Demo mette i tre colori su un solo rotolo da 715 mm, da separare a mano.",
+ "cmp6": "Insegna da 48 pezzi: Arrange Master Demo chiude in 1968 mm senza crocini, Corvo in 2044 mm con 8 crocini Graphtec ARMS. Arrange Master non genera segni di registro.",
+ "cmp7": "AgricolaInsert, 101 parti: Corvo le mette tutte in 2 fogli 600×400 con margine e venatura; Arrange Master Demo ne dispone 50 in un foglio e ne lascia fuori 51, senza gestione dei fogli.",
+ "cmp8": "Gang sheet DTF da 22\" con 24 PNG: Corvo 226 mm nestando sul contorno, Arrange Master Demo 431 mm perché dispone i raster solo per riquadro (Dense Packing accetta solo vettori)."
+}
