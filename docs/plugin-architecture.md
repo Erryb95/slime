@@ -1,4 +1,4 @@
-# Corvo — architettura del plugin Illustrator (v0.1 + moduli 1, 2, 5, 6, 8 — merge 2026-09-24)
+# Corvo — architettura del plugin Illustrator (v0.9.0-beta: moduli 1-9, merge 2026-09-24)
 
 Obiettivo v0.1: selezioni gli oggetti in Illustrator, premi **Nest**, e vedi i pezzi muoversi LIVE nella tavola
 mentre Sparrow cerca; **Stop** tiene il migliore, **Applica** conferma, **Annulla** riporta tutto com'era.
@@ -11,16 +11,24 @@ plugin/
   .debug                   # porta CEP 8093 per ILST (solo sviluppo)
   host/corvo.jsx           # ExtendScript: geometria in uscita, trasformazioni in entrata      [AGENTE HOST]
   host/regmarks.jsx        # modulo 6: disegno dei crocini (caricato da corvo.jsx)
+  host/multinest.jsx       # moduli 4+7: colori degli oggetti (paint) e contenitori multipli (caricato da corvo.jsx)
   client/index.html        # pannello UI                                                       [AGENTE PANEL]
   client/css/panel.css
   client/js/main.js        # UI, stato, orchestrazione, throttle delle mosse live               [AGENTE PANEL]
   client/js/geometry.js    # anelli -> forme Sparrow (unione, chiusura, semplificazione)        [AGENTE PANEL]
   client/js/cluster.js     # modulo 1: oggetti esportati -> pezzi (unione, crocini, linea di taglio)
   client/js/holes.js       # modulo 2: pezzi piccoli dentro i fori dei grandi (pre-pass prima del nest)
+  client/js/quantity.js    # modulo 3: copie per design, coppie specchiate S/D, copie vicine (logica pura)
+  client/js/quantity-panel.js, css/quantity.css   # modulo 3: sezione "Copie e coppie specchiate" (solo DOM)
   client/js/report.js      # modulo 5: report materiale/costo, CSV (logica pura)
   client/js/report-panel.js, css/report.css   # modulo 5: sezione "Materiale e costo" del pannello (solo DOM)
   client/js/regmarks.js    # modulo 6: specifiche e geometria dei crocini print&cut (logica pura)
   client/js/raster.js      # modulo 8: PNG trasparente -> contorno (decoder, marching squares, offset)
+  client/js/license.js     # modulo 9: licenza offline ECDSA, prova 14 giorni, tabella gating Standard/Pro + UI licenza
+  client/css/license.css   # modulo 9: badge nel piede + finestra licenza
+  client/js/multinest.js   # moduli 4+7: orchestratore multi-job (nest in sequenza, contenitori, preset)
+  client/js/colorgroups.js # modulo 4: gruppi per colore (spot per nome, ΔE sui colori di processo) o livello
+  client/js/sheets.js      # modulo 7: fogli standard, greedy multi-foglio sopra lo strip packing di Sparrow
   client/js/worker.js      # Web Worker: carica wasm dai byte ricevuti, chiama nest()           [AGENTE PANEL]
   client/js/CSInterface.js # ponte CEP minimo scritto da noi (evalScript, requestOpenExtension, ...) su window.__adobe_cep__
                            # NB: il CSInterface.js ufficiale (Adobe-CEP/CEP-Resources) NON e' MIT: porta la licenza Adobe SDK
@@ -31,6 +39,9 @@ plugin/
   tools/test_modulo1.js    # modulo 1 nel pannello vero (Illustrator)
   tools/test_client.js, test_cluster.js, test_holes.js, test_report.js, test_regmarks.js, test_raster.js,
   tools/test_combined.js   # test Node senza Illustrator (vedi "Integrazione dei moduli")
+  tools/test_license.js    # modulo 9 (Node)
+  tools/release/           # modulo 9: license-keygen/gen .mjs, build-zxp.ps1, install/uninstall .ps1+.cmd, test-install.ps1
+  tools/test_multinest.js, test_multinest_panel.js, svgparse.js   # moduli 4+7 (Node, file reali bench/real)
   tools/install-dev.ps1    # junction in %APPDATA%\Adobe\CEP\extensions\com.corvo.nesting + PlayerDebugMode
 ```
 
@@ -144,7 +155,7 @@ Correzioni emerse:
 - Pannello: un errore dell'host durante la ricerca ferma la sessione (`failSession`) invece di ripetere l'errore ogni
   250 ms; un `corvoApply` parziale (`ok:false` + `errors`, es. pezzo bloccato) ora viene mostrato come avviso.
 
-## Integrazione dei moduli (merge 2026-09-24: moduli 2, 5, 6, 8 sopra il modulo 1)
+## Integrazione dei moduli (merge 2026-09-24: moduli 2, 5, 6, 8 sopra il modulo 1; poi 9, 3, 4+7)
 
 I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva nel frattempo cambiato il formato di
 `corvoExport` (oggetti con `layer`, `rings`, `rg`, `cut`, `box`) e spostato il raggruppamento nel pannello
@@ -160,7 +171,11 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
    Così un'immagine sotto una CutContour si unisce alla sua linea di taglio, e in "Solo linea di taglio" e' un passeggero.
 4. **Modulo 1** `cluster.planPieces` → pezzi `{i, members, name, layers, source, rings, rg, box}`; `corvoGroup`.
 5. `geometry.buildPieces`; i pezzi degeneri restano al loro posto e gli altri sono rinumerati (`hostI` = indice del piano).
-6. **Modulo 2** `holes.planHoles(planPieces, pieces)` → figli nei fori; `nestPieces` toglie i figli.
+5b. **Modulo 3** `quantity.expand(planPieces, pieces, spec)` → copie e copie specchiate VIRTUALI (pezzi + oggetti
+   virtuali agli indici host `base + k`); `corvoM3Ghosts` crea le sagome nell'host prima della ricerca.
+6. **Modulo 2** `holes.planHoles(planPieces, pieces)` → figli nei fori (anche nei fori delle copie); `nestPieces` toglie i figli.
+6b. **Modulo 3** `quantity.buildNest(nestPieces)` → item Sparrow con `demand` (+ celle "tieni vicine");
+   ogni report viene riportato a una posizione per pezzo con `quantity.expandPlacements` appena arriva dal motore.
 7. **Modulo 5** `CorvoReportPanel.begin` con `expand` (posizioni di tutti i pezzi, figli compresi) e con le misure del
    materiale (rotolo intero e lunghezza con i margini dei crocini).
 8. Nest; live `movesFor` = `holes.movesFor` (indici `hostI`, figli composti col genitore); a fine ricerca crocini in
@@ -195,6 +210,58 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
 - API host retrocompatibile: `corvoExport` senza `raster:true` si comporta come nel modulo 1; `corvoRegmarksFinish`,
   `corvoGroup`, `corvoApply`, `corvoRevert`, `corvoFinish(opts)` invariati nelle firme.
 
+### Moduli 3, 4, 7, 9 (secondo merge 2026-09-24, branch `integrazione-3-47-9`)
+
+Ordine: `modulo9-commerciale` → `modulo3-quantita` → `modulo4-7-multinest`, sopra i moduli 1, 2, 5, 6, 8.
+Conflitti solo testuali (`main.js`, `index.html`, `corvo.jsx`, questo documento); tutte le funzioni tenute.
+Ordine degli script in `index.html`: ... `quantity.js` (3), `raster.js` (8), `multinest.js` / `colorgroups.js` /
+`sheets.js` (4/7), `license.js` (9, prima di `main.js`), `main.js`, `report*.js`, `quantity-panel.js`.
+
+**Gating delle edizioni (9)** — una sola tabella, `FEATURES` in `license.js`; `CorvoLicense.has(f)` nel pannello:
+| Funzione | Chiave | Edizione | Dove si controlla |
+|---|---|---|---|
+| Pezzi nei fori (2) | `holes` | Pro | `readParams` (`m9has`) + casella bloccata da `license.js` |
+| Nest per colore/livello (4) | `colorNest` | Pro | `mnReadParams`: errore chiaro + finestra licenza; opzioni "Colore"/"Livello" disabilitate |
+| Multi-foglio (7) | `multiSheet` | Pro | come sopra, opzione "Fogli" disabilitata |
+| CSV del report (5) | `costCsv` | Pro | `report-panel.js` (anche il CSV multi-gruppo) |
+| Copie / coppie specchiate (3) | `quantity` | Standard (anche a prova finita) | `nest()` prima di `quantity.expand` |
+Il controllo in `readParams` vale anche quando un **preset** (modulo 4) imposta un raggruppamento bloccato: il preset si
+carica, Nest si ferma con il messaggio "funzione Pro". In prova (14 giorni) tutto e' Pro.
+
+**Limite di Applica a prova finita (9)** — `S.m9Count = pieces.length` DOPO `quantity.expand` e dopo aver tolto i pezzi
+degeneri: conta i pezzi reali che Applica sposta o crea nell'host, **copie e specchiate comprese** (9 design × 1 + 2 copie
+= 11 → rifiutato), figli nei fori compresi. Vale uguale per il nest singolo e per il multi-job.
+
+**Copie (3) × multi-job (4/7)**
+- `quantity.expand` avviene PRIMA della divisione in gruppi; `MN.assignGroups(plan.groups, pieces)` mette ogni copia e
+  ogni specchiata nel gruppo del suo originale (`copyOf` = indice del piano), quindi nei rotoli per colore e nei fogli
+  le copie si dispongono con i pezzi del loro colore / gruppo. La venatura per nome/livello si legge dall'originale.
+- Ogni copia e' un'unita' a se' (demand 1) nel suo job: `quantity.buildNest` (demand + celle "tieni vicine") vale solo
+  per il nest singolo; con piu' rotoli/fogli e "Tieni vicine" attivo compare la nota `mnNoCells`.
+- Le sagome (`corvoM3Ghosts`) si creano prima del primo job (`mnStart` → `m3Ghosts()` → `mnStartJobs`); le mosse di ogni
+  job (`mnUnitMoves` → `holes.movesFor`) usano gli indici host `base + k`, quindi **le sagome si spostano job per job**
+  come gli originali. Applica (`corvoFinish`) crea i duplicati veri come nel nest singolo; `corvo_singleUndo` aspetta sia
+  le sagome sia `Corvo_Containers` prima di ridisegnare i contenitori confermati.
+- Fori (2) per gruppo: i figli si cercano solo tra pezzi dello stesso gruppo (copie comprese).
+- "Leggi selezione" usa lo stesso export (`paint` se "per colore") e lo stesso piano (`planGroups`) di Nest, cosi' le
+  chiavi della tabella (nome + ingombro + ordinale) coincidono; l'export in cache si riusa solo se ha i colori quando servono.
+
+**Crocini (6) × multi-job (4/7)** — NON supportati: con piu' rotoli/fogli i crocini non vengono disegnati e la riga di
+stato lo dice (`mnNoRegmarks`: "per print & cut con crocini usa Tutto insieme + Rotolo"). Motivo: il modulo 6 riserva
+fasce dentro UN rotolo e disegna un solo set (`corvo_rmDraw`); un set per rotolo/foglio richiede un payload per
+contenitore e il ricalcolo dell'origine di ogni job (lavoro futuro).
+
+**Limite noto (4)** — per colore, un oggetto di taglio senza riempimento (solo traccia CutContour, colore di taglio
+escluso) finisce nel gruppo "senza colore" e non si unisce piu' alla sua stampa: il nest per colore e' pensato per il
+vinile da intaglio; per print & cut usare "Tutto insieme" (o per livello con stampa e taglio sullo stesso livello).
+
+**Motore: gruppo con poca area su un rotolo largo** — trovato dal test combinato: jagua-rs parte da una striscia larga
+`area pezzi / altezza` e la restringe di `gap/2` per lato; 15 pallini da 3-5 mm su 507 mm di striscia danno una larghezza
+iniziale sotto il gap → **panic nel wasm** ("Offset resulted in an empty polygon", worker morto). Succede anche nel nest
+singolo (pochi adesivi piccoli su un rotolo da 1,6 m). Correzione lato pannello: `geometry.guardInstance(inst, gap)`
+abbassa `strip_height` (mai sotto l'ingombro minimo di ogni pezzo nelle rotazioni ammesse) finche' area/altezza >= 4 gap;
+la disposizione resta dentro il rotolo vero. Applicata in `nest()` e in `mnRunner`.
+
 ### Test Node (senza Illustrator)
 
 | Test | Cosa | Esito al merge |
@@ -205,7 +272,11 @@ I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva
 | `test_report.js [s]` | modulo 5, + colonna livello da pezzi raggruppati, + costo con margini crocini | PASS |
 | `test_regmarks.js [s]` | modulo 6 | 333 controlli, 0 falliti |
 | `test_raster.js [s]` | modulo 8 | PASS |
-| `test_combined.js [s]` | lettering + pezzi piccoli con fori ON, adesivo stampa+taglio, crocino su "Reg", 3 PNG DTF, crocini Graphtec, report | 28/28 |
+| `test_quantity.js [s]` | modulo 3, anche host corvo.jsx con DOM finto | 221 controlli, PASS |
+| `test_combined.js [s]` | lettering + pezzi piccoli con fori ON, adesivo stampa+taglio, crocino su "Reg", 3 PNG DTF, crocini Graphtec, report; **parte 2**: stessi oggetti per colore (4 rotoli) con 2 copie + 1 copia + 1 specchiata, fori per gruppo, report per gruppo, gating edizioni e limite di Applica | 49/49 |
+| `test_multinest.js [s] [split] [finale]` | moduli 4+7: colori/livelli su bench/real/color, fogli su bench/real/laser, preset | 221/221 |
+| `test_multinest_panel.js [s]` | moduli 4+7 nel pannello vero (DOM e host finti, motore inline); + 3b copie/specchiata nei rotoli per colore (sagome mosse job per job), + 4 gating a prova finita (colore/fogli rifiutati prima dell'export, Applica rifiutato per 1 pezzo + 11 copie) | 48/48 |
+| `test_license.js` | modulo 9: firma ECDSA, prova, edizioni, tabella FEATURES (4 Pro + `quantity` Standard) | 64/64 |
 
 `SEED=n` fissa il seme del motore in `test_holes`, `test_combined` (default 7).
 
@@ -359,6 +430,160 @@ Limiti noti: un solo livello di annidamento; il figlio e' trattato come convesso
 libero per i pezzi piccoli il guadagno e' ~0 e il rumore stocastico di Sparrow (±2%) domina; non ancora verificato
 in Illustrator (`test_e2e.js`).
 
+## Modulo 3 — Copie per design, coppie specchiate S/D, copie vicine (`client/js/quantity.js`, 2026-09-24)
+
+Problemi utente: Deepnest #6 (specchiatura chiesta dal 2018), #16/#181 (copie), #124 (pezzi dello stesso lavoro vicini),
+Signs101 (decal S/D ridisegnate a mano). File nuovi: `quantity.js` (puro, `window.CorvoQuantity`/`module.exports`),
+`quantity-panel.js` + `css/quantity.css` (DOM). Agganci `// MODULO 3` in `main.js`, `index.html`, `host/corvo.jsx`.
+
+### Scelta di progetto: copie VIRTUALI fino ad Applica
+- Durante la ricerca nessun oggetto viene duplicato. Ogni copia e' un pezzo del pannello con `hostI = base + k`
+  (`base` = numero di pezzi di `corvoGroup`); nell'host all'indice `base + k` c'e' una **sagoma** leggera
+  (`Corvo_Ghost`: il poligono Sparrow, <= 200 punti, tratteggio azzurro sul livello Corvo). `corvoApply` muove sagome e
+  pezzi con lo stesso contratto assoluto, quindi l'anteprima dal vivo costa come un tracciato semplice per copia anche se
+  il design e' un gruppo pesante con maschere e tinte piatte.
+- **Applica** (`corvoFinish`): per ogni copia l'host duplica TUTTI i membri del pezzo sorgente con
+  `duplicate(membro, ElementPlacement.PLACEBEFORE)` (stesso livello/gruppo, subito sopra l'originale: tinte piatte,
+  CutContour, livelli e impilamento dentro la copia conservati), riporta i duplicati alla posizione ORIGINALE del
+  sorgente (inverso della sua `applied`), li specchia se serve, poi applica la mossa finale della sagoma e toglie le
+  sagome. Con l'annullo unico le sagome (un passo in `st.steps`) si annullano con tutto il resto e i duplicati nascono
+  nello stesso script → **un Ctrl+Z toglie disposizione, rotolo, crocini e copie**. Risposta: `{ok, undo, copies, copyErrors?}`.
+- **Annulla** (`corvoRevert`): toglie solo le sagome (`corvo_m3_clear`): non esiste nessun duplicato da cancellare.
+- **Specchiata**: riflessione rispetto alla verticale `x = axis` (asse = centro dell'ingombro del poligono del pezzo,
+  `piece.ref.x`), poi mossa rigida. Pannello: `mirrorPolygon` = `x -> -x` sul poligono relativo a `ref` con ordine
+  invertito (esatto in f32); host: `app.getScaleMatrix(-100, 100)` + traslazione `2·axis − 2·o.x` (sonda `st.probe`),
+  `transform(..., DOCUMENTORIGIN)`. Sparrow non puo' specchiare (Sparrow #157): la specchiata e' un item separato e non
+  viene mai "simulata" con una rotazione.
+- Semantica: `copie = n` → n esemplari del design; `S+D` → anche n copie specchiate (2n pezzi in tutto).
+
+### Contratto host (aggiunte, firme esistenti invariate)
+- `corvoM3Ghosts({base, copies:[{src, mirror, axis, ring:[[x,y]..]}]})` — dopo `corvoGroup`, prima del primo
+  `corvoApply`; `base` deve essere il numero di pezzi. Ritorna `{ok, base, n}`. Conta un passo di annullamento.
+- `corvoM3SelSig()` — `{sig}`: firma veloce della selezione (tipo + `geometricBounds` di ogni oggetto, nessuna lettura
+  di punti). "Leggi selezione" esporta una volta; Nest riusa quell'esportazione UNA volta se la firma non e' cambiata
+  (sui file densi `corvoExport` costa minuti).
+- `corvoGroup`/`corvoRevert` chiamano `corvo_m3_clear`; `corvo_singleUndo` aspetta anche che le sagome siano sparite,
+  rimette solo i `base` pezzi e poi `corvo_m3_materialize`.
+
+### Pannello
+- Sezione "Copie e coppie specchiate": **Leggi selezione** (esporta + raggruppa col modulo 1, nessuna sessione),
+  tabella pezzo / ingombro mm / copie (1..999) / S+D, campo "Tutti" + OK, casella "Tieni vicine le copie dello stesso
+  design" (`localStorage corvo.m3close`). Valori ricordati per nome + ingombro del pezzo; la tabella si riempie anche a
+  ogni Nest. Riga di stato: "N copie aggiunte (M specchiate): sagome fino ad Applica", dopo Applica "N copie create".
+- `quantity.expand` crea anche gli **oggetti virtuali** (anelli specchiati se serve, `rg`, `box`, livelli) → il modulo 2
+  riempie i fori delle copie e il modulo 5 conta le copie nel report/CSV.
+- `quantity.buildNest`: pezzi con poligono identico → **un item Sparrow con `demand`** (misurato: 205 pezzi = 5 item,
+  prima disposizione in 0,28–0,45 s contro 1,9–2,5 s con un item per copia, stessa lunghezza finale).
+  `expandPlacements` assegna i posizionamenti ripetuti alle copie in ordine (sono intercambiabili).
+
+### "Tieni vicine" — misurato e scelto
+- Il post-processo "scambia le copie" proposto nei FINDINGS non serve: copie identiche scambiate danno lo stesso disegno.
+- Scelto: **celle rigide** pre-calcolate: coppia (S+D per le coppie specchiate, altrimenti copia+copia con rotazione
+  relativa 0/180 se ammessa), poi coppia di coppie (4). Posizione relativa: vertici, punti medi e punti di allineamento
+  degli ingombri sul no-fit polygon (Minkowski di clipper, forma semplificata per eccesso, distanza >= gap),
+  scelta quella col minimo inviluppo convesso e verificata esattamente. Contorno = chiusura della coppia, semplificato
+  per eccesso (contiene i pezzi). Una cella si accetta solo se occupa <= 3 % di area in piu' dei pezzi (cresciuti di
+  gap/2) E il suo inviluppo <= 3 % in piu' degli inviluppi dei membri; mai con un solo design (ogni vicino e' gia' una
+  copia) e mai se non entra nel rotolo.
+- Numeri (test_quantity, 6 s, seme 7, gap 2 mm): prima versione senza il criterio dell'inviluppo +4…+14 % di lunghezza
+  (cerchi e fari rigidi in coppia) → scartata. Con i criteri: 4 design/27 pezzi +0,4 % (vicino piu' prossimo dello
+  stesso design 22 → 37 %), 5 design/40 pezzi +0,2 % (30 → 28 %), 3 adesivi x10 +0,8 % (53 → 70 %),
+  205 pezzi +0,0 %. Costo sempre <= 3 %, beneficio modesto: e' un'opzione, spenta di default.
+
+### Numeri (Node, `node plugin/tools/test_quantity.js 6`)
+- Specchio: faro destro reale specchiato vs file sinistro reale: differenza simmetrica 0,012 % dell'area (lo scarto e'
+  il taglio 4e-5 del file). Host con DOM finto: copia = originale mosso, specchiata = riflessione + mossa (errore 0).
+- Lunghezza vs step-and-repeat dei rettangoli (stesso margine di bordo di Sparrow): Avery 2" x20 214 vs 215 mm;
+  adesivi Wikipedia20 x20 59 vs 65 (−9,7 %); etichette tonde x12 303 vs 338 (−10,4 %); fari S+D x6 57 vs 74 (−23,9 %);
+  fiamme hot-rod S+D x2 112 vs 143 (−22 %). O x3 + 12 pallini con fori: tutti i pallini nei fori, anche delle copie.
+
+### Da verificare in Illustrator (non ancora fatto)
+`transform()` con `getScaleMatrix(-100,100)` (specchiata esatta, spessore traccia invariato: usa lo stesso
+`changeLineWidths` = 1 delle rotazioni), `duplicate(x, PLACEBEFORE)` su gruppi con maschera / testo / immagini collegate,
+un solo Ctrl+Z dopo Applica con copie, tempo di Applica con 200 copie di un gruppo pesante, sagome tratteggiate visibili.
+
+### Limiti noti
+- Il testo vivo in una copia specchiata esce specchiato (come in Illustrator "Rifletti"): per decal S/D con scritte
+  serve una versione del testo per lato.
+- Le celle sono rigide e il beneficio di vicinanza e' modesto; nessuna penalita' di distanza dentro Sparrow.
+- I pezzi identici selezionati come oggetti distinti (un foglio gia' ripetuto) non sono riconosciuti come stesso design.
+
+## Orchestratore multi-job (moduli 4 + 7, 2026-09-24)
+
+Astrazione comune: piu' nest Sparrow **in sequenza**, ciascuno su un sottoinsieme dei pezzi e nel suo contenitore
+(un rotolo per colore/livello = modulo 4, un foglio per nest = modulo 7). File nuovi, puri, testati in Node:
+`client/js/multinest.js` (`window.CorvoMultinest`), `client/js/colorgroups.js` (`CorvoColorGroups`),
+`client/js/sheets.js` (`CorvoSheets`), lato host `host/multinest.jsx` (caricato da `corvo.jsx` come `regmarks.jsx`).
+Agganci marcati `// MODULO 4` / `// MODULO 7` / `MODULO 4/7` in `main.js`, `index.html`, `corvo.jsx`, `report.js`,
+`report-panel.js`, `panel.css`.
+
+- `subsetInstance(units, H, orientFor)`: istanza Sparrow con id 0..m-1 e `allowed_orientations` PER PEZZO (venatura);
+  `mapPlacements(rep, units)` riporta le posizioni sugli id delle unita' (= `S.nestPieces`, figli nei fori esclusi),
+  cosi' `holes.movesFor` / `placementToMove` / `expandPlacements` funzionano senza modifiche (anche su sottoinsiemi).
+- `runJobs(jobs, runNest, hooks)`: `runNest(instance, secs, onReport) -> Promise<miglior report>`. Nel pannello
+  (`mnRunner`) un solo worker riusato per tutta la sequenza; Stop = "chiudi in fretta" (`mnHurry`): il nest corrente
+  termina col migliore trovato (worker terminato e ricreato), i successivi hanno 1 s, niente riempimento/verifica finale.
+  Applica e' disabilitato finche' la sequenza non finisce; Annulla funziona sempre (`corvoRevert` toglie anche i contenitori).
+- Live: `S.mn.fixed` = mosse dei job/fogli gia' chiusi + mosse del report corrente (`mnMoves`); i pezzi non ancora
+  disposti restano dove sono. Contenitori: `corvoContainers({list:[{ox,oy,w,h,label}]})` ridisegna TUTTI i rettangoli
+  arancioni + etichette (gruppo `Corvo_Containers` sul livello `Corvo`), solo quando il payload cambia. Nessun `corvoRoll`.
+- Annullo unico (merge col modulo 1): `corvoContainers` conta un passo (`st.steps`) e salva `st.mnPayload`;
+  `corvo_singleUndo` aspetta che anche `Corvo_Containers` sia sparito e lo ridisegna confermato
+  (`Corvo_Containers_rif`, etichette comprese, restano come riferimento di produzione); senza annullo unico
+  `corvoFinish` lo rinomina `_rif` (o lo toglie con `keepRoll:false`).
+- Crocini (modulo 6): con piu' contenitori non vengono disegnati (nota `mnNoRegmarks`). Fori (modulo 2): pre-pass
+  PER GRUPPO (un pezzo rosso non finisce nel foro di una lettera blu); nei fogli vale sul gruppo intero.
+- Report (modulo 5): a fine sequenza `CorvoReportPanel.multi(list)` = un `computeReport` per colore/foglio
+  (`color` = etichetta) + `R.combineReports` (TOTALE: lunghezze, aree, costi sommati, riempimento ricalcolato).
+  Il pannello mostra il totale e una riga per gruppo; CSV `R.toCSVMulti`: blocco 1 = una riga per gruppo (colonna
+  `colore_vinile`) + riga `TOTALE`, blocco 2 = pezzi con la colonna iniziale `gruppo`; "Copia riepilogo" = `toTextMulti`.
+  Fogli: materiale = foglio intero (`materialWidthPt` = altezza foglio, `materialLengthPt` = lunghezza foglio).
+
+## Modulo 4 — Nesting per colore / livello + preset (2026-09-24)
+
+UI: **Nest per** = Tutto insieme | Colore di riempimento | Livello; **Tolleranza colore** ΔE (default 8, solo per
+colore). Con "Colore" `corvoExport` riceve `paint:true` e aggiunge a ogni oggetto
+`paint: [{c: colore, a: area pt²}]` (`corvo_m4_paint` in `host/multinest.jsx`): riempimenti dei tracciati visibili
+(guide, figli nascosti e maschere esclusi; tinte con nome di taglio — CutContour… — escluse), colori di traccia solo se
+l'oggetto non ha nessun riempimento (disegni al tratto). Colore = `{t:'spot',name,tint,base}` | `rgb` | `cmyk` | `gray` | `lab`.
+
+`colorgroups.js`:
+- colore dell'oggetto = quello con l'area maggiore (`itemColor`; se un secondo colore copre ≥ 10 % → "misto", nota `mnMixed`);
+- **tinte piatte per NOME** (maiuscole/spazi ignorati, tinta % ignorata: un vinile per tinta); **quadricromia/RGB**
+  raggruppate con ΔE76 ≤ tolleranza (sRGB→Lab D65, CMYK ingenuo) attorno al colore di area maggiore; senza colore →
+  gruppo "senza colore" in fondo. Per livello: nome del livello dell'oggetto.
+- `planGroups(items, {by, tol}, planOpts, cluster)` esegue `cluster.planPieces` **separatamente per gruppo** e concatena
+  i pezzi (`i` rinumerato = indice di `corvoGroup`): l'unione degli oggetti sovrapposti del modulo 1 non incolla mai due
+  colori (una bandiera fatta di rettangoli sovrapposti resta un pezzo per colore).
+
+Rotoli: stessa larghezza, impilati VERSO IL BASSO sotto la tavola (primo a 20 mm, distanza tra rotoli
+max(20 mm, 2,5 × corpo etichetta)); etichetta `Corvo — <colore> — L mm` (colore = nome tinta, `C.. M.. Y.. K..` o
+`#RRGGBB`; per livello il nome del livello). Tempo: il campo Tempo e' diviso tra i gruppi in proporzione all'area,
+minimo 3 s per gruppo. La vista live mostra il gruppo corrente ("Gruppo k/n: <colore>").
+
+**Preset con nome** (`MN.Presets`, `localStorage corvo.presets`): larghezza rotolo, distanza, rotazioni, tempo,
+raggruppamento + tolleranza, materiale rotolo/fogli (foglio, lunghezza/larghezza, margine, venatura) e il materiale del
+modulo 5 (`CorvoReportPanel.material()`). Salva (nome dal campo di testo accanto: `window.prompt` non e' affidabile in CEP; vuoto = preset scelto o data), scegli dal menu = carica, Elimina, Esporta/Importa
+JSON `{"corvoPresets":1,"presets":{nome: preset}}` (dialoghi CEP `showSaveDialogEx`/`showOpenDialogEx`, nel browser
+download / `<input type=file>`). Campi sconosciuti scartati, numeri limitati ai range dei campi. Le impostazioni correnti
+restano anche in `corvo.mn.opts`.
+
+Numeri (`test_multinest.js`, 4 s per gruppo, rotolo 1000 mm per le bandiere, 600 mm per l'alfabeto a 1400 mm di
+larghezza, distanza 2 mm, 0/90/180/270):
+
+| File | Gruppi | Lunghezza per colore (mm) | Totale |
+|---|---|---|---|
+| flag_italy | 3 | verde 304 · bianco 304 · rosso 154 | 763 |
+| flag_jamaica | 2 (+1 pezzo degenere: il tracciato a farfalla nera ha area netta 0, resta fermo) | verde 229 | 229 |
+| flag_south_africa | 5 | bianco 230 · rosso 154 · blu 154 · nero 230 · verde 157 | 926 |
+| flag_brazil (i `<use>` non letti dal parser di test) | 4 | verde 312 · giallo 237 · bianco 191 · blu 158 | 898 |
+| alfabeto colorato, per colore | 6 | #00FF00 1069 · #FF0000 1145 · #00FFFF 314 · #FFFF00 211 · #FF00FF 1074 · #0080FF 304 | 4118 |
+| alfabeto colorato, per livello | 6 | stessi gruppi (layer0..5 = un colore ciascuno) | 4118 |
+
+I tre gruppi da ~1,1 m dell'alfabeto sono UN tracciato composto con piu' lettere (come nel file): un pezzo solo.
+Limite geometria (non del modulo): la Y bianca del Sudafrica e' un tracciato unico che tocca se stesso; `geometry.js` ne
+prende un solo lobo come sagoma, quindi il disegno puo' uscire dalla sagoma (il test lo segnala come NOTE).
+
 ## Modulo 5 — Report materiale e costo (2026-09-24)
 
 File nuovi, isolati dal resto: `client/js/report.js` (logica pura, `window.CorvoReport` / `module.exports`),
@@ -381,7 +606,8 @@ Definizioni (ingresso in pt come il resto del pannello, uscita in mm/m/m²):
   dei `bounds` degli oggetti, com'e' o ruotata di 90°, solo se entra nella larghezza del rotolo (altrimenti assente).
   Risparmio in m, m², % ed € (stessa formula di costo); proiezione mensile se "lavori/mese" > 0.
   Se i rettangoli non sono piu' lunghi del nest il pannello scrive "nessun risparmio" invece di un numero negativo.
-- `combine(reports)`: riga TOTALE per il multicolore del modulo 4 (somme, riempimento ricalcolato).
+- `combine(reports)`: riga TOTALE per il multicolore del modulo 4 (somme, riempimento ricalcolato);
+  `combineReports` / `toCSVMulti` / `toTextMulti` (moduli 4+7, vedi "Orchestratore multi-job").
 
 Impostazioni materiale in localStorage: `corvo.m5.current` (campi correnti), `corvo.m5.materials` (preset per nome,
 Salva/Elimina), `corvo.m5.preset`, `corvo.m5.open`. Valute EUR (default) e USD.
@@ -485,6 +711,82 @@ crocini a 1882-2080 mm di nest (fasce da 25-46 mm per lato).
   Roland/Mimaki possono richiedere di dividere il lavoro in pannelli: l'avviso `rmIntermediate` lo segnala.
 - Nessuna verifica ancora su plotter reale ne' in Illustrator (fase VERIFICA del loop).
 
+## Modulo 7 — Multi-foglio laser / fresa (2026-09-24)
+
+UI: **Materiale** = Rotolo | Fogli; con Fogli: **Foglio** 600 × 400, 1000 × 600, 1220 × 2440, Personalizzato
+(lunghezza/larghezza), **Margine foglio** (mm, default 10: morsetti/bordo, SEPARATO dalla Distanza = separazione minima
+di Sparrow tra i pezzi) e **Venatura** (solo 0/180° per tutti i pezzi). Venatura per pezzo: nome del pezzo o livello che
+contiene `grain`/`venatura`/`vena`/`fibra`. Il lato lungo del foglio va lungo x (la venatura di un pannello 1220 × 2440
+corre sui 2440). Il campo Larghezza rotolo e' nascosto; il nest usa l'altezza utile del foglio.
+
+Sparrow fa solo strip packing (`spp`): `sheets.planSheets` e' un greedy sopra (dettagli nel commento del file):
+0. foglio utile = foglio − 2 × margine; un pezzo che non entra nel foglio utile in nessuna rotazione ammessa →
+   errore chiaro PRIMA del nest (`mnTooBig`: dimensioni utili e nomi dei pezzi); margine ≥ meta' foglio → `mnBadSheet`.
+1. pezzi rimasti ordinati per area decrescente, nest su striscia alta quanto il foglio utile per `splitSecs`
+   (10 % del Tempo, 1-5 s); taglio alla lunghezza utile: i pezzi interamente dentro vanno al foglio k.
+2. riempimento: i pezzi rimasti fuori riprovati sul foglio k a lotti stimati dall'area libera (92 % utile), lotto
+   dimezzato se non entra, un pezzo singolo che non entra scarta anche quelli piu' grandi; max 4 nest.
+3. il resto passa al foglio k+1.
+3b. **minimo numero di fogli**: finche' i fogli superano il limite inferiore ceil(area pezzi / area UTILE), i pezzi
+   dell'ultimo foglio vengono spostati nei fogli precedenti con piu' spazio (stessa logica a lotti, max 8 nest); se
+   l'ultimo si svuota viene eliminato.
+4. verifica finale: ogni foglio rinestato da solo col Tempo intero; il nuovo layout si tiene solo se sta nel foglio
+   (quello del greedy e' gia' valido: nessun pezzo viene mai perso). L'ultimo foglio riporta la lunghezza usata
+   (avanzo riutilizzabile) nell'etichetta: `Corvo — [gruppo — ]Foglio k — 600 × 400 mm — usati L mm`.
+Fogli nel documento: in fila verso destra sotto la tavola, una riga per gruppo se e' attivo anche il modulo 4
+(es. un livello per materiale). Posizioni nel sistema del foglio utile: origine = angolo del foglio + (margine, margine).
+Sparrow tiene meta' distanza anche verso il bordo: distanza misurata dal margine 2,1-2,2 mm con distanza 2 mm.
+
+**Futuro**: jagua-rs 0.8.3 ha la feature `bpp` (bin packing: `Bin{container, stock, cost}`) ma sparrow implementa solo
+`spp`: un vero solutore bin-packing in Rust (o sparrow esteso a `bpp`) sostituirebbe il greedy e i suoi nest ripetuti.
+
+Numeri (`test_multinest.js`, split 1,5 s, verifica 4 s, distanza 2 mm, margine 10 mm, 0/90/180/270; limite inferiore
+= area foglio / area utile):
+
+| File (pezzi) | Foglio | Fogli | Limite inf. | Riempimento per foglio (area foglio) | Ultimo foglio usato |
+|---|---|---|---|---|---|
+| ClosedBox (7) | 600 × 400 | 1 | 1 / 1 | 24 % | 205 mm |
+| ClosedBox | 1220 × 2440 | 1 | 1 / 1 | 2 % | 103 mm |
+| DividerTray (17 pezzi, 45 tracciati) | 600 × 400 | 1 | 1 / 1 | 58 % | 457 mm |
+| DividerTray | 1220 × 2440 | 1 | 1 / 1 | 5 % | 153 mm |
+| AgricolaInsert (101 pezzi, 195 tracciati) | 600 × 400 | 2 | 1 / 2 | 68 / 30 % | 284 mm |
+| AgricolaInsert | 1220 × 2440 | 1 | 1 / 1 | 8 % | 264 mm |
+| AgricolaInsert | 400 × 300 (pers.) | 3 (4 prima del passo 3b) | 2 / 3 | 70 / 66 / 60 % | 366 mm |
+| DividerTray, venatura globale | 600 × 400 | 1 | 1 / 1 | 58 % (rotazioni usate 0, 180) | 502 mm |
+| AgricolaInsert, venatura per pezzo (p-1..p-59) | 600 × 400 | 2 | 1 / 2 | 69 / 29 % | 261 mm |
+
+Una esecuzione (il motore e' a tempo: riempimenti ±3 punti tra esecuzioni, numero di fogli stabile). Sempre al
+limite inferiore sull'area utile. Ogni foglio: nessuna sovrapposizione (intersezione clipper delle sagome),
+tutto dentro i margini, ogni pezzo in un solo foglio, pezzi con venatura solo a 0/180. DividerTray su 120 × 90 →
+`tooBig` per 17 pezzi senza avviare il motore.
+
+### Test (moduli 4 + 7)
+
+- `node plugin/tools/test_multinest.js [sGruppo=4] [split=1.5] [finale=4] [realDir]` (SEED=n): unit (colori, ΔE,
+  gruppi spot/processo/nessuno, preset salva/carica/JSON/import errato, fogli, venatura, fitsRect) + i casi sopra
+  su `bench/real/color` e `bench/real/laser` (sola lettura; senza `bench/real` nel worktree usa `..\Plugin\bench\real`).
+  Parser SVG di test in `tools/svgparse.js` (path/rect/circle/polygon, trasformazioni, fill/stroke ereditati; `<use>`
+  ignorati). ~4 min.
+- `node plugin/tools/test_multinest_panel.js [s=6]`: gli script VERI del pannello (ordine di `index.html`) in Node con
+  DOM finto, CSInterface finto che risponde come `corvo.jsx`/`multinest.jsx`, motore inline (niente Worker in Node):
+  alfabeto per colore (6 rotoli impilati con etichette, ogni pezzo spostato una volta e dentro il SUO rotolo, report
+  6 gruppi + TOTALE, CSV multi, Applica → `corvoFinish`), AgricolaInsert su 600 × 400 (fogli in fila, pezzi dentro
+  l'area utile, Annulla → `corvoRevert`), Stop durante la sequenza (chiusura rapida, tutti i pezzi disposti),
+  preset salva/carica/esporta. 38/38.
+
+### Da verificare in Illustrator (passo VERIFICA)
+
+1. `corvoExport({paint:true})`: `paint` su file reali (tinte piatte con tinta %, CMYK globali, gruppi con maschera,
+   testo, raster) e tempo aggiunto sui file densi (2 letture DOM per tracciato).
+2. `corvoContainers`: rettangoli + etichette `Corvo — colore — L mm` impilati sotto la tavola, aggiornati live senza
+   sfarfallio; dopo Applica un solo Ctrl+Z toglie disposizione + contenitori (`Corvo_Containers_rif` ridisegnato
+   da `corvo_singleUndo`); Annulla toglie tutto; `corvoFinish({keepRoll:false})`.
+3. Stop durante la sequenza (worker terminato e ricreato), Applica disabilitato fino alla fine, chiusura del pannello.
+4. Fogli: pezzi dentro il margine su file laser reali, venatura, errore pezzo troppo grande, riga per gruppo con
+   "Nest per livello" + Fogli.
+5. Preset: campo nome, menu, dialoghi CEP di esporta/importa (`showSaveDialogEx` / `showOpenDialogEx`).
+6. Regressione `insegna48.svg` / `lettering.svg` con "Tutto insieme" + Rotolo (percorso a nest singolo invariato).
+
 ## Modulo 8 — DTF gang sheet: raster con contorno (2026-09-24)
 
 Obiettivo: immagini trasparenti (PNG per DTF) nestate per la loro **silhouette reale** invece che per il rettangolo,
@@ -551,3 +853,85 @@ sparisce); i fori del contorno ricevono pezzi piccoli (modulo 2); il testo in pi
 di geometry. Il pannello chiede sempre `raster:true`: anche le immagini di un foglio print&cut (es. i 3 raster di
 test_modulo1) vengono tracciate (render temporaneo se non sono PNG collegati) — da misurare il tempo in Illustrator.
 PNG temporanei rimasti in `%TEMP%\corvo_m8_*.png` se l'export fallisce a metà.
+
+## Modulo 9 — Qualità commerciale (licenza, prova, firma ZXP, installer) — 2026-09-24
+
+Procedure operative (emettere una licenza, build, firma, installazione): **`docs/release.md`**.
+
+### Licenza offline (`client/js/license.js`)
+- Stesso schema di CamForge (studiato, nessun codice o chiave copiati) ma con una **coppia di chiavi nuova**: ECDSA P-256 /
+  SHA-256, firma IEEE P1363 (64 byte). Token `CV1-<payload base64url>.<firma base64url>`, payload
+  `{v:1, p:'corvo', id, ed:'standard'|'pro', iat:'YYYY-MM-DD', n?:nome, eh?:hash email, exp?:'YYYY-MM-DD', m?:id macchina}`.
+  L'email non entra nel token: `eh` = primi 16 hex di SHA-256(email minuscola).
+- Nel pannello c'è solo la chiave **pubblica** (`PUBLIC_JWK` + `PUBLIC_PEM`). Verifica con WebCrypto (`crypto.subtle`, provato in
+  Edge headless con la chiave vera) e ripiego sul `crypto` di Node (`crypto.verify` con `dsaEncoding:'ieee-p1363'`).
+- La privata è **fuori dal repo**: `%USERPROFILE%\.config\corvo\license-private.jwk` (o `$CORVO_LICENSE_KEY`).
+- Legame alla macchina **spento per default** (`--machine` in license-gen): ID = 16 hex da SHA-256(hostname + modello CPU),
+  mostrato nella finestra Licenza con "Copia".
+- Errori: `format`, `signature`, `product`, `edition`, `expired`, `machine` (messaggi IT/EN nella finestra).
+
+### Prova e dopo la prova
+- **14 giorni** dal primo avvio con tutte le funzioni Pro. Stato in `localStorage['corvo.m9']` **e** in
+  `%APPDATA%\Corvo\license.json` (Node fs; fuori dalla cartella dell'estensione, così non rompe la firma): vale l'inizio
+  più vecchio dei due (reinstallare non azzera), `lastSeen` = orologio più avanti visto (riportare indietro la data non allunga
+  la prova), inizio nel futuro = manomesso = finita. Anche la chiave attivata sta in entrambi.
+- **Prova finita senza licenza ("free")**: il nest funziona tutto (anteprima live, Stop, Annulla), **Applica solo fino a 10 pezzi**
+  (`LIMITS.freeApplyMax`); oltre, Applica mostra il messaggio e apre la finestra Licenza. Scelto al posto della filigrana:
+  non mette oggetti estranei nel file (finirebbero al plotter) e lascia il prodotto utile per lavori piccoli.
+  Funzioni come Standard (niente Pro).
+
+### Gating delle edizioni — UNA tabella (`FEATURES` in license.js)
+| Chiave | Modulo | Edizione minima |
+|---|---|---|
+| `holes` | 2 — pezzi dentro i fori | Pro |
+| `colorNest` | 4 — nesting per colore/livello | Pro |
+| `costCsv` | 5 — export CSV del report costi | Pro |
+| `multiSheet` | 7 — multi-foglio | Pro |
+
+Ranghi: free 1, standard 1, pro 2, trial 2. Una funzione non in tabella è libera. API per i moduli:
+`CorvoLicense.has(chiave)`, `CorvoLicense.canApply(nPezzi)`, `proFeatureMsg(chiave)`, `openDialog()`.
+Se `license.js` non è caricato gli agganci lasciano tutto libero (i test Node dei moduli restano invariati).
+
+### Agganci (`// MODULO 9`)
+- `main.js`: `LIC`/`m9has`; checkbox "Usa i fori" disabilitata e ignorata senza Pro (`setState`, `readParams`);
+  `S.m9Count = pieces.length` al nest; in `apply()` controllo `LIC.canApply(S.m9Count)` prima di qualsiasi azione.
+- `report-panel.js`: `exportCsv()` → `has('costCsv')` (il riepilogo "Copia" resta libero).
+- **Moduli 4 e 7** (non ancora in questo ramo): chiamare `CorvoLicense.has('colorNest')` / `has('multiSheet')` all'avvio del
+  nest e mostrare `proFeatureMsg`. Le chiavi sono già in tabella.
+- `index.html`: `css/license.css`, `js/license.js` prima di `main.js`, versione nel piede (`#corvoVersion`). license.js aggiunge
+  da sé il badge (Prova · N gg / Prova finita / Standard / Pro) e la finestra.
+
+### Versione
+`0.9.0-beta`. Nel manifest è `0.9.0.beta` (bundle ed estensione): lo schema CEP accetta solo `major.minor.micro.qualificatore`
+(pattern `\d{1,9}(\.\d{1,9}(\.\d{1,9}(\.(\w|_|-)+)?)?)?` nell'XSD di CEP-Resources), il trattino dopo il micro non passa.
+`build-zxp.ps1` legge il manifest, lo converte in `0.9.0-beta` e si ferma se non coincide con `VERSION` di license.js;
+test_license controlla anche il piede.
+
+### Firma ZXP e installer (`tools/release/`)
+- `build-zxp.ps1`: staging di `CSXS`, `client`, `host` (niente `.debug`, `tools/`, test, mappe, `.DS_Store`/`__MACOSX`, niente
+  junction: `robocopy /XJ` + controllo dei reparse point), firma con **ZXPSignCmd 4.1.3 x64** + marca temporale
+  `http://timestamp.digicert.com`, `-verify -certInfo` → `dist/Corvo-0.9.0-beta.zxp` (+ `.sha256`, `dist/Corvo-0.9.0-beta-win/`
+  con zxp + install/uninstall, e il suo `.zip`). `dist/` è gitignored.
+- `install.ps1` / `install.cmd` (doppio clic, niente amministratore): controlla che lo zxp sia Corvo e firmato
+  (`META-INF/signatures.xml`), estrae con .NET in una cartella accanto e poi scambia (niente installazione a metà);
+  **se al posto dell'estensione c'è la junction di sviluppo si ferma (codice 2) con le istruzioni** (`cmd /c rmdir`), una
+  cartella non-Corvo non la tocca. `-Target` per installare altrove (test). `uninstall.ps1`/`.cmd`: stesse protezioni;
+  licenza e prova restano in `%APPDATA%\Corvo`.
+- Niente file aggiunti dentro la cartella installata (romperebbero la verifica della firma di CEP).
+
+### Test
+| Test | Cosa | Esito |
+|---|---|---|
+| `node plugin/tools/test_license.js` | chiavi di test al volo: Pro/Standard valide (WebCrypto e Node), manomissioni (standard→pro, firma, payload, altra chiave), formato, edizione/prodotto sbagliati, scadenza, macchina, prova 13/14 giorni, limite 10/11 pezzi, reinstallazione, file cancellato, orologio indietro, versione manifest/piede, agganci; giro completo con la chiave vera se presente | 63/63 |
+| `plugin/tools/release/test-install.ps1` | install/aggiorna/disinstalla in `%TEMP%`, firma verificata sulla cartella installata, junction rifiutata e intatta, cartella estranea, zxp non firmato; la junction vera di CEP non cambia | 21/21 |
+| Edge headless (`--dump-dom`) | pannello vero: badge "Trial · 14 d left" e finestra; prova scaduta → fori disabilitati, 10 sì/11 no; attivazione di una Standard firmata con la chiave vera via WebCrypto | ok |
+
+### Limiti noti
+- **Non provato in Illustrator** (niente Illustrator in questo giro): caricamento dello ZXP firmato **senza** PlayerDebugMode,
+  `crypto.subtle` nel CEF di CEP 11 (c'è comunque il ripiego Node), finestra nel pannello stretto. Sulla macchina di sviluppo
+  PlayerDebugMode=1 resta attivo: per provare davvero la firma serve un utente/PC senza.
+- Certificato **autofirmato**: CEP lo accetta, ma non identifica un editore; per la vendita valutare un certificato di firma
+  vero. Il problema noto di Adobe (ZXPSignCMD/KnownIssue2024: pannelli vuoti) riguarda i link simbolici installati via UPIA:
+  il pacchetto non ne ha e l'installer non usa UPIA.
+- La protezione della prova è "non banale", non inviolabile (cancellare entrambi i posti la azzera; il JS è leggibile).
+- Il limite di 10 pezzi conta i pezzi del piano (figli nei fori compresi), non gli oggetti originali di Illustrator.

@@ -336,10 +336,59 @@
   }
   function round(v, d) { var k = Math.pow(10, d); return Math.round(v * k) / k; }
 
+  // ---------- MODULO 4 / MODULO 7: one report per colour (or per sheet) + TOTAL ----------
+  /* reports: computeReport results, each with .color = group label (colour, layer, "Sheet k").
+   * -> a report-like object for the panel: TOTAL numbers (combine) + currency/material + rows of every group
+   *    (row.group = label) + multi = the per-group reports. */
+  function combineReports(reports) {
+    var t = combine(reports), r0 = reports[0] || {};
+    var widths = reports.map(function (r) { return round(r.rollWidthMm, 3); });
+    t.currency = r0.currency; t.symbol = r0.symbol; t.material = r0.material;
+    t.sheets = reports.reduce(function (s, r) { return s + (r.sheets || 0); }, 0);
+    t.rollWidthMm = widths.every(function (w) { return w === widths[0]; }) ? r0.rollWidthMm : null;
+    t.materialBase = reports.reduce(function (s, r) { return s + (r.materialBase || 0); }, 0);
+    t.baseline = null; t.initial = null;
+    t.rows = [];
+    reports.forEach(function (r) { r.rows.forEach(function (row) { t.rows.push(Object.assign({ group: r.color || '' }, row)); }); });
+    t.multi = reports;
+    return t;
+  }
+  /* CSV of a multicolour / multi-sheet job (FINDINGS-modulo4-6 §4): block 1 = one summary row per colour (column
+   * colore_vinile) + a TOTAL row; block 2 = pieces with a leading `gruppo` column. Same separators as toCSV. */
+  function toCSVMulti(reports, lang) {
+    var it = lang === 'it', sep = it ? ';' : ',', head = null, vals = [], pieces = [], phead = null;
+    function split(csv) { return csv.replace(/^﻿/, '').replace(/\r\n$/, '').split('\r\n'); }
+    function cell(g) {
+      g = String(g || '');
+      if (/^[=+\-@\t\r]/.test(g)) g = "'" + g;
+      if (g.indexOf(sep) >= 0 || /["\r\n]/.test(g)) g = '"' + g.replace(/"/g, '""') + '"';
+      return g;
+    }
+    reports.forEach(function (r) {
+      var L = split(toCSV(r, lang));
+      head = L[0]; vals.push(L[1]); phead = L[3];
+      L.slice(4).forEach(function (line) { pieces.push(cell(r.color) + sep + line); });
+    });
+    var tot = combineReports(reports);
+    tot.color = it ? 'TOTALE' : 'TOTAL'; tot.rows = [];
+    tot.job = reports[0] ? reports[0].job : ''; tot.date = reports[0] ? reports[0].date : '';
+    if (!tot.material) tot.material = normalizeMaterial({});
+    vals.push(split(toCSV(tot, lang))[1]);
+    return '﻿' + [head].concat(vals, [''], ['gruppo' + sep + phead], pieces).join('\r\n') + '\r\n';
+  }
+  function toTextMulti(reports, lang) {
+    var tot = combineReports(reports), T = TXT[lang === 'it' ? 'it' : 'en'], f = function (v, d) { return fmtNum(v, d, lang); };
+    var out = reports.map(function (r) { return '## ' + (r.color || '') + '\n' + toText(r, lang); });
+    out.push((lang === 'it' ? 'TOTALE' : 'TOTAL') + ': ' + T.length + ' ' + f(tot.lengthM, 3) + ' m, ' + T.usedArea + ' ' + f(tot.usedM2, 3) +
+      ' m², ' + T.fill + ' ' + f(tot.fillPct, 1) + ' %, ' + T.total + ' ' + money(tot.totalCost, tot, lang));
+    return out.join('\n\n');
+  }
+
   return {
     MM: MM, CURRENCIES: CURRENCIES, DEFAULT_MATERIAL: DEFAULT_MATERIAL, normalizeMaterial: normalizeMaterial,
     materialCost: materialCost, rotBBox: rotBBox, placedBBox: placedBBox, shelfBaseline: shelfBaseline,
     initialLength: initialLength, computeReport: computeReport, combine: combine,
-    toText: toText, toCSV: toCSV, fmtNum: fmtNum, money: money
+    toText: toText, toCSV: toCSV, fmtNum: fmtNum, money: money,
+    combineReports: combineReports, toCSVMulti: toCSVMulti, toTextMulti: toTextMulti   // MODULO 4/7
   };
 });

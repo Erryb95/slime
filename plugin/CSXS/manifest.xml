@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- MODULO 9: versione 0.9.0-beta. Lo schema CEP accetta solo major.minor.micro.qualificatore (con il punto),
+     quindi qui e' "0.9.0.beta"; pannello, ZXP e license.js la mostrano come "0.9.0-beta". -->
 <ExtensionManifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   ExtensionBundleId="com.corvo.nesting"
   ExtensionBundleName="Corvo Nesting"
-  ExtensionBundleVersion="0.1.0"
+  ExtensionBundleVersion="0.9.0.beta"
   Version="11.0">
   <ExtensionList>
-    <Extension Id="com.corvo.nesting.panel" Version="0.1.0"/>
+    <Extension Id="com.corvo.nesting.panel" Version="0.9.0.beta"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>

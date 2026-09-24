@@ -349,6 +349,31 @@
     };
   }
 
+  // Engine guard (merge 3/4-7/9): jagua-rs starts the strip at width = item area / strip height and deflates it by
+  // gap/2 per side; when that width is below the gap (a few small pieces on a wide roll, e.g. one colour group of dots)
+  // the strip polygon is empty and the wasm PANICS ("Offset resulted in an empty polygon", worker dead).
+  // Fix: lower strip_height (never below what every piece needs in an allowed orientation) until area / height >=
+  // 4 x gap. The layout then lies in [0, h] inside the real roll [0, H]: still valid, placements unchanged in meaning.
+  function guardInstance(inst, gap) {
+    if (!inst || !inst.items || !inst.items.length) return inst;
+    var H = inst.strip_height, need = 4 * Math.max(gap || 0, 1), area = 0, minH = 0;
+    inst.items.forEach(function (it) {
+      var P = it.shape && it.shape.data;
+      if (!P || !P.length) return;
+      var a = 0;
+      for (var k = 0; k < P.length; k++) { var q = P[(k + 1) % P.length]; a += P[k][0] * q[1] - q[0] * P[k][1]; }
+      area += Math.abs(a / 2) * (it.demand || 1);
+    });
+    if (!(H > 0) || area / H >= need) return inst;
+    inst.items.forEach(function (it) {
+      var P = it.shape && it.shape.data;
+      if (P && P.length) minH = Math.max(minH, minExtent(P, it.allowed_orientations || null));
+    });
+    var h = Math.min(H, Math.max(area / need, minH * 1.02 + 1e-3));
+    if (h < H) { inst.strip_height = h; inst.guardedHeight = H; }
+    return inst;
+  }
+
   // Sparrow placement (on the ref-relative polygon) -> absolute move for corvoApply
   // p_doc = R(a)(p - ref) + t + O  =  R(a) p + (t - R(a) ref + O)
   function placementToMove(pl, piece, origin) {
@@ -373,7 +398,7 @@
     },
     signedArea: signedArea, area: area, cleanRing: cleanRing, bbox: bbox, convexHull: convexHull,
     douglasPeucker: douglasPeucker, isSimple: isSimple, filledArea: filledArea,
-    buildPiece: buildPiece, buildPieces: buildPieces, buildInstance: buildInstance,
+    buildPiece: buildPiece, buildPieces: buildPieces, buildInstance: buildInstance, guardInstance: guardInstance,
     minExtent: minExtent, placementToMove: placementToMove, applyMove: applyMove,
     _internals: { silhouette: silhouette, closing: closing, simplify: simplify, union: union,
                   offset: offset, outers: outers, toPath: toPath, fromPath: fromPath, SCALE: SCALE, lib: lib }

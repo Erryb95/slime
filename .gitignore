@@ -29,3 +29,6 @@ bench/output/
 wasm/demo/corvo*
 wasm/demo/*.json
 bench/real/
+
+# MODULO 9: pacchetti ZXP firmati e installer (plugin/tools/release/build-zxp.ps1)
+/dist/

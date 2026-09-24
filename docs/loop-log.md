@@ -115,3 +115,31 @@ Un margine oltre `st.steps` è stato provato e TOLTO: annullava anche una modifi
 `1+1` (non è un callback perso: provato un watchdog lato pannello, inutile e rimosso). Riavviare Illustrator tra le sessioni lunghe.
 (c) I crocini Mimaki restano una guida: FineCut va verificato su un plotter reale. (d) Nessun pezzo è finito nel foro del
 donut DTF (nessun PNG abbastanza piccolo nel set): part-in-part dentro un raster verificato solo in Node (test_combined).
+
+## 2026-09-24 — Merge moduli 3, 4-7, 9
+
+Worktree `Plugin-int`, branch `integrazione-3-47-9` (base 6ba63e2 = moduli 1,2,5,6,8). Merge `--no-ff` in ordine:
+`modulo9-commerciale` (nessun conflitto), `modulo3-quantita` (conflitti: architettura, `index.html` css, `main.js`
+gating fori + `QP().setEnabled`), `modulo4-7-multinest` (conflitti: `index.html` script, `main.js` setState/readParams/
+export/apply, `corvo.jsx` `corvo_singleUndo` = sagome M3 + contenitori M4/7, architettura). Tutte le funzioni tenute.
+
+Integrazione (dettagli in plugin-architecture.md, "Moduli 3, 4, 7, 9"):
+- gating: `colorNest` (4) e `multiSheet` (7) controllati in `mnReadParams` (anche da preset) + opzioni bloccate nella UI
+  licenza; fori (2) e CSV (5) gia' agganciati; nuova voce `quantity` = Standard.
+- copie (3) nel multi-job: `MN.assignGroups` mette copie e specchiate nel gruppo dell'originale, sagome create prima dei
+  job e mosse job per job; "Tieni vicine" solo nel nest singolo (nota `mnNoCells`); "Leggi selezione" usa export+piano di Nest.
+- crocini (6) con piu' rotoli/fogli: non supportati, nota di stato esplicita (`mnNoRegmarks`).
+- limite di prova: `S.m9Count` conta i pezzi reali dopo `quantity.expand` (copie comprese).
+- BUG trovato dal test combinato: gruppo con poca area (pallini 3-5 mm) su striscia larga -> panic di jagua-rs ("Offset
+  resulted in an empty polygon", worker morto); vale anche per il nest singolo. Fix `geometry.guardInstance` (abbassa
+  `strip_height` finche' area/altezza >= 4 gap), usato in `nest()` e `mnRunner`.
+
+Test Node (SEED=7): test_client PASS, test_cluster 74/74, test_holes PASS, test_report PASS, test_regmarks 333/333,
+test_raster PASS, test_quantity 221/221, test_multinest 221/221, test_multinest_panel 48/48 (+10: copie per colore,
+gating), test_license 64/64, test_combined 49/49 (+21: 4 rotoli per colore, 4 copie di cui 1 specchiata, 50 pezzi per
+il limite di Applica).
+
+Da verificare in Illustrator: nest per colore con copie (sagome tratteggiate che saltano da un rotolo all'altro, Applica
+crea i duplicati nel rotolo giusto, un solo Ctrl+Z toglie copie + `Corvo_Containers`); opzioni Colore/Livello/Fogli
+disabilitate a prova finita (badge licenza) e messaggio "funzione Pro" caricando un preset; Applica rifiutato con
+<= 10 design + copie > 10; nota crocini con piu' rotoli; pochi adesivi piccoli su rotolo 1600 mm (guard, niente crash).
