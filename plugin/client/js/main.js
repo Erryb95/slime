@@ -11,6 +11,7 @@
   var CL = window.CorvoCluster;
   var RM = window.CorvoRegmarks;       // MODULO 6: crocini di registro (js/regmarks.js)
   var HO = window.CorvoHoles;          // MODULO 2 (pieces inside holes), optional
+  var R = window.CorvoRaster;          // MODULO 8 (DTF: immagini -> contorno)
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -68,7 +69,11 @@
       rmFineCut: 'Mimaki: FineCut reads only its own marks. Select Corvo_FineCut_Area and create the marks in FineCut.',
       rmMaterial: 'Marks: black on white matte media only (no clear, glossy or coloured media).',
       rmError: 'Registration marks not drawn: {msg}',
-      useHoles: 'Use holes', holesNote: '{n} piece(s) placed inside holes.'   // MODULO 2
+      useHoles: 'Use holes', holesNote: '{n} piece(s) placed inside holes.',   // MODULO 2
+      // MODULO 8
+      preset: 'Preset', presetCustom: 'Custom', images: 'Images', imgContour: 'Contour', imgBbox: 'Bounding box',
+      rasterNoAlpha: 'No real transparency, nested as a rectangle: {names}.',
+      rasterNoEngine: 'Images selected but raster.js is not loaded.'
     },
     it: {
       rollWidth: 'Larghezza rotolo', gap: 'Distanza', rotations: 'Rotazioni', rotNone: 'Nessuna', rotFree: 'Libera', time: 'Tempo',
@@ -120,7 +125,11 @@
       rmFineCut: 'Mimaki: FineCut legge solo i suoi crocini. Seleziona Corvo_FineCut_Area e crea i crocini con FineCut.',
       rmMaterial: 'Crocini: solo nero su materiale bianco opaco (niente trasparenti, lucidi o colorati).',
       rmError: 'Crocini non disegnati: {msg}',
-      useHoles: 'Usa i fori', holesNote: '{n} pezzi nei fori.'   // MODULO 2
+      useHoles: 'Usa i fori', holesNote: '{n} pezzi nei fori.',   // MODULO 2
+      // MODULO 8
+      preset: 'Preset', presetCustom: 'Personalizzato', images: 'Immagini', imgContour: 'Contorno', imgBbox: 'Rettangolo',
+      rasterNoAlpha: 'Nessuna trasparenza reale, disposte come rettangolo: {names}.',
+      rasterNoEngine: 'Immagini selezionate ma raster.js non è caricato.'
     }
   };
   var lang = 'en';
@@ -289,7 +298,8 @@
     $('btnStop').disabled = !running;
     $('btnApply').disabled = !(running || review);
     $('btnCancel').disabled = !(running || review || st === 'preparing');
-    ['rollWidth', 'gap', 'rotations', 'time', 'shapeSrc', 'merge', 'regmarks'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
+    // MODULO 8: + preset, rasterMode
+    ['rollWidth', 'gap', 'rotations', 'time', 'shapeSrc', 'merge', 'regmarks', 'preset', 'rasterMode'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
     if ($('useHoles')) $('useHoles').disabled = st !== 'idle';   // MODULO 2
   }
 
@@ -302,7 +312,8 @@
       shape: $('shapeSrc').value === 'cut' ? 'cut' : 'all',
       merge: !!$('merge').checked,
       rm: ($('regmarks') && $('regmarks').value) || 'none',     // MODULO 6
-      holes: !!($('useHoles') && $('useHoles').checked)   // MODULO 2
+      holes: !!($('useHoles') && $('useHoles').checked),  // MODULO 2
+      rasterMode: $('rasterMode').value           // MODULO 8
     };
     try { localStorage.setItem('corvo.opts', JSON.stringify({ shape: p.shape, merge: p.merge })); } catch (e) { /* storage blocked */ }
     try { localStorage.setItem('corvo.holes', p.holes ? '1' : '0'); } catch (e) { /* storage blocked */ }   // MODULO 2
@@ -495,12 +506,22 @@
       return;
     }
     var H = rmRes.nestHeight * MM, gapPt = p.gapMm * MM, orient = G.rotationsFor(p.rot);
-    hostCall('corvoExport', { flatness: FLATNESS }).then(function (exp) {
+    hostCall('corvoExport', { flatness: FLATNESS, raster: true }).then(function (exp) {   // MODULO 8: raster
       if (S !== me || S.state !== 'preparing') return;
       S.session = true;
       var items = (exp && exp.items) || [];
       if (!items.length) throw new Error(t('noSelection'));
       var doc = exp.doc || {};
+
+      // MODULO 8: immagini (PlacedItem/RasterItem) -> contorno dalla trasparenza (client/js/raster.js), PRIMA del
+      // raggruppamento del modulo 1: l'immagine diventa un oggetto con anelli e si unisce alla sua linea di taglio
+      var rasterNote = '';
+      if (items.some(function (x) { return x.raster; })) {
+        if (!R) throw new Error(t('rasterNoEngine'));
+        var rr = R.prepareItems(items, { mode: p.rasterMode, offset: R.SAFETY_MM * MM });
+        items = rr.items;
+        if (rr.warnings.length) rasterNote = t('rasterNoAlpha', { names: rr.warnings.map(function (x) { return x.name || '?'; }).join(', ') });
+      }
 
       // module 1: registration marks, overlapping objects -> one piece, shape from the cut line
       var plan = CL.planPieces(items, { merge: p.merge, shape: p.shape, artboards: doc.artboards || [], lockedCuts: exp.lockedCuts || [] });
@@ -519,6 +540,7 @@
       if (skipped) notes.push(t('noteSkipped', { n: skipped }));
       if (w.cutFallback) notes.push(t('noteFallback', { n: w.cutFallback }));
       if (w.noContour) notes.push(t('noteNoContour', { n: w.noContour }));
+      if (rasterNote) notes.push(rasterNote);   // MODULO 8
       S.plan = plan;
       setStatus('preparing', { n: plan.pieces.length });
       return hostCall('corvoGroup', plan.pieces.map(function (x) { return x.members; })).then(function () {
@@ -663,6 +685,14 @@
     try { localStorage.setItem('corvo.lang', lang); } catch (e) { /* storage blocked */ }
     applyLang();
     fillRegmarksSelect();              // MODULO 6
+  });
+  // MODULO 8: preset rotolo DTF -> larghezza e distanza; modificarle a mano torna a "Personalizzato"
+  $('preset').addEventListener('change', function () {
+    var pr = R && R.PRESETS[$('preset').value];
+    if (pr) { $('rollWidth').value = pr.rollMm; $('gap').value = pr.gapMm; }
+  });
+  ['rollWidth', 'gap'].forEach(function (id) {
+    $(id).addEventListener('input', function () { $('preset').value = ''; });
   });
   window.addEventListener('beforeunload', onUnload);
   window.addEventListener('unload', onUnload);

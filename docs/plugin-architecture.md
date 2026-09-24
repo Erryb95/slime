@@ -1,4 +1,4 @@
-# Corvo — architettura del plugin Illustrator (v0.1, 2026-09-23)
+# Corvo — architettura del plugin Illustrator (v0.1 + moduli 1, 2, 5, 6, 8 — merge 2026-09-24)
 
 Obiettivo v0.1: selezioni gli oggetti in Illustrator, premi **Nest**, e vedi i pezzi muoversi LIVE nella tavola
 mentre Sparrow cerca; **Stop** tiene il migliore, **Applica** conferma, **Annulla** riporta tutto com'era.
@@ -10,10 +10,17 @@ plugin/
   CSXS/manifest.xml        # id com.corvo.nesting, host ILST [29.5,99.9], CSXS 11.0, --enable-nodejs --mixed-context
   .debug                   # porta CEP 8093 per ILST (solo sviluppo)
   host/corvo.jsx           # ExtendScript: geometria in uscita, trasformazioni in entrata      [AGENTE HOST]
+  host/regmarks.jsx        # modulo 6: disegno dei crocini (caricato da corvo.jsx)
   client/index.html        # pannello UI                                                       [AGENTE PANEL]
   client/css/panel.css
   client/js/main.js        # UI, stato, orchestrazione, throttle delle mosse live               [AGENTE PANEL]
   client/js/geometry.js    # anelli -> forme Sparrow (unione, chiusura, semplificazione)        [AGENTE PANEL]
+  client/js/cluster.js     # modulo 1: oggetti esportati -> pezzi (unione, crocini, linea di taglio)
+  client/js/holes.js       # modulo 2: pezzi piccoli dentro i fori dei grandi (pre-pass prima del nest)
+  client/js/report.js      # modulo 5: report materiale/costo, CSV (logica pura)
+  client/js/report-panel.js, css/report.css   # modulo 5: sezione "Materiale e costo" del pannello (solo DOM)
+  client/js/regmarks.js    # modulo 6: specifiche e geometria dei crocini print&cut (logica pura)
+  client/js/raster.js      # modulo 8: PNG trasparente -> contorno (decoder, marching squares, offset)
   client/js/worker.js      # Web Worker: carica wasm dai byte ricevuti, chiama nest()           [AGENTE PANEL]
   client/js/CSInterface.js # ponte CEP minimo scritto da noi (evalScript, requestOpenExtension, ...) su window.__adobe_cep__
                            # NB: il CSInterface.js ufficiale (Adobe-CEP/CEP-Resources) NON e' MIT: porta la licenza Adobe SDK
@@ -21,6 +28,9 @@ plugin/
   client/lib/clipper.js    # clipper-lib (Boost License) vendorizzato
   tools/build.sh           # rebuild wasm + copia in client/lib
   tools/test_e2e.js        # test end-to-end del pannello VERO in Illustrator via CDP (porta 8093)
+  tools/test_modulo1.js    # modulo 1 nel pannello vero (Illustrator)
+  tools/test_client.js, test_cluster.js, test_holes.js, test_report.js, test_regmarks.js, test_raster.js,
+  tools/test_combined.js   # test Node senza Illustrator (vedi "Integrazione dei moduli")
   tools/install-dev.ps1    # junction in %APPDATA%\Adobe\CEP\extensions\com.corvo.nesting + PlayerDebugMode
 ```
 
@@ -134,6 +144,71 @@ Correzioni emerse:
 - Pannello: un errore dell'host durante la ricerca ferma la sessione (`failSession`) invece di ripetere l'errore ogni
   250 ms; un `corvoApply` parziale (`ok:false` + `errors`, es. pezzo bloccato) ora viene mostrato come avviso.
 
+## Integrazione dei moduli (merge 2026-09-24: moduli 2, 5, 6, 8 sopra il modulo 1)
+
+I quattro moduli sono nati in branch separati sulla base v0.1; il modulo 1 aveva nel frattempo cambiato il formato di
+`corvoExport` (oggetti con `layer`, `rings`, `rg`, `cut`, `box`) e spostato il raggruppamento nel pannello
+(`cluster.js` + `corvoGroup`). Nel codice gli agganci restano marcati `// MODULO N`.
+
+### Pipeline di `nest()` in `main.js` (ordine)
+
+1. **Modulo 6** `RM.reserve(sistema, larghezza)` → striscia del nest ridotta (`nestHeight`) e offset dentro il rotolo.
+2. `corvoExport({flatness, raster:true})` → oggetti di primo livello (modulo 1); le immagini di primo livello arrivano
+   con `raster` e `rings: []` (**modulo 8**).
+3. **Modulo 8** `raster.prepareItems` traccia le immagini PRIMA del raggruppamento: ogni immagine diventa un oggetto
+   come gli altri (`rings` = contorno, `rg` = un solo gruppo pari-dispari, `box` = ingombro + contorno con offset).
+   Così un'immagine sotto una CutContour si unisce alla sua linea di taglio, e in "Solo linea di taglio" e' un passeggero.
+4. **Modulo 1** `cluster.planPieces` → pezzi `{i, members, name, layers, source, rings, rg, box}`; `corvoGroup`.
+5. `geometry.buildPieces`; i pezzi degeneri restano al loro posto e gli altri sono rinumerati (`hostI` = indice del piano).
+6. **Modulo 2** `holes.planHoles(planPieces, pieces)` → figli nei fori; `nestPieces` toglie i figli.
+7. **Modulo 5** `CorvoReportPanel.begin` con `expand` (posizioni di tutti i pezzi, figli compresi) e con le misure del
+   materiale (rotolo intero e lunghezza con i margini dei crocini).
+8. Nest; live `movesFor` = `holes.movesFor` (indici `hostI`, figli composti col genitore); a fine ricerca crocini in
+   anteprima; Applica = `corvoFinish` che conferma anche i crocini.
+
+### Interazioni risolte nel merge
+
+- **Fori (2) × pezzi raggruppati (1)**: le regioni libere si calcolano sugli anelli del pezzo raggruppato con i gruppi
+  `rg` (pari-dispari dentro un tracciato/tracciato composto, unione non-zero tra tracciati). Senza questo la stampa
+  disegnata sopra il suo sfondo (due oggetti uniti in un pezzo) apriva un falso foro e ci finivano dentro altri pezzi.
+  `planHoles` cerca l'oggetto del pezzo per `hostI`; i figli portano `hostI`; `movesFor` restituisce gli indici
+  del piano (quelli di `corvoGroup`), non gli id rinumerati per Sparrow.
+- **Fori (2) × DTF (8)**: i fori del contorno di un PNG (es. donut) sono veri fori: possono ricevere pezzi piccoli.
+- **Report (5) × pezzi raggruppati (1)**: colonna `livello` = livelli del pezzo (`"Print + CUT"` per un pezzo su due
+  livelli), nome = nome del pezzo; lunghezza originale dai `box` dei pezzi.
+- **Report (5) × fori (2)**: `expandPlacements(placements, nestPieces, plan, pieces)` = posizioni nella striscia di TUTTI
+  i pezzi (inverso di `placementToMove`); righe CSV = pezzi, figli compresi.
+- **Report (5) × crocini (6)**: con i crocini il materiale usato e' il rotolo INTERO (non la striscia ridotta) per la
+  lunghezza del nest + margini di testa/coda: `computeReport({materialWidthPt, materialLengthPt})`. I risparmi vs
+  rettangoli / disposizione originale aggiungono gli stessi margini, quindi restano confrontabili.
+- **Crocini (6) × annullo unico (1)**: disegno e rimozione dei crocini durante la sessione contano nei passi di
+  annullamento (`st.steps`), `corvo_singleUndo` aspetta che anche i crocini di anteprima siano spariti e poi li
+  ridisegna gia' confermati (`Corvo_Regmarks_rif`) nello stesso script: un solo Ctrl+Z toglie disposizione, rotolo e
+  crocini. `corvoFinish` conferma i crocini anche nei percorsi senza annullo unico; il pannello non chiama piu'
+  `corvoRegmarksFinish` (resta nell'host per compatibilita').
+- **Crocini (6) × crocini esistenti (1)**: i crocini disegnati da Corvo stanno sul livello `Regmarks` → se riselezionati
+  in una sessione successiva il modulo 1 li esclude come crocini (nome livello).
+- **DTF (8) × modulo 1**: immagini dentro un gruppo o una maschera restano "other" (rettangolo d'ingombro) come nel
+  modulo 1; solo quelle di primo livello vengono tracciate. Un pezzo fatto solo di immagini non e' piu' un errore
+  (`errRasterOnly`) se le immagini sono di primo livello.
+- **Preset DTF (8) × crocini (6)**: indipendenti; per DTF lasciare "Crocini: Nessuno".
+- API host retrocompatibile: `corvoExport` senza `raster:true` si comporta come nel modulo 1; `corvoRegmarksFinish`,
+  `corvoGroup`, `corvoApply`, `corvoRevert`, `corvoFinish(opts)` invariati nelle firme.
+
+### Test Node (senza Illustrator)
+
+| Test | Cosa | Esito al merge |
+|---|---|---|
+| `test_client.js` | geometria + nest insegna48 | PASS |
+| `test_cluster.js` | modulo 1 | 74/74 |
+| `test_holes.js [s]` | modulo 2, + blocco "module 1 clusters" (sfondo+stampa senza falso foro, `hostI`, `expandPlacements`) | PASS |
+| `test_report.js [s]` | modulo 5, + colonna livello da pezzi raggruppati, + costo con margini crocini | PASS |
+| `test_regmarks.js [s]` | modulo 6 | 333 controlli, 0 falliti |
+| `test_raster.js [s]` | modulo 8 | PASS |
+| `test_combined.js [s]` | lettering + pezzi piccoli con fori ON, adesivo stampa+taglio, crocino su "Reg", 3 PNG DTF, crocini Graphtec, report | 28/28 |
+
+`SEED=n` fissa il seme del motore in `test_holes`, `test_combined` (default 7).
+
 ## Modulo 1 — Fedeltà al file (print&cut, kit veicoli) — 2026-09-23
 
 Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, il pannello decide i pezzi con
@@ -217,7 +292,7 @@ Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, i
 ### Limiti v1 (noti)
 - La traccia (strokeWidth) non allarga la sagoma: un tracciato stampato con traccia spessa sporge di metà traccia (la
   distanza la assorbe se ≥ traccia/2).
-- Raster/immagini in "Tutto il disegno" = rettangolo d'ingombro (conservativo, niente trasparenza → contorno: modulo 8).
+- Raster/immagini DENTRO un gruppo in "Tutto il disegno" = rettangolo d'ingombro (quelle di primo livello: contorno, modulo 8).
 - Un oggetto di stampa che copre due linee di taglio (sfondo unico per due adesivi) va a una sola ancora.
 - Lettura della geometria lenta sui file densi: ogni lettura DOM di un punto costa ~1-4 ms con Illustrator in
   background (misurato 24/09: 27 000 punti di Wikipedia20 = ~270 s di esportazione). Da valutare: esportazione in blocco
@@ -237,7 +312,50 @@ Il raggruppamento in pezzi NON sta più nell'host: l'host esporta gli oggetti, i
 - Aperture di file nei test: `app.userInteractionLevel = DONTDISPLAYALERTS` (un avviso sui profili colore CMYK bloccava
   ExtendScript con una finestra modale).
 
-## Modulo 5 — Report materiale e costo (2026-09-24, branch `modulo5-report`)
+## Modulo 2 — Pezzi dentro i fori (`client/js/holes.js`, 2026-09-24)
+
+jagua-rs/Sparrow non accetta item con fori (jagua-rs PR #96): i fori si riempiono PRIMA del nest, fuori dal motore,
+con un pre-pass deterministico in JS (nessuna modifica al wasm). File nuovo, puro, usabile in Node e nel pannello
+(`window.CorvoHoles`, richiede `CorvoGeometry` + `ClipperLib`). Aggancio in `main.js`/`index.html` marcato `// MODULO 2`.
+
+1. **Regioni libere** di ogni pezzo P = poligono Sparrow di P (contorno esterno, chiusura o inviluppo) MENO il disegno
+   di P (pari-dispari dentro ogni tracciato, unione tra tracciati se il pezzo porta `rg`) cresciuto di `gap + 0.05 pt`. Sono i controfori di O A R B D P Q 0 6 8 9, cornici,
+   anelli, guarnizioni, e anche le concavita' coperte da una chiusura/inviluppo. Regioni < 50 pt² ignorate. Le isole
+   dentro un foro (es. il disco centrale di un logo ad anello) restano ostacoli.
+2. **Riempimento greedy**: regioni per area decrescente; per ciascuna si provano i pezzi rimasti dal piu' grande, in
+   tutte le rotazioni ammesse dall'UI (Libera → 0/90/180/270). Le posizioni ammissibili sono ESATTE via somme di
+   Minkowski (inner-fit della regione meno i no-fit dei figli gia' messi, cresciuti di `gap`), usando l'inviluppo
+   convesso del figlio come pattern (conservativo). Si prende il vertice in basso a sinistra e si ricontrolla con
+   clipper (figlio dentro la regione, fuori dagli altri figli). Forme conservative: figlio = poligono Sparrow
+   semplificato GONFIANDO (≤ 40 vertici), regione = sgonfiata poi semplificata → distanza sempre ≥ `gap`.
+   Budget 2 s (`maxMs`); misurato 0.1–0.5 s su 26–46 pezzi.
+3. **Un livello**: un pezzo che riceve figli non diventa figlio, un figlio non riceve figli. Genitore + figli = UN
+   item Sparrow (il poligono del genitore: i figli sono dentro).
+4. **Contratto**: `planHoles(items, pieces, {gap, orientations})` →
+   `{children:[{id, parent, a, tx, ty}], parents, regions, usedRegions, emptyRegions, ms, timedOut}` dove
+   `(a, tx, ty)` porta il figlio dalla sua posizione ORIGINALE dentro il foro del genitore nella posizione ORIGINALE
+   del genitore. `nestPieces(pieces, plan)` toglie i figli e rinumera gli id 0..n-1 (Sparrow vuole id consecutivi;
+   `srcId` = id del pezzo, `hostI` copiato). `movesFor(placements, nestPieces, origin, plan)` = mosse `corvoApply` di
+   TUTTI i pezzi sull'indice del piano del modulo 1 (`hostI` se i pezzi sono stati rinumerati);
+   `expandPlacements(...)` = le stesse posizioni nel sistema della striscia per il report. Composizione:
+   figlio `a = a_P + a_c`, `t = R(a_P)·t_c + t_P` (stesso contratto assoluto per indice `i`, quindi `corvoRevert`
+   riporta anche i figli, e il colore spot dei figli resta intatto: solo trasformazioni).
+5. **UI**: casella "Usa i fori" / "Use holes" (default ON, ricordata in `localStorage corvo.holes`); nota di stato
+   "N pezzi nei fori". La densita' mostrata conta l'area di tutti i pezzi, figli compresi.
+
+Test: `node plugin/tools/test_holes.js [secondi]` (Node + wasm, niente Illustrator; contiene un piccolo parser SVG
+con archi/Bézier/trasformazioni). Set: Bebas Neue O A R B D 8 a 300 pt + 20 pezzi; le 9 lettere reali
+`BebasNeue_channel_letters_OARBDQ890.svg`; anello/guarnizione/cornice MDI + roundel Wikimedia (+ 26 o 40 pezzi); caso
+negativo senza pezzi che entrano. Verifica: tutti i pezzi piazzati e nel rotolo, nessuna sovrapposizione fra i disegni
+(even-odd), ogni figlio dentro il genitore con distanza ≥ gap dal genitore e dagli altri figli, composizione delle
+trasformazioni, lunghezza fori ON vs OFF (stesso seed) e tempo del pre-pass.
+
+Limiti noti: un solo livello di annidamento; il figlio e' trattato come convesso nel calcolo delle posizioni
+(niente incastri a L dentro un foro); il greedy non garantisce "mai peggio": quando il rotolo ha comunque spazio
+libero per i pezzi piccoli il guadagno e' ~0 e il rumore stocastico di Sparrow (±2%) domina; non ancora verificato
+in Illustrator (`test_e2e.js`).
+
+## Modulo 5 — Report materiale e costo (2026-09-24)
 
 File nuovi, isolati dal resto: `client/js/report.js` (logica pura, `window.CorvoReport` / `module.exports`),
 `client/js/report-panel.js` (solo DOM, `window.CorvoReportPanel`), `client/css/report.css`, sezione `<details id="m5">`
@@ -272,7 +390,7 @@ Blocco 1 = riepilogo con le colonne di FINDINGS-modulo4-6 §4 (deviazioni: impor
 velocita' cutter e modulo 4). Riga vuota, poi blocco 2 = un pezzo per riga: `n, nome, livello, area_mm2,
 rotazione_gradi, x_mm, y_mm, larghezza_mm, altezza_mm` (bbox del pezzo posato, coordinate del rotolo, origine in basso
 a sinistra). Celle con separatore/virgolette/a capo tra virgolette; testo che inizia con `= + - @` prefissato da `'`.
-`livello` = `item.layer` di `corvoExport` se l'host lo fornisce (modulo 1), altrimenti vuoto.
+`livello` = livelli del pezzo raggruppato del modulo 1 (`layers` uniti con " + "), o `item.layer`; vuoto senza modulo 1.
 Esporta: `window.cep.fs.showSaveDialogEx` nella cartella del documento (o Desktop se non salvato), scrittura con
 `fs.writeFileSync`; senza dialogo scrive accanto al documento; nel browser scarica il file.
 "Copia riepilogo": testo per preventivi (`toText`), `execCommand('copy')` con ripiego su `navigator.clipboard`.
@@ -330,15 +448,17 @@ due fasce laterali; ogni crocino ha un box (forma piena) e una zona di rispetto 
   `Corvo_Regmarks` e, per Mimaki, il rettangolo `Corvo_FineCut_Area` (telaio dei vertici) da usare con "Crea crocini"
   di FineCut. Ritorna `{"ok":true,"marks":n,"layer":".."}`.
 - `corvoRegmarksClear()` — toglie gruppo e rettangolo non confermati, rimuove i livelli crocini rimasti vuoti.
-- `corvoRegmarksFinish()` — Applica: rinomina in `Corvo_Regmarks_rif` / `Corvo_FineCut_Area_rif`, cosi' una
-  sessione successiva non li sostituisce.
+- `corvoRegmarksFinish()` — rinomina in `Corvo_Regmarks_rif` / `Corvo_FineCut_Area_rif`, cosi' una sessione
+  successiva non li sostituisce. Dal merge lo fa `corvoFinish` (stesso passo di annullamento); resta per compatibilita'.
+- Con una sessione Corvo aperta, `corvoRegmarks`/`corvoRegmarksClear` contano un passo in `st.steps` e memorizzano
+  l'ultimo payload in `st.rmPayload` (ridisegnato confermato da `corvo_singleUndo`, vedi "Integrazione dei moduli").
 
 ### Flusso pannello
 
 Menu "Crocini" (Nessuno, Graphtec, Summa, Roland, Mimaki; ricordato in `localStorage`). Durante la ricerca il rotolo
 arancione e' gia' quello intero (margini di testa/coda compresi). A fine ricerca (Stop o fine tempo) i crocini vengono
-disegnati come anteprima e gli avvisi compaiono nella riga di stato; Applica li ridisegna sul layout finale, li conferma
-e chiude la sessione; Annulla (o chiusura del pannello) chiama `corvoRegmarksClear()` prima di `corvoRevert()`.
+disegnati come anteprima e gli avvisi compaiono nella riga di stato; Applica li ridisegna sul layout finale e
+`corvoFinish` li conferma chiudendo la sessione (un solo Ctrl+Z); Annulla (o chiusura del pannello) chiama `corvoRegmarksClear()` prima di `corvoRevert()`.
 La lunghezza mostrata a fine ricerca e' quella del materiale usato (nest + margini crocini).
 
 ### Test
@@ -361,43 +481,67 @@ crocini a 1882-2080 mm di nest (fasce da 25-46 mm per lato).
   Roland/Mimaki possono richiedere di dividere il lavoro in pannelli: l'avviso `rmIntermediate` lo segnala.
 - Nessuna verifica ancora su plotter reale ne' in Illustrator (fase VERIFICA del loop).
 
-## Modulo 2 — Pezzi dentro i fori (`client/js/holes.js`, branch `modulo2-fori`)
+## Modulo 8 — DTF gang sheet: raster con contorno (2026-09-24)
 
-jagua-rs/Sparrow non accetta item con fori (jagua-rs PR #96): i fori si riempiono PRIMA del nest, fuori dal motore,
-con un pre-pass deterministico in JS (nessuna modifica al wasm). File nuovo, puro, usabile in Node e nel pannello
-(`window.CorvoHoles`, richiede `CorvoGeometry` + `ClipperLib`). Aggancio in `main.js`/`index.html` marcato `// MODULO 2`.
+Obiettivo: immagini trasparenti (PNG per DTF) nestate per la loro **silhouette reale** invece che per il rettangolo,
+con l'immagine che si muove col suo contorno. Tutte le aggiunte sono marcate `MODULO 8`.
 
-1. **Regioni libere** di ogni pezzo P = poligono Sparrow di P (contorno esterno, chiusura o inviluppo) MENO il disegno
-   di P (riempimento even-odd) cresciuto di `gap + 0.05 pt`. Sono i controfori di O A R B D P Q 0 6 8 9, cornici,
-   anelli, guarnizioni, e anche le concavita' coperte da una chiusura/inviluppo. Regioni < 50 pt² ignorate. Le isole
-   dentro un foro (es. il disco centrale di un logo ad anello) restano ostacoli.
-2. **Riempimento greedy**: regioni per area decrescente; per ciascuna si provano i pezzi rimasti dal piu' grande, in
-   tutte le rotazioni ammesse dall'UI (Libera → 0/90/180/270). Le posizioni ammissibili sono ESATTE via somme di
-   Minkowski (inner-fit della regione meno i no-fit dei figli gia' messi, cresciuti di `gap`), usando l'inviluppo
-   convesso del figlio come pattern (conservativo). Si prende il vertice in basso a sinistra e si ricontrolla con
-   clipper (figlio dentro la regione, fuori dagli altri figli). Forme conservative: figlio = poligono Sparrow
-   semplificato GONFIANDO (≤ 40 vertici), regione = sgonfiata poi semplificata → distanza sempre ≥ `gap`.
-   Budget 2 s (`maxMs`); misurato 0.1–0.5 s su 26–46 pezzi.
-3. **Un livello**: un pezzo che riceve figli non diventa figlio, un figlio non riceve figli. Genitore + figli = UN
-   item Sparrow (il poligono del genitore: i figli sono dentro).
-4. **Contratto**: `planHoles(items, pieces, {gap, orientations})` →
-   `{children:[{id, parent, a, tx, ty}], parents, regions, usedRegions, emptyRegions, ms, timedOut}` dove
-   `(a, tx, ty)` porta il figlio dalla sua posizione ORIGINALE dentro il foro del genitore nella posizione ORIGINALE
-   del genitore. `nestPieces(pieces, plan)` toglie i figli e rinumera gli id 0..n-1 (Sparrow vuole id consecutivi;
-   `srcId` = indice host). `movesFor(placements, nestPieces, origin, plan)` = mosse `corvoApply` di TUTTI i pezzi:
-   figlio `a = a_P + a_c`, `t = R(a_P)·t_c + t_P` (stesso contratto assoluto per indice `i`, quindi `corvoRevert`
-   riporta anche i figli, e il colore spot dei figli resta intatto: solo trasformazioni).
-5. **UI**: casella "Usa i fori" / "Use holes" (default ON, ricordata in `localStorage corvo.holes`); nota di stato
-   "N pezzi nei fori". La densita' mostrata conta l'area di tutti i pezzi, figli compresi.
+**Host (`host/corvo.jsx`, blocco `corvo_m8_*`).** `corvoExport({flatness, raster:true})`: un `PlacedItem` o `RasterItem`
+di primo livello diventa un pezzo con `rings: []` e
+`raster: {path, temp, kind:'linked'|'render', corners:{tl,tr,bl}}`, dove `corners` sono le coordinate documento dei
+vertici pixel (0,0), (W,0), (0,H) (y pixel in basso), piu' `name`, `layer`, `bounds` e `box` (= `visibleBounds`) come gli
+altri oggetti del modulo 1 (anche il controllo nascosti/bloccati vale). Senza `raster:true` l'immagine resta un rettangolo
+`other` (modulo 1).
+- `linked`: PNG collegato, esistente, matrice senza rotazione/inclinazione, `mValueA > 0` e
+  `mValueD·CORVO_M8_PLACED_DSIGN > 0` → file originale a piena risoluzione, corners dai `geometricBounds`.
+- `render`: tutto il resto (incorporato, TIF/PSD/JPG, ruotato, specchiato, `rasterRender:true`) → documento RGB temporaneo,
+  `duplicate`, tavola = `visibleBounds`, `exportFile(PNG24, transparency, artBoardClipping)` in `Folder.temp`
+  a `rasterPpi` (default 150) con lato massimo `rasterMaxPx` (default 4000 px, scala PNG24 1..776 %), chiusura senza salvare,
+  `doc.activate()`. Corners = `visibleBounds` dell'originale (pixel allineati agli assi). Il pannello cancella il PNG temporaneo.
 
-Test: `node plugin/tools/test_holes.js [secondi]` (Node + wasm, niente Illustrator; contiene un piccolo parser SVG
-con archi/Bézier/trasformazioni). Set: Bebas Neue O A R B D 8 a 300 pt + 20 pezzi; le 9 lettere reali
-`BebasNeue_channel_letters_OARBDQ890.svg`; anello/guarnizione/cornice MDI + roundel Wikimedia (+ 26 o 40 pezzi); caso
-negativo senza pezzi che entrano. Verifica: tutti i pezzi piazzati e nel rotolo, nessuna sovrapposizione fra i disegni
-(even-odd), ogni figlio dentro il genitore con distanza ≥ gap dal genitore e dagli altri figli, composizione delle
-trasformazioni, lunghezza fori ON vs OFF (stesso seed) e tempo del pre-pass.
+**Pannello (`client/js/raster.js`, `window.CorvoRaster` / `module.exports`).** `prepareItems(items, opts)` legge il file
+(fs), `decodePNG` (decoder scritto da noi: zlib di Node, filtri 0-4, Adam7, profondità 1-16, tipi 0/2/3/4/6 + tRNS; solo
+l'alfa), `trace(img, corners, opts)` e sostituisce `rings` con contorni esterni (CCW) + fori (CW) in coordinate documento,
+lo stesso formato di `corvoExport`: `geometry.buildPiece` non cambia.
+1. soglia alfa `alphaThreshold` 10 %; immagini > `maxPixels` (4 Mpx) ridotte con media a blocchi;
+2. pulizia = apertura morfologica per ricostruzione: una componente (8-conn) resta intera se sopravvive a un'apertura di
+   raggio `openPx` (1) e ha ≥ max(9, 1e-5·W·H) px (via i puntini, le linee sottili vere restano); fori < stessa soglia riempiti;
+3. marching squares sul campo alfa vincolato alla maschera pulita (bordo sub-pixel sull'anti-aliasing), selle = primo piano
+   8-connesso; esterni/fori per parità di contenimento;
+4. smoothing laplaciano leggero (2 passate 1/4-1/2-1/4) + Douglas-Peucker 0.5 px: niente gradini sui bordi netti;
+5. mappa pixel → documento con i 3 corners (qualsiasi affine: scala, rotazione, specchio);
+6. offset esterno Clipper (`offset`, pt). Il pannello usa `SAFETY_MM = 0.2 mm`: la separazione di Sparrow misurata sui
+   contorni veri può restare ~0.2 mm sotto la distanza impostata; con l'offset la distanza misurata è ≥ distanza.
+   La spaziatura vera e propria resta il `gap` di Sparrow (uguale per pezzi vettoriali e raster nello stesso nest).
+Modi (`Immagini` nel pannello): `contour` (default, "Trim transparency": il margine trasparente non conta) o `bbox`
+(rettangolo rifilato); `canvas` (rettangolo intero) solo per confronto. Immagine senza canale alfa / tRNS (`noAlpha`) o con
+< 0.1 % di pixel trasparenti (`noTransparency`) → rettangolo intero + avviso nella riga di stato; tutta trasparente →
+errore `empty`; file non PNG → errore `notPng`.
+**Preset** (`R.PRESETS`): DTF 22" = 558.8 mm e DTF 58 cm = 580 mm, distanza 6 mm; cambiare larghezza/distanza a mano torna
+a "Personalizzato".
 
-Limiti noti: un solo livello di annidamento; il figlio e' trattato come convesso nel calcolo delle posizioni
-(niente incastri a L dentro un foro); il greedy non garantisce "mai peggio": quando il rotolo ha comunque spazio
-libero per i pezzi piccoli il guadagno e' ~0 e il rumore stocastico di Sparrow (±2%) domina; non ancora verificato
-in Illustrator (`test_e2e.js`).
+**Test** `node plugin/tools/test_raster.js [secondi=20]` (Node, niente Illustrator): decoder (RGBA 8/16, Adam7, grigio+alfa,
+RGB, chiave tRNS, palette), pulizia (puntini, foro piccolo riempito, foro vero tenuto, diagonale senza gradini), 5 PNG reali di
+`bench/real/dtf`, mappatura ruotata+specchiata, offset, `prepareItems` (PNG temporaneo cancellato), poi nest wasm di 5 design × 6
+copie su 22", distanza 6 mm, rotazioni 90°:
+
+| PNG | px | contorni | fori | silhouette/bbox | scarto max px (maschera→contorno / ritorno) |
+|---|---|---|---|---|---|
+| donut | 618² | 1 | **1** | 71.6 % | 1.01 / 0.59 |
+| gatto | 618² | 1 | 0 | 49.3 % | 1.06 / 0.59 |
+| stella | 618² | 1 | 0 | 46.4 % | 1.03 / 0.59 |
+| farfalla | 618² | 1 | 0 | 60.5 % | 0.94 / 0.58 |
+| testo corsivo | 1899×446 | 13 | 5 | 16.6 % | 1.03 / 0.60 |
+
+Nest 30 copie, 20 s: silhouette **358 mm** (riempimento 42.9 %, distanza minima misurata sui contorni 6.15 mm), rettangolo
+rifilato 460 mm (33.5 %), rettangolo intero 657 mm (23.4 %) → **−22 % di rotolo** rispetto al bbox rifilato, −45 % rispetto
+all'immagine intera (a 5 s: −25 % / −47 %).
+
+**Limiti / da verificare in Illustrator.** Segno di `mValueD` per un PNG collegato dritto (`CORVO_M8_PLACED_DSIGN`, se
+sbagliato i PNG collegati passano comunque dal render, tranne quelli specchiati in verticale → contorno capovolto); render
+= documento temporaneo che compare un istante; solo immagini di primo livello (dentro un gruppo → rettangolo d'ingombro
+del modulo 1, dentro una maschera conta il tracciato di maschera); l'opacità dell'oggetto riduce l'alfa (sotto il 10 %
+sparisce); i fori del contorno ricevono pezzi piccoli (modulo 2); il testo in più parti passa per la chiusura morfologica
+di geometry. Il pannello chiede sempre `raster:true`: anche le immagini di un foglio print&cut (es. i 3 raster di
+test_modulo1) vengono tracciate (render temporaneo se non sono PNG collegati) — da misurare il tempo in Illustrator.
+PNG temporanei rimasti in `%TEMP%\corvo_m8_*.png` se l'export fallisce a metà.

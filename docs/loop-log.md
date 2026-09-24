@@ -56,3 +56,29 @@ rifare la base v0.1 con SEED fisso; (c) dopo Applica la disposizione sta sotto l
 le tavole → serve una tavola sul rotolo (modulo 5/6); (d) lettere di un logo non raggruppate (Wikimania "WIKIMANIA")
 diventano pezzi separati; (e) die-cut: l'etichetta "EXAMPLE" fuori dal taglio diventa un pezzo a sé (corretto ma da
 spiegare); (f) template kit moto/auto veri ancora mancanti (solo a pagamento).
+
+## 2026-09-24 — Merge moduli 2,5,6,8
+
+Branch `modulo5-report`, `modulo6-crocini`, `modulo2-fori`, `modulo8-dtf` (nati da e4b3f8a) uniti in quest'ordine sopra il
+modulo 1 (`--no-ff`, un commit di merge per modulo). Conflitti: `main.js`, `index.html`, `docs/plugin-architecture.md`
+a ogni merge, `corvo.jsx` con il modulo 8 (export riscritto dal modulo 1). Tutte le funzioni tenute.
+
+Adattamenti al modello del modulo 1 (dettagli in plugin-architecture.md, "Integrazione dei moduli"):
+- 5: colonna `livello` dai `layers` del pezzo raggruppato, `hostI` per i pezzi rinumerati, lunghezza originale dai `box`;
+  con i crocini costo e area sul rotolo intero + margini di testa/coda; righe anche per i pezzi nei fori.
+- 6: fascia dei crocini dentro il rotolo del modulo 1; disegno/rimozione crocini contati nei passi di annullamento e
+  ridisegnati confermati dentro `corvoFinish` → l'annullo unico (E2) vale anche con i crocini.
+- 2: fori calcolati con i gruppi `rg` (la stampa sopra lo sfondo non apre un falso foro), indici `hostI`,
+  `expandPlacements` per il report.
+- 8: immagini di primo livello esportate col formato del modulo 1 (layer, box, nascosti/bloccati) e tracciate PRIMA di
+  `planPieces` → diventano membri dei pezzi (si uniscono alla loro CutContour).
+
+Test Node (SEED=7): test_client PASS, test_cluster 74/74, test_report PASS (+3 controlli nuovi), test_regmarks 333/333
+(1 nest saltato come prima), test_holes PASS (+ blocco cluster: 6 pezzi nell'O, 0 sullo sfondo stampato), test_raster PASS,
+nuovo test_combined 28/28 (46 pezzi: 28 lettere, 14 piccoli di cui 11 nei fori, adesivo stampa+taglio unito, crocino "Reg"
+escluso, 3 PNG DTF; Graphtec: striscia 507,5 mm su 600, nessun pezzo nei rispetti; report 46 righe con livello).
+
+Da verificare in Illustrator (non usato in questo giro): annullo unico con crocini (un Ctrl+Z dopo Applica deve togliere
+anche i crocini, che poi devono restare `_rif` dopo Ctrl+Maiusc+Z); corvoExport con `raster:true` sui fogli print&cut
+di test_modulo1 (render temporaneo dei raster, tempi); PNG collegati (segno `CORVO_M8_PLACED_DSIGN`); test_e2e insegna48/
+lettering con fori ON e crocini; CSV con la colonna livello.
