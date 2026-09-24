@@ -131,6 +131,27 @@ function corvo_pathRing(path, tol) {
     return ring.length >= 3 ? ring : null;
 }
 
+/* PathItem aperto con estremi distinti -> polilinea APERTA (curve appiattite), anche con 2 soli punti (linee e archi
+   dei DXF). null se chiuso, se gli estremi coincidono (lo tratta corvo_pathRing) o se ha meno di 2 punti.
+   Il pannello (client/js/cluster.js, joinOpen) concatena le polilinee per estremi in contorni chiusi. */
+function corvo_pathLine(path, tol) {
+    if (path.closed) return null;
+    var pts = path.pathPoints, n = pts.length;
+    if (n < 2) return null;
+    var A = [], L = [], R = [], i;
+    for (i = 0; i < n; i++) {
+        var pp = pts[i];
+        A.push(pp.anchor); L.push(pp.leftDirection); R.push(pp.rightDirection);
+    }
+    if (Math.abs(A[0][0] - A[n - 1][0]) < 0.01 && Math.abs(A[0][1] - A[n - 1][1]) < 0.01) return null;
+    var line = [[A[0][0], A[0][1]]];
+    for (i = 0; i < n - 1; i++) {
+        if (corvo_same(R[i], A[i]) && corvo_same(L[i + 1], A[i + 1])) line.push([A[i + 1][0], A[i + 1][1]]);
+        else corvo_flatCubic(line, A[i], R[i], L[i + 1], A[i + 1], tol, 0);
+    }
+    return { pts: line, n: n };
+}
+
 /* ------------------------------------------------------------------ raccolta anelli */
 
 function corvo_unsupported(it) {
@@ -310,11 +331,18 @@ function corvo_scan(it, tol, acc, cutOnly) {
         if (it.guides) return;
         pp = corvo_pathPaint(it);
         if (cutOnly && !pp.cut) return;
-        if (!cutOnly) corvo_boxAddPath(acc, it);
-        if (!pp.visible && !it.clipping && !pp.cut) return;      // tracciato invisibile: non e' disegno
+        if (!pp.visible && !it.clipping && !pp.cut) {             // tracciato invisibile: non e' disegno
+            if (!cutOnly) corvo_boxAddPath(acc, it);
+            return;
+        }
         acc.g = (acc.g || 0) + 1;
+        // ingombro dai punti letti (geometricBounds di Illustrator puo' essere sbagliato: tracciati SVG di Inkscape
+        // con geometricBounds 170 mm piu' largo dei punti e di visibleBounds -> pezzi incollati; caso Deepnest #12)
+        var ln = acc.opens ? corvo_pathLine(it, tol) : null;
+        if (ln) { acc.opens.push({ pts: ln.pts, g: acc.g, cut: pp.cut || null, n: ln.n }); corvo_boxAddRing(acc, ln.pts); return; }
         r = corvo_pathRing(it, tol);
         if (r) corvo_addRing(acc, r, pp.cut);
+        else if (!cutOnly) corvo_boxAddPath(acc, it);
         return;
     }
     if (t === 'CompoundPathItem') {
@@ -324,12 +352,16 @@ function corvo_scan(it, tol, acc, cutOnly) {
         var clip = false;
         try { clip = !!it.pathItems[0].clipping; } catch (e0) { clip = false; }
         acc.g = (acc.g || 0) + 1;                                // i sottotracciati formano UNA forma (fori pari-dispari)
-        if (!cutOnly) corvo_boxAddPath(acc, it);
-        if (!pp.visible && !clip && !pp.cut) return;
+        if (!pp.visible && !clip && !pp.cut) { if (!cutOnly) corvo_boxAddPath(acc, it); return; }
         var sub = it.pathItems, ns = sub.length;                 // collezione letta una volta (ogni accesso DOM costa)
         for (i = 0; i < ns; i++) {
+            // sottotracciato aperto (curve spezzate Fusion 360 -> Inkscape, SVGnest #37): un arco a 2 punti finiva
+            // ignorato (corvo_pathRing vuole >= 3 punti) -> sagoma senza l'arco -> pezzi sovrapposti e fuori rotolo
+            var sl = acc.opens ? corvo_pathLine(sub[i], tol) : null;
+            if (sl) { acc.opens.push({ pts: sl.pts, g: acc.g, cut: pp.cut || null, n: sl.n }); corvo_boxAddRing(acc, sl.pts); continue; }
             r = corvo_pathRing(sub[i], tol);
-            if (r) corvo_addRing(acc, r, pp.cut);
+            if (r) corvo_addRing(acc, r, pp.cut);               // ingombro dai punti (vedi sopra)
+            else if (!cutOnly) corvo_boxAddPath(acc, sub[i]);
         }
         return;
     }
@@ -341,9 +373,9 @@ function corvo_scan(it, tol, acc, cutOnly) {
                     var cp = cps[i], subs = cp.typename === 'PathItem' ? [cp] : cp.pathItems;
                     acc.g = (acc.g || 0) + 1;
                     for (k = 0; k < subs.length; k++) {
-                        corvo_boxAddPath(acc, subs[k]);
                         r = corvo_pathRing(subs[k], tol);
                         if (r) corvo_addRing(acc, r, corvo_pathPaint(subs[k]).cut);
+                        else corvo_boxAddPath(acc, subs[k]);
                     }
                 }
                 for (i = 0; i < it.pageItems.length; i++) {
@@ -550,6 +582,38 @@ function corvo_m8_info(it, doc, idx, opts) {
     return r || corvo_m8_render(it, doc, idx, opts);
 }
 
+/* ------------------------------------------------------------------ DXF: unita' dichiarate nel file (P5, casi reali) */
+
+/*
+ * corvoDxfUnits() -> {dxf:false} oppure {dxf:true, insunits, measurement, extmin:[x,y], extmax:[x,y]} letti dall'header
+ * del .dxf da cui e' stato aperto il documento attivo (primi 256 KB). Il pannello confronta le misure dei pezzi con le
+ * unita' del file: Illustrator importa i DXF con la sua scala (1 unita' = 1 mm di default), non con $INSUNITS.
+ */
+function corvoDxfUnits() {
+    var res = { dxf: false };
+    try {
+        var f = app.activeDocument.fullName;
+        if (!f || !/\.dxf$/i.test(f.name) || !f.exists) return corvo_json(res);
+        res.dxf = true;
+        f.encoding = 'BINARY';
+        if (!f.open('r')) return corvo_json(res);
+        var txt = f.read(262144);
+        f.close();
+        var L = txt.split(/\r?\n/), i, k;
+        for (i = 0; i < L.length; i++) L[i] = L[i].replace(/^\s+|\s+$/g, '');
+        var hdr = { '$INSUNITS': 'insunits', '$MEASUREMENT': 'measurement', '$EXTMIN': 'extmin', '$EXTMAX': 'extmax' };
+        for (i = 0; i < L.length - 1; i++) {
+            if (L[i] === 'ENDSEC') break;
+            if (L[i] !== '9' || !hdr.hasOwnProperty(L[i + 1])) continue;
+            var key = hdr[L[i + 1]], vals = {};
+            for (k = i + 2; k < L.length - 1 && L[k] !== '9' && L[k] !== '0'; k += 2) vals[L[k]] = Number(L[k + 1]);
+            if (key === 'extmin' || key === 'extmax') res[key] = [vals['10'], vals['20']];
+            else res[key] = vals['70'];
+        }
+    } catch (e) { res.error = e.message; }
+    return corvo_json(res);
+}
+
 /* ------------------------------------------------------------------ export */
 
 /*
@@ -592,7 +656,7 @@ function corvoExport(optsJson) {
                 out.push({ i: raw.length - 1, name: nm, type: it.typename, layer: lname, rings: [], raster: ri, bounds: b8, box: b8 });
                 continue;
             }
-            var acc = { rings: [], rg: [], g: 0, cut: [], cutSpots: {}, other: [], text: 0, textBoxes: [], nonVector: 0, nonVectorTypes: {},
+            var acc = { rings: [], rg: [], g: 0, opens: [], cut: [], cutSpots: {}, other: [], text: 0, textBoxes: [], nonVector: 0, nonVectorTypes: {},
                         box: [1e30, -1e30, -1e30, 1e30] };
             try { corvo_scan(it, tol, acc, false); }
             catch (e) { return corvo_err('Oggetto ' + (i + 1) + ' (' + (nm || it.typename) + '): ' + e.message); }
@@ -619,6 +683,7 @@ function corvoExport(optsJson) {
             raw.push(it);
             var o = { i: idx, name: nm, type: it.typename, layer: lname, rings: acc.rings, bounds: rb || acc.box, box: acc.box };
             if (acc.rings.length) o.rg = acc.rg;                  // anello -> tracciato di provenienza (area riempita)
+            if (acc.opens.length) o.opens = acc.opens;            // tracciati aperti (DXF: LINE/ARC) -> cluster.joinOpen
             if (acc.cut.length) { o.cut = acc.cut; o.cutSpots = spots; }
             if (acc.other.length) o.other = acc.other;
             if (acc.text) { o.text = acc.text; if (acc.textBoxes.length === acc.text) o.textBoxes = acc.textBoxes; }

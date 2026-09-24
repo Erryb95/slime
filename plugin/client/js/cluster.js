@@ -251,6 +251,11 @@
       if (pure && cut.length && cut.length === rings.length) fb = it.box;
       else if (pure && rings.length === 1 && !cut.length && coversArtboard(it.box, o.artboards, o)) fb = it.box;
       if (!fb) continue;
+      // a sheet frame / background is a RECTANGLE (square or slightly rounded corners): a round or shaped outline
+      // around separate engravings is the part itself (LightBurn plaque: shield cut line + stars + text inside)
+      var ra = 0;
+      rings.forEach(function (r) { ra = Math.max(ra, geo().area(r)); });
+      if (ra < 0.85 * boxArea(fb)) continue;
       var inside = [];
       for (var b = 0; b < keep.length; b++) {
         if (b === a) continue;
@@ -282,6 +287,125 @@
     return [[l, bo], [r, bo], [r, t], [l, t], [(l + r) / 2, (bo + t) / 2]].every(function (p) { return pointInRings(p[0], p[1], rings); });
   }
 
+  // ---------------------------------------------------------------- open paths (DXF LINE / ARC / SPLINE entities)
+  /**
+   * CAD files reach Illustrator as loose open segments (a drawer front = 48 LINE + 4 ARC objects, each in its own
+   * group): no object has a closed contour. joinOpen chains the open polylines exported by the host (item.opens:
+   * [{pts, g, cut, n}]) by their endpoints (within tol pt, any item, any direction) into closed outlines:
+   *   - closed chain -> a ring on the item of its first segment (the "owner"), its box grown to the ring; every item
+   *     of the chain is linked, planPieces then keeps them in ONE piece (they move together, nothing is modified);
+   *   - open chain of several segments whose ends are within closeTol (small CAD gaps) -> closed by a straight segment;
+   *   - otherwise every polyline falls back to the v0.1 rule: closed by its chord when it has >= 3 anchors.
+   * Input items are never mutated (changed items are shallow copies).
+   * Returns {items, links:[[item...]], joined:{segments, loops, gaps}}.
+   */
+  function joinOpen(items, tol, closeTol) {
+    tol = tol > 0 ? tol : 0.25;
+    closeTol = closeTol > 0 ? closeTol : 2.8;   // ~1 mm
+    var segs = [];
+    items.forEach(function (it, x) {
+      (it.opens || []).forEach(function (o) {
+        if (o && o.pts && o.pts.length >= 2) segs.push({ x: x, pts: o.pts, g: o.g, cut: o.cut || null, n: o.n || o.pts.length });
+      });
+    });
+    var res = { items: items, links: [], joined: { segments: 0, loops: 0, gaps: 0 } };
+    if (!segs.length) return res;
+    var cell = Math.max(4 * tol, 1), grid = {}, used = [];
+    function key(cx, cy) { return cx + ',' + cy; }
+    function addEnd(p, s, end) { var k = key(Math.floor(p[0] / cell), Math.floor(p[1] / cell)); (grid[k] = grid[k] || []).push({ s: s, end: end }); }
+    segs.forEach(function (sg, i) { used.push(false); addEnd(sg.pts[0], i, 0); addEnd(sg.pts[sg.pts.length - 1], i, 1); });
+    function near(a, b, t) { return Math.abs(a[0] - b[0]) <= t && Math.abs(a[1] - b[1]) <= t; }
+    function findAt(p) {
+      var cx = Math.floor(p[0] / cell), cy = Math.floor(p[1] / cell);
+      for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) {
+        var list = grid[key(cx + dx, cy + dy)];
+        if (!list) continue;
+        for (var q = 0; q < list.length; q++) {
+          var e = list[q], P = segs[e.s].pts;
+          if (!used[e.s] && near(e.end ? P[P.length - 1] : P[0], p, tol)) return e;
+        }
+      }
+      return null;
+    }
+    var copies = {}, rest = [];
+    function copyOf(x) {
+      if (!copies[x]) {
+        var it = items[x], c = {}, k;
+        for (k in it) if (Object.prototype.hasOwnProperty.call(it, k)) c[k] = it[k];
+        var rs = it.rings || [];
+        c.rings = rs.slice();
+        if (it.rg && it.rg.length === rs.length) c.rg = it.rg.slice(); else if (!rs.length) c.rg = []; else delete c.rg;
+        c.cut = (it.cut || []).slice();
+        c.cutSpots = (it.cutSpots || []).slice();
+        c.box = it.box.slice();
+        delete c.opens;
+        copies[x] = c;
+      }
+      return copies[x];
+    }
+    function addRing(x, ring, gid, cut) {
+      var c = copyOf(x);
+      c.rings.push(ring);
+      if (c.rg) c.rg.push(gid);
+      if (cut) { c.cut.push(c.rings.length - 1); if (c.cutSpots.indexOf(cut) < 0) c.cutSpots.push(cut); }
+      for (var k = 0; k < ring.length; k++) {
+        var p = ring[k];
+        if (p[0] < c.box[0]) c.box[0] = p[0];
+        if (p[0] > c.box[2]) c.box[2] = p[0];
+        if (p[1] > c.box[1]) c.box[1] = p[1];
+        if (p[1] < c.box[3]) c.box[3] = p[1];
+      }
+    }
+    for (var s = 0; s < segs.length; s++) {
+      if (used[s]) continue;
+      used[s] = true;
+      var pts = segs[s].pts.slice(), mem = [s], closed = false, fwd = true, bwd = true, e;
+      while (fwd || bwd) {
+        if (pts.length > 2 && near(pts[0], pts[pts.length - 1], tol)) { closed = true; break; }
+        if (fwd) {
+          e = findAt(pts[pts.length - 1]);
+          if (e) { var P = segs[e.s].pts; used[e.s] = true; mem.push(e.s); pts = pts.concat(e.end ? P.slice(0, -1).reverse() : P.slice(1)); continue; }
+          fwd = false;
+        }
+        if (bwd) {
+          e = findAt(pts[0]);
+          if (e) { var Q = segs[e.s].pts; used[e.s] = true; mem.push(e.s); pts = (e.end ? Q.slice(0, -1) : Q.slice(1).reverse()).concat(pts); continue; }
+          bwd = false;
+        }
+      }
+      var gap = !closed && mem.length > 1 && pts.length > 2 && near(pts[0], pts[pts.length - 1], closeTol);
+      if (closed || gap) {
+        if (closed) pts.pop();
+        var owner = segs[mem[0]].x, xs = [], allCut = segs[mem[0]].cut;
+        mem.forEach(function (m) { if (xs.indexOf(segs[m].x) < 0) xs.push(segs[m].x); if (segs[m].cut !== allCut) allCut = null; });
+        addRing(owner, pts, 900000 + res.joined.loops, allCut);
+        xs.forEach(function (x) { copyOf(x); });
+        if (xs.length > 1) res.links.push(xs);
+        res.joined.segments += mem.length; res.joined.loops++;
+        if (gap) res.joined.gaps++;
+      } else mem.forEach(function (m) { rest.push(m); });
+    }
+    // an open line/arc left over INSIDE an object that has a shape (compound path with a broken curve, SVGnest #37)
+    // must still count for collisions: thin ring around it (0.25 pt), never dropped
+    function strokeRing(pts) {
+      var C = geo()._internals.lib(), co = new C.ClipperOffset(2, 25), out = new C.Paths();
+      co.AddPath(pts.map(function (p) { return { X: Math.round(p[0] * 1000), Y: Math.round(p[1] * 1000) }; }), C.JoinType.jtRound, C.EndType.etOpenRound);
+      co.Execute(out, 250);
+      var best = null, ba = 0;
+      out.forEach(function (q) { var a = Math.abs(C.Clipper.Area(q)); if (a > ba) { ba = a; best = q; } });
+      return best ? best.map(function (q) { return [q.X / 1000, q.Y / 1000]; }) : null;
+    }
+    rest.forEach(function (m) {                   // v0.1: an open path with >= 3 anchors is closed by its chord
+      var sg = segs[m], c = copies[sg.x], has = (items[sg.x].rings || []).length > 0 || (c && c.rings.length > 0);
+      if (sg.n >= 3 && sg.pts.length >= 3) addRing(sg.x, sg.pts.slice(), sg.g, sg.cut);
+      else if (has) { var sr = strokeRing(sg.pts); if (sr) addRing(sg.x, sr, sg.g, sg.cut); else copyOf(sg.x); }
+      else copyOf(sg.x);
+    });
+    res.items = items.map(function (it, x) { return copies[x] || it; });
+    res.links = res.links.map(function (xs) { return xs.map(function (x) { return res.items[x]; }); });
+    return res;
+  }
+
   /**
    * items: corvoExport().items  ({i, name, layer, rings, cut?, other?, text?, nonVector?, box})
    * opts : {merge, shape, tol, touch, artboards, ...DEFAULTS}
@@ -297,13 +421,17 @@
     for (k in DEFAULTS) o[k] = DEFAULTS[k];
     for (k in (opts || {})) if (opts[k] !== undefined) o[k] = opts[k];
     items = (items || []).filter(function (it) { return it && validBox(it.box); });
+    // 0. open segments (DXF) -> closed outlines; the items of one outline stay together (links)
+    var jo = joinOpen(items, o.joinTol, o.joinCloseTol), chained = [];
+    items = jo.items;
+    jo.links.forEach(function (l) { l.forEach(function (it) { chained.push(it); }); });
 
     // 1. registration marks
     var excluded = [], keep = [];
     if (o.regMarks) {
       var boxes = items.map(function (it) { return it.box; });
       items.forEach(function (it) {
-        if (isRegLayerName(it.layer) || looksLikeRegMark(it, o.artboards, boxes, o)) excluded.push({ i: it.i, name: it.name || it.type || ('#' + it.i), reason: 'regMark', layer: it.layer });
+        if (isRegLayerName(it.layer) || (chained.indexOf(it) < 0 && looksLikeRegMark(it, o.artboards, boxes, o))) excluded.push({ i: it.i, name: it.name || it.type || ('#' + it.i), reason: 'regMark', layer: it.layer });
         else keep.push(it);
       });
     } else keep = items.slice();
@@ -329,6 +457,19 @@
     if (o.merge && keep.length > 1 && o.shape === 'cut') groups = clusterCutAnchored(keep, o);
     else if (o.merge && keep.length > 1) groups = clusterBoxes(keep.map(function (it) { return it.box; }), o.tol, makeToucher(keep, o.touch));
     else groups = keep.map(function (_, x) { return [x]; });
+    if (jo.links.length) {                                  // one DXF outline = one piece, whatever the boxes say
+      var gOf = {}, guf = makeUF(groups.length);
+      groups.forEach(function (g, gi) { g.forEach(function (x) { gOf[x] = gi; }); });
+      jo.links.forEach(function (l) {
+        var gs = l.map(function (it) { return gOf[keep.indexOf(it)]; }).filter(function (v) { return v !== undefined; });
+        for (var q = 1; q < gs.length; q++) guf.union(gs[0], gs[q]);
+      });
+      var mg = {}, mgd = [];
+      groups.forEach(function (g, gi) { var r = guf.find(gi); if (!mg[r]) { mg[r] = []; mgd.push(mg[r]); } mg[r].push.apply(mg[r], g); });
+      mgd.forEach(function (g) { g.sort(function (x, y) { return x - y; }); });
+      mgd.sort(function (x, y) { return x[0] - y[0]; });
+      groups = mgd;
+    }
 
     // 3. shape per cluster
     var pieces = [], textN = 0, textInside = 0, textNames = [], rasterNames = [], noContour = [], fallback = 0, mergedObjects = 0, nonVector = 0;
@@ -340,7 +481,8 @@
         var rs = it.rings || [], cut = it.cut || [], rg = it.rg && it.rg.length === rs.length ? it.rg : null;
         // ring -> source path key (member * 1e6 + path id): the filled area is computed per path (even-odd inside a
         // compound path), then united across paths, so overlapping print shapes do not cancel each other
-        var key = function (q) { return m * 1e6 + (rg ? rg[q] : q); };
+        // joined DXF outlines (rg >= 900000, cluster.joinOpen): ONE even-odd shape per piece (outline + its holes)
+        var key = function (q) { var v = rg ? rg[q] : q; return rg && v >= 900000 ? 1e12 : m * 1e6 + v; };
         for (var c = 0; c < cut.length; c++) if (rs[cut[c]]) { cutRings.push(rs[cut[c]]); cutRg.push(key(cut[c])); }
         for (var q = 0; q < rs.length; q++) { allRings.push(rs[q]); allRg.push(key(q)); }
         (it.other || []).forEach(function (r) { otherRings.push(r); otherRg.push(-1 - otherRg.length); });
@@ -401,6 +543,7 @@
       warnings: { regMarks: regN, sheetFrames: frames.length, sheetFrameNames: frames,
                   lockedFrames: lockedFrame.length ? lcInfo(lockedFrame) : null, cutFallback: fallback, noContour: noContour.length, noContourNames: noContour,
                   merged: { objects: mergedObjects, pieces: groups.filter(function (g) { return g.length > 1; }).length },
+                  joined: jo.joined,
                   nonVector: nonVector, textInside: textInside }
     };
     if (lockedHit.length) {
@@ -415,6 +558,6 @@
     DEFAULTS: DEFAULTS,
     boxesOverlap: boxesOverlap, boxInside: boxInside, boxUnion: boxUnion,
     isRegLayerName: isRegLayerName, looksLikeRegMark: looksLikeRegMark,
-    clusterBoxes: clusterBoxes, clusterCutAnchored: clusterCutAnchored, planPieces: planPieces
+    clusterBoxes: clusterBoxes, clusterCutAnchored: clusterCutAnchored, joinOpen: joinOpen, planPieces: planPieces
   };
 });

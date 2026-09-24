@@ -940,3 +940,18 @@ test_license controlla anche il piede.
   il pacchetto non ne ha e l'installer non usa UPIA.
 - La protezione della prova è "non banale", non inviolabile (cancellare entrambi i posti la azzera; il JS è leggibile).
 - Il limite di 10 pezzi conta i pezzi del piano (figli nei fori compresi), non gli oggetti originali di Illustrator.
+
+## Casi reali (2026-09-24, `docs/casi-reali.md`)
+
+- Host: `corvoExport` esporta i tracciati aperti con estremi distinti (anche i sottotracciati dei composti) in
+  `item.opens: [{pts, g, cut, n}]` invece di chiuderli con la corda; l'ingombro `box` viene dai punti letti
+  (`geometricBounds` solo per i tracciati senza anello: su SVG di Inkscape è sbagliato fino a 170 mm).
+  Nuovo `corvoDxfUnits()` → `{dxf, insunits, measurement, extmin, extmax}` dall'header del .dxf del documento attivo.
+- Pannello: `cluster.joinOpen(items, tol=0.25, closeTol=2.8)` all'inizio di `planPieces`: contorni chiusi dai segmenti
+  (DXF), oggetti di un contorno legati in un pezzo, anelli uniti `rg >= 900000` = una forma pari-dispari per pezzo;
+  linee non concatenabili dentro un oggetto con forma → anello sottile 0,25 pt; altrimenti regola v0.1 (corda se ≥ 3 punti).
+  Cornice del foglio (`findFrames`) solo se rettangolare (area ≥ 85 % del riquadro). Nota `noteJoined`, `compoundNote`, `dxf*`.
+- `geometry.buildPiece`: P1 `ringArea` (Clipper), P2 `densePoints` 5000 / `maxParts` 16, P3 `simplify` gonfia t/2 e
+  DP t/2, P4 `buildPieces` senza `maxVertices` usa `vertexCap(N) = clamp(6000/N, 32, 200)`.
+- `guardInstance` non modifica più l'istanza: il wasm (`wasm/src/lib.rs`) parte da una striscia larga almeno
+  diametro massimo + 2 gap + 1 (niente panic "empty polygon" né "could not construct an initial placement").

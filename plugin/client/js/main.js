@@ -36,6 +36,7 @@
       running: 'Searching… pieces move live. Stop keeps the best layout.',
       exploration: 'exploring', compression: 'compressing', done: 'finished',
       hullNote: '{n} multi-part piece(s) approximated by their convex hull.',
+      compoundNote: '"{name}" is ONE object with {parts} separate shapes and moves as a single piece. To nest the shapes one by one: Object > Compound Path > Release (or Ungroup), then Nest again.',
       doneMsg: 'Finished: {len} mm, fill {fill}%. Apply to keep, Cancel to restore.',
       stoppedMsg: 'Stopped: {len} mm, fill {fill}%. Apply to keep, Cancel to restore.',
       applied: 'Layout applied.',
@@ -57,6 +58,11 @@
       noteSkipped: '{n} hidden or locked object(s) skipped.',
       noteFallback: '{n} piece(s) without a cut line: whole artwork used.',
       noteNoContour: '{n} object(s) without a closed contour left in place.',
+      noteJoined: '{segments} open segments (DXF lines/arcs) joined into {loops} closed outline(s).',
+      dxfScale: 'DXF in {unit}: the drawing should measure {fw} x {fh} mm but here it measures {dw} x {dh} mm (x{ratio}). Reopen it with Illustrator\'s DXF scale set to 1 unit = 1 {unit} before cutting.',
+      dxfUnit: 'DXF in {unit} ($INSUNITS): here the pieces measure {dw} x {dh} mm. Illustrator imports 1 unit = 1 mm unless told otherwise: check the size before cutting.',
+      dxfNoUnit: 'DXF without units: here the pieces measure {dw} x {dh} mm (if the drawing was in inches: {iw} x {ih} mm). Check the size before cutting.',
+      dxfHuge: 'The DXF pieces span {dw} x {dh} mm: wrong units? Check the DXF import scale.',
       errText: '{n} live text frame(s) define the shape of {names}: convert them with Type > Create Outlines (Shift+Ctrl+O), or choose "Cut line only".',
       errTextCut: '{n} live text frame(s) in {names}, which has no cut line (no CutContour/Thru-cut spot color), so the artwork defines the shape: convert the text with Type > Create Outlines (Shift+Ctrl+O) or add a cut path.',
       errRasterOnly: '{n} image(s) without a vector contour ({names}): place a cut path or a vector shape over them, or select them together with it.',
@@ -123,6 +129,11 @@
       noteSkipped: '{n} oggetti nascosti o bloccati ignorati.',
       noteFallback: '{n} pezzi senza linea di taglio: uso tutto il disegno.',
       noteNoContour: '{n} oggetti senza contorno chiuso lasciati al loro posto.',
+      noteJoined: '{segments} segmenti aperti (linee/archi DXF) uniti in {loops} contorni chiusi.',
+      dxfScale: 'DXF in {unit}: il disegno dovrebbe misurare {fw} x {fh} mm ma qui misura {dw} x {dh} mm (x{ratio}). Riaprilo con la scala DXF di Illustrator a 1 unità = 1 {unit} prima di tagliare.',
+      dxfUnit: 'DXF in {unit} ($INSUNITS): qui i pezzi misurano {dw} x {dh} mm. Illustrator importa 1 unità = 1 mm se non indicato: controlla le misure prima di tagliare.',
+      dxfNoUnit: 'DXF senza unità: qui i pezzi misurano {dw} x {dh} mm (se il disegno era in pollici: {iw} x {ih} mm). Controlla le misure prima di tagliare.',
+      dxfHuge: 'I pezzi del DXF occupano {dw} x {dh} mm: unità sbagliate? Controlla la scala di importazione DXF.',
       errText: '{n} cornici di testo vivo definiscono la forma di {names}: convertile con Testo > Crea contorni (Maiusc+Ctrl+O) oppure scegli "Solo linea di taglio".',
       errTextCut: '{n} cornici di testo vivo in {names}, che non ha una linea di taglio (nessuna tinta CutContour/Thru-cut), quindi la forma è il disegno: converti il testo con Testo > Crea contorni (Maiusc+Ctrl+O) o aggiungi un tracciato di taglio.',
       errRasterOnly: '{n} immagini senza contorno vettoriale ({names}): mettici sopra un tracciato di taglio o una forma vettoriale, o selezionale insieme.',
@@ -458,6 +469,28 @@
     });
   }
 
+  // ---------------------------------------------------------------- P5 (casi reali): unita' del DXF
+  // header del file (host corvoDxfUnits) vs misure dei pezzi nel documento: Illustrator importa con la SUA scala
+  var DXF_UNITS = { 1: ['in', 25.4], 2: ['ft', 304.8], 4: ['mm', 1], 5: ['cm', 10], 6: ['m', 1000], 9: ['mil', 0.0254], 10: ['yd', 914.4], 14: ['dm', 100] };
+  function dxfNote(u, pieces) {
+    if (!u || !u.dxf || !pieces || !pieces.length) return '';
+    var b = null;
+    pieces.forEach(function (x) { var q = x.box; if (!q) return; b = b ? [Math.min(b[0], q[0]), Math.max(b[1], q[1]), Math.max(b[2], q[2]), Math.min(b[3], q[3])] : q.slice(); });
+    if (!b) return '';
+    var dw = (b[2] - b[0]) / MM, dh = (b[1] - b[3]) / MM, f1 = function (v) { return fmt(v, v < 100 ? 1 : 0); };
+    var U = DXF_UNITS[u.insunits];
+    var ok = function (e) { return e && isFinite(e[0]) && isFinite(e[1]) && Math.abs(e[0]) < 1e15 && Math.abs(e[1]) < 1e15; };
+    if (U && ok(u.extmin) && ok(u.extmax) && u.extmax[0] > u.extmin[0] && u.extmax[1] > u.extmin[1]) {
+      var fw = (u.extmax[0] - u.extmin[0]) * U[1], fh = (u.extmax[1] - u.extmin[1]) * U[1], ratio = Math.max(dw, dh) / Math.max(fw, fh);
+      // a partial selection is smaller than the file: warn only on unit-sized errors (x25.4, x2.83 pt/mm, ...)
+      if (ratio > 1.1 || ratio < 0.36)
+        return t('dxfScale', { unit: U[0], fw: f1(fw), fh: f1(fh), dw: f1(dw), dh: f1(dh), ratio: fmt(ratio, 3) });
+    } else if (U && U[0] !== 'mm') return t('dxfUnit', { unit: U[0], dw: f1(dw), dh: f1(dh) });
+    else if (!U) return t('dxfNoUnit', { dw: f1(dw), dh: f1(dh), iw: f1(dw * 25.4), ih: f1(dh * 25.4) });
+    if (dw > 3000 || dh > 3000) return t('dxfHuge', { dw: f1(dw), dh: f1(dh) });
+    return '';
+  }
+
   // ---------------------------------------------------------------- MODULO 3: copie e coppie specchiate
   // corvoExport, oppure l'esportazione di "Leggi selezione" se la selezione non e' cambiata (firma veloce: tipo +
   // ingombro di ogni oggetto): sui file densi l'esportazione costa minuti, non va fatta due volte. Usata una volta sola.
@@ -671,6 +704,7 @@
       if (w.lockedFrames) notes.push(t('noteLockedFrame', { names: w.lockedFrames.spots.join(', '), layers: w.lockedFrames.layers.join(', ') }));
       if (skipped) notes.push(t('noteSkipped', { n: skipped }));
       if (w.cutFallback) notes.push(t('noteFallback', { n: w.cutFallback }));
+      if (w.joined && w.joined.loops) notes.push(t('noteJoined', w.joined));
       if (w.noContour) notes.push(t('noteNoContour', { n: w.noContour }));
       if (rasterNote) notes.push(rasterNote);   // MODULO 8
       if (plan.groups && plan.mixed && plan.mixed.length) notes.push(t('mnMixed', { n: plan.mixed.length }));   // MODULO 4
@@ -679,6 +713,8 @@
       if (QP()) QP().fill(plan.pieces);   // MODULO 3: tabella delle copie
       setStatus('preparing', { n: plan.pieces.length });
       return hostCall('corvoGroup', plan.pieces.map(function (x) { return x.members; })).then(function () {
+        return /\.dxf$/i.test(doc.name || '') ? hostCall('corvoDxfUnits').then(function (u) { var n = dxfNote(u, plan.pieces); if (n) notes.push(n); }, function () {}) : null;
+      }).then(function () {
         return { items: plan.pieces, notes: notes, doc: doc };
       });
     }).then(function (pl) {
@@ -719,6 +755,9 @@
       S.areaSum = pieces.reduce(function (s, x) { return s + x.area; }, 0);
       S.budget = p.time;
       if (hulls) pl.notes.push(t('hullNote', { n: hulls }));
+      // one object (e.g. a boolean union of a whole sheet, Deepnest #12) made of many separate shapes: say so
+      var multi = pieces.filter(function (x) { var it = items[x.hostI !== undefined ? x.hostI : x.id]; return x.parts >= 3 && it && it.members && it.members.length === 1; });
+      if (multi.length) pl.notes.push(t('compoundNote', { name: multi[0].name, parts: multi[0].parts }));
       S.note = pl.notes.join(' ');
       if (mnMode(p)) return mnStart(me, p, pieces, items, doc, gapPt, orient);   // MODULO 4/7: sequenza di nest
 

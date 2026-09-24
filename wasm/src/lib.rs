@@ -121,8 +121,16 @@ pub fn nest(
         config.min_item_separation,
         config.narrow_concavity_cutoff_ratio,
     );
-    let instance = jagua_rs::probs::spp::io::import_instance(&importer, &ext_instance)
+    let mut instance = jagua_rs::probs::spp::io::import_instance(&importer, &ext_instance)
         .map_err(|e| JsValue::from_str(&format!("could not import instance: {e}")))?;
+    // jagua-rs starts the strip at width = item area / height and deflates it by the separation: with a few small
+    // pieces and a large gap (tiny DXF/SVG, casi reali Deepnest #3/#29/#148) that width is below the gap and the
+    // container offset panics ("Offset resulted in an empty polygon"). Start at least one piece + two gaps wide.
+    let max_diam = instance.items.iter().map(|(item, _)| item.shape_cd.diameter).fold(0.0f32, f32::max);
+    let min_width = max_diam + 2.0 * min_separation.max(0.0) + 1.0;
+    if instance.base_strip.width < min_width {
+        instance.base_strip.set_width(min_width);
+    }
 
     let rng = Xoshiro256PlusPlus::seed_from_u64(seed);
     let mut listener = JsListener { callback: on_report, phase: "exploration" };

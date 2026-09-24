@@ -25,7 +25,11 @@
   'use strict';
 
   var SCALE = 1000;          // clipper works on integers: 0.001 pt resolution
-  var DEFAULTS = { gap: 0, flatness: 0.5, minRingArea: 0.5, maxVertices: 200, minClosing: 2 };
+  var DEFAULTS = { gap: 0, flatness: 0.5, minRingArea: 0.5, maxVertices: 200, minClosing: 2, densePoints: 5000, maxParts: 16 };
+  // P4: the engine needs ~1.5 ms per vertex before its first layout: with many pieces the vertex cap per piece shrinks
+  // (clamp(VERTEX_BUDGET / pieces, 32, 200)) so the first layout arrives inside the time budget
+  var VERTEX_BUDGET = 6000;
+  function vertexCap(n) { return Math.max(32, Math.min(200, Math.round(VERTEX_BUDGET / Math.max(1, n)))); }
 
   function lib() {
     var C = ClipperLibInit || (typeof window !== 'undefined' && window.ClipperLib) ||
@@ -248,18 +252,29 @@
     return outers(offset(grown, -r, tol));
   }
 
-  // inflate by tol then DP with tol => result (approximately) contains the input
-  function simplify(ring, tol, maxV) {
-    var t = tol, base = toPath(ring);
+  // inflate by t/2 (+ extra) then DP with t/2 => result (approximately) contains the input and stays within ~t of it
+  // (P3, casi reali: inflating by t and DP by t let the proxy drift ~2t away: 0.69 mm of waste per side on SVGnest #27).
+  // extra: points already removed inside the outline by a pre-simplification (dense pieces, P2) -> added to the inflation.
+  function simplify(ring, tol, maxV, extra) {
+    var t = tol, base = toPath(ring), ex = extra > 0 ? extra : 0;
     for (var it = 0; it < 10; it++) {
-      var grown = largest(outers(offset([base], t, t / 2)));
+      var grown = largest(outers(offset([base], t / 2 + ex, t / 4)));
       if (grown) {
-        var s = cleanRing(douglasPeucker(cleanRing(fromPath(grown)), t));
+        var s = cleanRing(douglasPeucker(cleanRing(fromPath(grown)), t / 2));
         if (s.length >= 3 && s.length <= maxV && isSimple(s)) return { ring: s, tol: t };
       }
       t *= 1.6;
     }
     return null;
+  }
+
+  // P1: area of ONE ring as drawn (non-zero): the shoelace area cancels on a symmetric figure-8 / bow tie
+  function ringArea(r) {
+    var a = area(r);
+    if (a > 0 && r.length < 4) return a;
+    var u = union([toPath(r)], lib().PolyFillType.pftNonZero), s = 0;
+    for (var i = 0; i < u.length; i++) s += pathArea(u[i]);
+    return Math.max(a, s);
   }
 
   /**
@@ -273,18 +288,33 @@
     opts = Object.assign({}, DEFAULTS, opts || {});
     var id = item.i, name = item.name || ('#' + item.i);
     var src = item.rings || [], rgIn = item.rg && item.rg.length === src.length ? item.rg : null;
-    var rings = [], rg = [];
-    for (var q = 0; q < src.length; q++) {
+    var rings = [], rg = [], npts = 0, q;
+    for (q = 0; q < src.length; q++) {
       var cr = cleanRing(src[q]);
-      if (cr.length >= 3 && area(cr) >= opts.minRingArea) { rings.push(cr); if (rgIn) rg.push(rgIn[q]); }
+      // shoelace first (cheap); a self-intersecting ring whose lobes cancel (figure-8) is measured with Clipper (P1)
+      if (cr.length >= 3 && (area(cr) >= opts.minRingArea || ringArea(cr) >= opts.minRingArea)) { rings.push(cr); npts += cr.length; if (rgIn) rg.push(rgIn[q]); }
     }
     if (!rings.length) return { id: id, name: name, error: 'no closed contour' };
+    // P2: a dense piece (Deepnest #12: ONE compound path, 404 subpaths) would take minutes in the clipper steps below:
+    // pre-simplify every ring at flatness/2 (the proxy is inflated by the same amount to stay conservative)
+    var extra = 0;
+    if (npts > opts.densePoints) {
+      extra = opts.flatness / 2;
+      rings = rings.map(function (r) { return cleanRing(douglasPeucker(r, extra)); });
+      var keepIdx = [];
+      rings.forEach(function (r, k) { if (r.length >= 3) keepIdx.push(k); });
+      rings = keepIdx.map(function (k) { return rings[k]; });
+      if (rgIn) rg = keepIdx.map(function (k) { return rg[k]; });
+      if (!rings.length) return { id: id, name: name, error: 'no closed contour' };
+    }
 
     var all = [].concat.apply([], rings);
     var pieceArea = filledArea(rings, rgIn ? rg : null);
     var parts = silhouette(rings), method = 'single', outer = null;
     if (parts.length === 1) {
       outer = fromPath(parts[0]);
+    } else if (parts.length > opts.maxParts) {
+      outer = convexHull(all); method = 'hull';            // P2: many separate shapes in one object: no closing
     } else if (parts.length > 1) {
       var b = bbox(all), diag = Math.hypot(b[2] - b[0], b[3] - b[1]);
       var r0 = Math.max(opts.gap || 0, opts.minClosing);
@@ -299,7 +329,7 @@
     if (!outer || outer.length < 3) { outer = convexHull(all); method = 'hull'; }
     outer = cleanRing(outer);
 
-    var simp = simplify(outer, opts.flatness, opts.maxVertices);
+    var simp = simplify(outer, opts.flatness, opts.maxVertices, extra);
     var poly;
     if (simp) poly = simp.ring;
     else {
@@ -317,7 +347,10 @@
   }
 
   function buildPieces(items, opts) {
-    return (items || []).map(function (it) { return buildPiece(it, opts); });
+    items = items || [];
+    var o = Object.assign({}, opts || {});
+    if (!(o.maxVertices > 0)) o.maxVertices = vertexCap(items.length);   // P4
+    return items.map(function (it) { return buildPiece(it, o); });
   }
 
   // smallest extent (across the strip) of a polygon over the given rotations (deg); null = free
@@ -349,28 +382,14 @@
     };
   }
 
-  // Engine guard (merge 3/4-7/9): jagua-rs starts the strip at width = item area / strip height and deflates it by
-  // gap/2 per side; when that width is below the gap (a few small pieces on a wide roll, e.g. one colour group of dots)
-  // the strip polygon is empty and the wasm PANICS ("Offset resulted in an empty polygon", worker dead).
-  // Fix: lower strip_height (never below what every piece needs in an allowed orientation) until area / height >=
-  // 4 x gap. The layout then lies in [0, h] inside the real roll [0, H]: still valid, placements unchanged in meaning.
-  function guardInstance(inst, gap) {
-    if (!inst || !inst.items || !inst.items.length) return inst;
-    var H = inst.strip_height, need = 4 * Math.max(gap || 0, 1), area = 0, minH = 0;
-    inst.items.forEach(function (it) {
-      var P = it.shape && it.shape.data;
-      if (!P || !P.length) return;
-      var a = 0;
-      for (var k = 0; k < P.length; k++) { var q = P[(k + 1) % P.length]; a += P[k][0] * q[1] - q[0] * P[k][1]; }
-      area += Math.abs(a / 2) * (it.demand || 1);
-    });
-    if (!(H > 0) || area / H >= need) return inst;
-    inst.items.forEach(function (it) {
-      var P = it.shape && it.shape.data;
-      if (P && P.length) minH = Math.max(minH, minExtent(P, it.allowed_orientations || null));
-    });
-    var h = Math.min(H, Math.max(area / need, minH * 1.02 + 1e-3));
-    if (h < H) { inst.strip_height = h; inst.guardedHeight = H; }
+  // Engine guard (merge 3/4-7/9), history: jagua-rs starts the strip at width = item area / strip height and deflates
+  // it by gap/2 per side; with a few small pieces on a wide roll that width was below the gap and the wasm PANICKED
+  // ("Offset resulted in an empty polygon"). The guard used to LOWER strip_height until area / height >= 4 x gap, which
+  // (casi reali 2026-09-24: tiny DXF/SVG pieces, Deepnest #3/#29/#148) was too low for piece + 2 gaps -> "could not
+  // construct an initial placement", and otherwise gave long single-row layouts (31 mm instead of 7 mm).
+  // Now the wasm (wasm/src/lib.rs) starts the strip at least one piece diameter + 2 gaps wide, so the full roll height
+  // is kept: guardInstance only records the check (kept for callers and tests), it never changes the instance.
+  function guardInstance(inst) {
     return inst;
   }
 
@@ -398,7 +417,7 @@
     },
     signedArea: signedArea, area: area, cleanRing: cleanRing, bbox: bbox, convexHull: convexHull,
     douglasPeucker: douglasPeucker, isSimple: isSimple, filledArea: filledArea,
-    buildPiece: buildPiece, buildPieces: buildPieces, buildInstance: buildInstance, guardInstance: guardInstance,
+    buildPiece: buildPiece, buildPieces: buildPieces, vertexCap: vertexCap, ringArea: ringArea, buildInstance: buildInstance, guardInstance: guardInstance,
     minExtent: minExtent, placementToMove: placementToMove, applyMove: applyMove,
     _internals: { silhouette: silhouette, closing: closing, simplify: simplify, union: union,
                   offset: offset, outers: outers, toPath: toPath, fromPath: fromPath, SCALE: SCALE, lib: lib }

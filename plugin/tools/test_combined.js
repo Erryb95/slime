@@ -247,8 +247,9 @@ const artboards = [[DX - 250, DY + 250, DX + 5000, DY - 1500]];
   // engine guard: the blue group (15 dots of 3-5 mm) on the ~507 mm strip has area / height < gap -> jagua-rs panicked
   const blueJob = jobs.find((j) => j.units.every((u) => /^small/.test(u.name))), blueInst = MN.subsetInstance(blueJob.units, W, orient), blueH = blueInst.strip_height;
   G.guardInstance(blueInst, GAP);
-  check(blueInst.strip_height < blueH && jobs.every((j) => j.report && j.placements.length === j.units.length),
-    `small-area group: strip height lowered ${(blueH / MM).toFixed(0)} -> ${(blueInst.strip_height / MM).toFixed(1)} mm, every colour job nested`);
+  // since 2026-09-24 the wasm starts the strip one piece + 2 gaps wide: no more lowering, the full roll height is kept
+  check(blueInst.strip_height === blueH && jobs.every((j) => j.report && j.placements.length === j.units.length),
+    `small-area group (area / height < gap): full height ${(blueH / MM).toFixed(0)} mm kept, no engine panic, every colour job nested`);
   const movesC = [].concat(...jobs.map((j) => HO.movesFor(j.placements, nestC, j.origin, holesC)));
   const mvIdx = movesC.map((m) => m.i).sort((a, b) => a - b), wantC = qx.pieces.map((p) => p.hostI).sort((a, b) => a - b);
   check(JSON.stringify(mvIdx) === JSON.stringify(wantC), `one move per piece and per ghost, job by job (${mvIdx.length} = ${wantC.length})`);

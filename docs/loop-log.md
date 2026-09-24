@@ -204,3 +204,18 @@ Illustrator (`tools/ill/hostload.js`, porta 8093, copie chiuse senza salvare) 11
 tolte da `$.global`) -> ricarica dei due moduli, ok; flag_italy per colore = 3 rotoli (#009246, #FFFFFF, #CE2B37), nessun
 "senza colore"; insegna48 (copia, cornice CONTAINER tolta) Graphtec: 8 crocini in revisione, presenti dopo Applica
 (`Corvo_Regmarks_rif`), spariti dopo un `app.undo()`.
+
+## 2026-09-24 — Casi reali degli utenti (GitHub, forum LightBurn) contro Corvo in Illustrator
+
+20 casi (8 GitHub giro 1, 3 LightBurn, 8 GitHub giro 2, 1 Rhino N/A), dettagli in `docs/casi-reali.md`; harness
+`plugin/tools/ill/real.js` (Nest + Applica dal pannello, misure sull'arte vera), `lbrn2svg.js`. Esito: 17 PASS (6 dopo
+correzioni), 1 parziale (Deepnest #12 path unito: 1 pezzo + nota, lettura host 136-159 s), 1 INFO (sparrow #113), 1 N/A.
+Corretti: DXF a segmenti (joinOpen), sottotracciati aperti nei composti ignorati (sovrapposizioni reali su SVGnest #37),
+ingombri `geometricBounds` sbagliati (Deepnest #12: 42 → 62 pezzi), cornice sagomata scambiata per cornice del foglio
+(targa Air Force), motore con pezzi piccoli rispetto al gap (wasm ricompilato + `guardInstance` neutro), P1-P5 di
+`docs/casi-reali-motore.md` (test_robustness 20 PASS / 0 FAIL). Regressione: test_modulo1 33/33 (142,2 mm), test_e2e
+insegna48 SEED=1 1624,3 mm (era 1653,6), test_host ok, test_cluster 92/92, combined, client, quantity, holes, multinest 228/228.
+**Incidente**: `tools/test_host.js` (lanciato nella regressione) apre e chiude per nome `bench/suite/insegna48.svg`: ha
+chiuso senza salvare il documento `insegna48.svg` aperto da Enrico. Riaperto dal disco a fine giro; eventuali modifiche
+non salvate sono perse. Da ora test_host/test_e2e insegna48 solo con quel documento non aperto (o su copia con altro nome).
+Aperti: lettura host lenta sui composti enormi (serve export SVG temporaneo), cornice di layout nei DXF 2013, unità SVG `100%`.

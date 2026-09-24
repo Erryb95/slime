@@ -226,5 +226,72 @@ console.log('filled area');
   check(Math.abs(bp.area - 10000) < 1, `buildPiece area uses the groups (${bp.area.toFixed(0)})`);
 }
 
+// ---------------------------------------------------------------- shaped outline around engravings = the part
+console.log('plaque (LightBurn Air Force): round cut line around separate engravings');
+{
+  nextI = 0;
+  const shield = vec('Cut Design', [circle(100, 100, 100, 96)]);
+  const stars = [vec('Stars', [rect(40, 90, 20, 20)]), vec('Stars', [rect(140, 90, 20, 20)]), vec('Text', [rect(70, 40, 60, 15)])];
+  const pl = C.planPieces([shield].concat(stars), { shape: 'all', artboards: [[-5, 205, 205, -5]] });
+  check(pl.pieces.length === 1 && pl.warnings.sheetFrames === 0 && pl.pieces[0].members.length === 4,
+    `round outline as big as the artboard is not a sheet frame: 1 piece with the engravings (${pl.pieces.length} pieces, frames ${pl.warnings.sheetFrames})`);
+  const bg = vec('BG', [rect(0, 0, 200, 200)]);
+  const pb = C.planPieces([bg].concat(stars), { shape: 'all', artboards: [[-5, 205, 205, -5]] });
+  check(pb.warnings.sheetFrames === 1 && pb.pieces.length === 3, 'rectangular background as big as the artboard still a frame');
+}
+
+// ---------------------------------------------------------------- open segments (DXF LINE/ARC) -> closed outlines
+console.log('joinOpen (DXF segments)');
+{
+  nextI = 0;
+  const segBox = (pts) => boxOf([pts]);
+  const seg = (pts, n) => { const it = { i: nextI++, name: 's' + nextI, type: 'GroupItem', layer: '0', rings: [], box: segBox(pts), opens: [{ pts, g: 1, cut: null, n: n || pts.length }] }; return it; };
+  // drawer front: outer 100x50 from 4 lines (one reversed), a 20x10 slot from 4 lines, 2 parts apart
+  const outer = [seg([[0, 0], [100, 0]]), seg([[100, 50], [100, 0]]), seg([[100, 50], [0, 50]]), seg([[0, 50], [0, 0]])];
+  const slot = [seg([[40, 20], [60, 20]]), seg([[60, 20], [60, 30]]), seg([[60, 30], [40, 30]]), seg([[40, 30], [40, 20]])];
+  const arc = [];   // second part: half disc = line + 2-anchor arc (flattened)
+  const arcPts = Array.from({ length: 17 }, (_, k) => [300 + 20 * Math.cos(Math.PI * k / 16), 20 * Math.sin(Math.PI * k / 16)]);
+  arc.push(seg(arcPts, 2), seg([[280, 0], [320, 0]]));
+  const lone = seg([[500, 0], [510, 0]]);                      // construction line: stays alone, no contour
+  const lonearc = seg(Array.from({ length: 9 }, (_, k) => [600 + 5 * Math.cos(Math.PI * k / 8), 5 * Math.sin(Math.PI * k / 8)]), 2);
+  const items = outer.concat(slot, arc, [lone, lonearc]);
+  const before = JSON.stringify(items);
+  const jo = C.joinOpen(items);
+  check(JSON.stringify(items) === before, 'input items are not mutated');
+  check(jo.joined.loops === 3 && jo.joined.segments === 10, `3 closed outlines from 10 segments (${JSON.stringify(jo.joined)})`);
+  const pp = C.planPieces(items, { shape: 'all', artboards: [[0, 600, 800, 0]] });
+  const sizes = pp.pieces.map(p => p.members.length + ':' + p.rings.length).join(' ');
+  check(pp.pieces.length === 2, `2 pieces with a contour (drawer front + half disc): ${sizes}`);
+  check(pp.pieces[0].members.length === 8 && pp.pieces[0].rings.length === 2, 'drawer front = 8 line objects, outer + slot rings');
+  check(pp.pieces[1].members.length === 2 && pp.pieces[1].rings.length === 1, 'half disc = line + arc, one ring');
+  check(pp.warnings.noContour === 2, `lone line and lone 2-anchor arc: no contour, left in place (${pp.warnings.noContour})`);
+  const G = require(path.join(__dirname, '..', 'client', 'js', 'geometry.js'));
+  const bp = G.buildPiece(pp.pieces[0], {});
+  check(Math.abs(bp.area - (5000 - 200)) < 1, `drawer front filled area = outer - slot (${bp.area.toFixed(1)})`);
+  // small CAD gap (0.5 mm) closes; a 5 mm gap does not
+  nextI = 0;
+  const g1 = [seg([[0, 0], [100, 0]]), seg([[100, 0], [100, 50]]), seg([[100, 50], [0, 50]]), seg([[0, 50], [0, 1.4]])];
+  const j1 = C.joinOpen(g1);
+  check(j1.joined.loops === 1 && j1.joined.gaps === 1, '0.5 mm gap between first and last segment -> closed outline (gap noted)');
+  const g2 = [seg([[0, 0], [100, 0]]), seg([[100, 0], [100, 50]]), seg([[100, 50], [0, 50]]), seg([[0, 50], [0, 14]])];
+  check(C.joinOpen(g2).joined.loops === 0, '5 mm gap -> not closed');
+  // v0.1: an open path with >= 3 anchors and no neighbour is still closed by its chord
+  nextI = 0;
+  const vv = seg([[0, 0], [10, 20], [20, 0]], 3);
+  const pv = C.planPieces([vv], { shape: 'all', artboards: [] });
+  check(pv.pieces.length === 1 && pv.pieces[0].rings.length === 1, 'lone open V (3 anchors) closed by its chord as before');
+  // compound path with a closed body + a 2-anchor arc that does not chain (SVGnest #37): the arc still counts
+  nextI = 0;
+  const body = { i: nextI++, name: 'fin', type: 'CompoundPathItem', layer: '0', rings: [rect(0, 0, 50, 20)], rg: [1], box: [0, 20, 50, 0],
+    opens: [{ pts: Array.from({ length: 9 }, (_, k) => [-40 + 40 * k / 8, 20 + 60 * Math.sin(Math.PI * k / 16)]), g: 1, cut: null, n: 2 }] };
+  const jb = C.joinOpen([body]).items[0];
+  const bb2 = boxOf(jb.rings);
+  check(jb.rings.length === 2 && bb2[0] < -39 && bb2[1] > 79, `unchained arc inside a shaped object -> thin ring, box covers it (${bb2.map(v => v.toFixed(0))})`);
+  // items without opens are returned as they are
+  nextI = 0;
+  const plain = [vec('L', [rect(0, 0, 10, 10)])];
+  check(C.joinOpen(plain).items[0] === plain[0], 'no open segments -> same objects');
+}
+
 console.log(fails ? `\n${fails}/${n} FAIL` : `\nALL OK (${n} checks)`);
 process.exit(fails ? 1 : 0);

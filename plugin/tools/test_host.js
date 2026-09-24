@@ -84,7 +84,7 @@ async function testFile(key) {
     const nSel = Number(open.split('|')[1]);
     check(ex.items.length === nSel, `numero pezzi = selezione (${ex.items.length}/${nSel})`);
     const expRings = svgSubpaths(`${SUITE}${key}.svg`);
-    const gotRings = ex.items.map(it => it.rings.length);
+    const gotRings = ex.items.map(it => it.rings.length + (it.opens || []).length);   // open paths: item.opens (cluster.joinOpen)
     const totExp = expRings.reduce((a, b) => a + b, 0), totGot = gotRings.reduce((a, b) => a + b, 0);
     check(totGot === totExp, `anelli totali ${totGot} vs sottotracciati SVG ${totExp}`);
     const pts = ex.items.reduce((a, it) => a + it.rings.reduce((s, r) => s + r.length, 0), 0);
