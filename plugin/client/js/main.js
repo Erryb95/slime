@@ -10,6 +10,7 @@
   var G = window.CorvoGeometry;
   var CL = window.CorvoCluster;
   var RM = window.CorvoRegmarks;       // MODULO 6: crocini di registro (js/regmarks.js)
+  var HO = window.CorvoHoles;          // MODULO 2 (pieces inside holes), optional
   var MM = 72 / 25.4;                  // 1 mm in pt
   var FLATNESS = 0.5;                  // pt, Bezier discretisation + simplification tolerance
   var ROLL_MARGIN_MM = 20;             // strip placed 20 mm below the active artboard
@@ -66,7 +67,8 @@
       rmCrossTooNarrow: 'Marks {d} mm apart across the roll: the minimum is {min} mm.',
       rmFineCut: 'Mimaki: FineCut reads only its own marks. Select Corvo_FineCut_Area and create the marks in FineCut.',
       rmMaterial: 'Marks: black on white matte media only (no clear, glossy or coloured media).',
-      rmError: 'Registration marks not drawn: {msg}'
+      rmError: 'Registration marks not drawn: {msg}',
+      useHoles: 'Use holes', holesNote: '{n} piece(s) placed inside holes.'   // MODULO 2
     },
     it: {
       rollWidth: 'Larghezza rotolo', gap: 'Distanza', rotations: 'Rotazioni', rotNone: 'Nessuna', rotFree: 'Libera', time: 'Tempo',
@@ -117,7 +119,8 @@
       rmCrossTooNarrow: 'Crocini a {d} mm sulla larghezza: il minimo è {min} mm.',
       rmFineCut: 'Mimaki: FineCut legge solo i suoi crocini. Seleziona Corvo_FineCut_Area e crea i crocini con FineCut.',
       rmMaterial: 'Crocini: solo nero su materiale bianco opaco (niente trasparenti, lucidi o colorati).',
-      rmError: 'Crocini non disegnati: {msg}'
+      rmError: 'Crocini non disegnati: {msg}',
+      useHoles: 'Usa i fori', holesNote: '{n} pezzi nei fori.'   // MODULO 2
     }
   };
   var lang = 'en';
@@ -287,6 +290,7 @@
     $('btnApply').disabled = !(running || review);
     $('btnCancel').disabled = !(running || review || st === 'preparing');
     ['rollWidth', 'gap', 'rotations', 'time', 'shapeSrc', 'merge', 'regmarks'].forEach(function (id) { $(id).disabled = st !== 'idle'; });
+    if ($('useHoles')) $('useHoles').disabled = st !== 'idle';   // MODULO 2
   }
 
   function readParams() {
@@ -297,9 +301,11 @@
       time: parseFloat($('time').value),
       shape: $('shapeSrc').value === 'cut' ? 'cut' : 'all',
       merge: !!$('merge').checked,
-      rm: ($('regmarks') && $('regmarks').value) || 'none'      // MODULO 6
+      rm: ($('regmarks') && $('regmarks').value) || 'none',     // MODULO 6
+      holes: !!($('useHoles') && $('useHoles').checked)   // MODULO 2
     };
     try { localStorage.setItem('corvo.opts', JSON.stringify({ shape: p.shape, merge: p.merge })); } catch (e) { /* storage blocked */ }
+    try { localStorage.setItem('corvo.holes', p.holes ? '1' : '0'); } catch (e) { /* storage blocked */ }   // MODULO 2
     if (!(p.rollMm > 0) || !(p.gapMm >= 0) || !(p.time >= 2)) throw new Error(t('badInput'));
     return p;
   }
@@ -331,6 +337,7 @@
   }
 
   function movesFor(rep) {
+    if (HO) return HO.movesFor(rep.placements, S.nestPieces, S.origin, S.holes);   // MODULO 2: + children in holes
     var out = [];
     for (var k = 0; k < rep.placements.length; k++) {
       var pl = rep.placements[k], piece = S.pieceById[pl.item_id];
@@ -546,13 +553,21 @@
       S.budget = p.time;
       if (hulls) pl.notes.push(t('hullNote', { n: hulls }));
       S.note = pl.notes.join(' ');
+
+      // MODULO 2: small pieces inside the holes of big ones; children travel with their parent (one Sparrow item)
+      S.holes = (HO && p.holes) ? HO.planHoles(items, pieces, { gap: gapPt, orientations: orient }) : null;
+      S.nestPieces = HO ? HO.nestPieces(pieces, S.holes) : pieces;
+      S.pieceById = {};
+      S.nestPieces.forEach(function (x) { S.pieceById[x.id] = x; });
+      if (S.holes && S.holes.children.length) S.note = (S.note ? S.note + ' ' : '') + t('holesNote', { n: S.holes.children.length });
       // MODULO 5: new report session (rectangle baseline + original length computed once)
       if (window.CorvoReportPanel) window.CorvoReportPanel.begin({ pieces: pieces, items: items, H: H, gapPt: gapPt, orient: orient, docName: doc.name || '',
+        expand: S.holes ? function (pls) { return HO.expandPlacements(pls, S.nestPieces, S.holes, pieces); } : null,   // MODULO 2: children in holes
         materialWidthPt: p.rollMm * MM, materialLength: function (w) { return rollLengthMm({ strip_width: w }) * MM; } });   // MODULO 6: marks margins
 
       var msg = {
         type: 'nest',
-        instance: G.buildInstance(pieces, H, orient),
+        instance: G.buildInstance(S.nestPieces, H, orient),   // MODULO 2: children excluded
         exploreSecs: p.time * 0.8,
         compressSecs: p.time * 0.2,
         seed: window.CorvoSeed > 0 ? Math.floor(window.CorvoSeed) : 1 + Math.floor(Math.random() * 1e9),   // fixed seed = tests only
@@ -661,6 +676,7 @@
   if ($('regmarks')) $('regmarks').addEventListener('change', function () {
     try { localStorage.setItem('corvo.regmarks', $('regmarks').value); } catch (e) { /* storage blocked */ }
   });
+  try { if ($('useHoles')) $('useHoles').checked = localStorage.getItem('corvo.holes') !== '0'; } catch (e) { /* storage blocked */ }   // MODULO 2
   setState('idle');
   applyLang();
   if (!cs) setStatus('notCep', null, 'warn');
